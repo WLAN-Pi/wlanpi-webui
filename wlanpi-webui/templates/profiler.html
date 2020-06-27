@@ -1,0 +1,29 @@
+{% extends "layout.html" %} {% block content %}
+<div class="uk-flex-auto">  
+<div class="uk-container uk-padding">
+<p><b>profiler</b> is a tool that helps determine the capabilities of wireless clients. this is accomplished by automating analysis of association frames.</p>
+  <ul uk-accordion="">
+    <li>
+      <a class="uk-accordion-title" href="#">instructions</a>
+      <div class="uk-accordion-content">
+        <p>to activate the profiler:</p>
+        <ul class="uk-list uk-list-hyphen">
+          <li>ensure a supported WLAN NIC is plugged into the WLAN Pi</li>
+          <li>start the profiler process using the Front Panel Menu System (FPMS)</li>
+          <li><kbd>Menu &gt; Apps &gt; Profile &gt; Start</kbd></li>
+        </ul>
+        <p>to profile a client:</p>
+        <ul class="uk-list uk-list-hyphen">
+        <li>once started the configured SSID will broadcast (default: "WLAN Pi")</li>
+        <li>connect a client and enter any random 8 characters for the PSK</li>
+        <li>the client will expectedly fail authentication but we should receive the association request</li>
+        </ul>
+        <p>once a client is profiled refresh this page to see new results.</p>
+      </div>
+    </li>
+  </ul>
+  <h3 class="uk-h3">results</h3>{% autoescape false %} {{ content }} {% endautoescape %}
+  <p uk-margin=""><button class="uk-button uk-align-center uk-button-secondary uk-button-small" onclick="window.location.reload();">manual refresh</button></p>
+</div>
+</div>
+{% endblock %}
