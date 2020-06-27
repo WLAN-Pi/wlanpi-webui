@@ -9,6 +9,8 @@ fi
 
 echo "start..."
 
+# MAIN APP
+
 REPO="https://github.com/joshschmelzle/wlanpi-webui.git"
 REPONAME="wlanpi-webui"
 WLANPIDIR="/opt/wlanpi"
@@ -41,6 +43,8 @@ else
     pip install $WLANPIDIR/$REPONAME/.
     deactivate
 fi
+
+# SPEEDTEST APP
 
 SPEEDTESTDIR="/var/www/wlanpi-speedtest"
 WWW="www-data" 
@@ -94,18 +98,28 @@ if [[ ! -f /etc/apache2/sites-available/$SPEED_CONF ]]; then
     cp $WLANPIDIR/$REPONAME/$SPEED_CONF /etc/apache2/sites-available/$SPEED_CONF
 fi
 
+# APACHE2 NEEDS TO LISTEN ON 8080!
+
 PCONF=`grep -r "Listen 8080" /etc/apache2/ports.conf`
 if [[ "" = "$PCONF" ]]; then
     echo "Adding 8080 to /etc/apache2/ports.conf"
     echo 'Listen 8080' >> /etc/apache2/ports.conf
 fi
 
+# TURN UP
+
 a2dissite 000-default.conf
 a2ensite wlanpi-webui.conf
 a2ensite wlanpi-speedtest.conf
 
+# PERMISSIONS!
+
 echo "making sure $WLANPIDIR owner is $USER..."
 sudo chown -R $USER:$USER $WLANPIDIR
+
+# REBOOT APACHE
+
 echo "restarting apache2..."
 sudo systemctl restart apache2
+
 echo "done..."
