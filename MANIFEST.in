@@ -1,5 +1,5 @@
 include LICENSE
-graft wfe_flask/static
-graft wfe_flask/templates
+graft wlanpi_webui/static
+graft wlanpi_webui/templates
 graft tests
 global-exclude *.pyc
