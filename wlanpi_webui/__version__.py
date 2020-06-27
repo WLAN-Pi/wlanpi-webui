@@ -7,7 +7,7 @@
                                     
 """ version information for wlanpi-webui """
 
-__title__ = "wlanpi-webui"
+__title__ = "wlanpi_webui"
 __description__ = "a custom local WebUI made for the WLAN Pi"
 __url__ = "https://github.com/joshschmelzle/wlanpi-webui"
 __author__ = "Josh Schmelzle"

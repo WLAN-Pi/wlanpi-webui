@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-wlanpi-webui
+wlanpi_webui
 ~~~~~~~~
 
 a custom local WebUI made for the WLAN Pi
