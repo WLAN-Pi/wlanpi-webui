@@ -34,7 +34,8 @@ activate () {
 if [[ -d "$WLANPIDIR/$REPONAME/venv" ]]; then
     echo "$WLANPIDIR/$REPONAME/venv already exists... skipping..."
 else
-    sudo -u wlanpi python3 -m virtualenv -p=python3 $WLANPIDIR/$REPONAME/venv
+    sudo chown -R $USER:$USER $WLANPIDIR
+    sudo -u $USER python3 -m virtualenv -p=python3 $WLANPIDIR/$REPONAME/venv
     activate
     pip install -r $WLANPIDIR/$REPONAME/requirements.txt
     pip install $WLANPIDIR/$REPONAME/.
