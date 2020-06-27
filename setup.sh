@@ -7,9 +7,11 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+echo "start..."
+
 REPO="https://github.com/joshschmelzle/wlanpi-webui.git"
 REPONAME="wlanpi-webui"
-WLANPIDIR="/opt/wlanpi2"
+WLANPIDIR="/opt/wlanpi"
 USER="wlanpi"
 
 if [[ -d "$WLANPIDIR" ]]; then
@@ -39,6 +41,27 @@ else
     deactivate
 fi
 
+SPEEDTESTDIR="/var/www/wlanpi-speedtest"
+WWW="www-data" 
+ 
+if [[ -d "$SPEEDTESTDIR" ]]; then
+    echo "$SPEEDTESTDIR already exists... skipping..."
+else
+    echo "creating $SPEEDTESTDIR..."
+    sudo mkdir $SPEEDTESTDIR
+    echo "copying files to $SPEEDTESTDIR..."
+    cp $WLANPIDIR/$REPONAME/speedtest/src/* $SPEEDTESTDIR -r
+    echo "changing $SPEEDTESTDIR owner to $WWW"
+    sudo chown -R $WWW:$WWW $SPEEDTESTDIR
+fi
+
+
+if [[ -d "$WLANPIDIR/$REPONAME" ]]; then
+    echo "$WLANPIDIR/$REPONAME already exists... skipping..."
+else
+    git clone $REPO $WLANPIDIR/$REPONAME
+fi
+
 # PHP
 
 PHP_PKG="php"
@@ -61,9 +84,27 @@ if [[ "" = "$PKG_OK" ]]; then
 fi
 
 APACHE_CONF="wlanpi-webui.conf"
-
 if [[ ! -f /etc/apache2/sites-available/$APACHE_CONF ]]; then
-    cp $WLANPIDIR/$REPONAME/$APACHE_CONF /etc/apache2/sites-avilable/$APACHE_CONF
+    cp $WLANPIDIR/$REPONAME/$APACHE_CONF /etc/apache2/sites-available/$APACHE_CONF
 fi
 
+SPEED_CONF="wlanpi-speedtest.conf"
+if [[ ! -f /etc/apache2/sites-available/$SPEED_CONF ]]; then
+    cp $WLANPIDIR/$REPONAME/$SPEED_CONF /etc/apache2/sites-available/$SPEED_CONF
+fi
+
+PCONF=`grep -r "Listen 8080" /etc/apache2/ports.conf`
+if [[ "" = "$PCONF" ]]; then
+    echo "Adding 8080 to /etc/apache2/ports.conf"
+    echo 'Listen 8080' >> /etc/apache2/ports.conf
+fi
+
+a2dissite 000-default.conf
+a2ensite wlanpi-webui.conf
+a2ensite wlanpi-speedtest.conf
+
+echo "making sure $WLANPIDIR owner is $USER..."
 sudo chown -R $USER:$USER $WLANPIDIR
+echo "restarting apache2..."
+sudo systemctl restart apache2
+echo "done..."
