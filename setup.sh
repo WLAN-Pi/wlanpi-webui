@@ -106,6 +106,14 @@ if [[ "" = "$PCONF" ]]; then
     echo 'Listen 8080' >> /etc/apache2/ports.conf
 fi
 
+# UFW NEEDS TO ALLOW 8080
+
+UFW=`ufw status numbered | grep 8080`
+if [[ "" = "$UFW" ]]; then
+    echo "Punching a hole in the firewall (ง •̀_•́)ง..."
+    ufw allow 8080
+fi 
+
 # TURN UP
 
 a2dissite 000-default.conf
