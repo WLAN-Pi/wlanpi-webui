@@ -133,7 +133,7 @@ if [[ -f $ipconfig ]]; then
 fi 
 cp $app_dir/$webui_repo_name/fpms/ipconfig.sh $ipconfig
 
-sudo chmod +s /usr/bin/arping
+chmod +s /usr/bin/arping
 
 # REBOOT APACHE
 
