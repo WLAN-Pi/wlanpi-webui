@@ -2,7 +2,7 @@
 
 this is a custom WebUI designed to run directly on the [WLAN Pi](https://github.com/WLAN-Pi).
 
-# script deployment
+# bash script deployment
 
 ```
 cd ~
