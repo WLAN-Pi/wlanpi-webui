@@ -75,7 +75,7 @@ fi
 mod_wsgi_pkg="libapache2-mod-wsgi-py3"
 pkg_ok=$(dpkg-query -W --showformat='${Status}\n' $mod_wsgi_pkg | grep "install ok installed")
 echo "checking for $mod_wsgi_pkg: $pkg_ok"
-if [[ "" = "$PKG_OK" ]]; then
+if [[ "" = "$pkg_ok" ]]; then
     echo "$mod_wsgi_pkg not installed. Setting up $mod_wsgi_pkg..."
     apt --yes install libapache2-mod-wsgi-py3
     sudo a2enmod wsgi
@@ -117,6 +117,22 @@ a2ensite wlanpi-speedtest.conf
 
 echo "making sure $WLANPIDIR owner is $user..."
 sudo chown -R $user:$user $app_dir
+
+# PATCH REACHABILITY SCRIPT
+ 
+reachability="/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/reachability.sh"
+ipconfig="/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/ipconfig.sh"
+
+if [[ -f reachability ]]; then
+    rm reachability
+fi   
+cp $app_dir/$webui_repo_name/fpms/reachability.sh reachability
+
+if [[ -f ipconfig ]]; then
+    rm ipconfig
+fi 
+cp $app_dir/$webui_repo_name/fpms/ipconfig.sh ipconfig
+
 sudo chmod +s /usr/bin/arping
 
 # REBOOT APACHE
