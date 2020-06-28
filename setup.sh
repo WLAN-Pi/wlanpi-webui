@@ -123,15 +123,15 @@ sudo chown -R $user:$user $app_dir
 reachability="/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/reachability.sh"
 ipconfig="/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/ipconfig.sh"
 
-if [[ -f reachability ]]; then
-    rm reachability
+if [[ -f $reachability ]]; then
+    rm $reachability
 fi   
-cp $app_dir/$webui_repo_name/fpms/reachability.sh reachability
+cp $app_dir/$webui_repo_name/fpms/reachability.sh $reachability
 
-if [[ -f ipconfig ]]; then
-    rm ipconfig
+if [[ -f $ipconfig ]]; then
+    rm $ipconfig
 fi 
-cp $app_dir/$webui_repo_name/fpms/ipconfig.sh ipconfig
+cp $app_dir/$webui_repo_name/fpms/ipconfig.sh $ipconfig
 
 sudo chmod +s /usr/bin/arping
 
