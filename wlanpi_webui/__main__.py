@@ -3,8 +3,7 @@
 
 """
 wlanpi_webui
-~~~~~~~~
-
+~~~~~~~
 a custom local WebUI made for the WLAN Pi
 """
 

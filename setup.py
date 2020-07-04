@@ -3,7 +3,7 @@
 import os
 from codecs import open
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,9 +14,7 @@ with open(os.path.join(here, "wlanpi_webui", "__version__.py"), "r", "utf-8") as
 
 readme = about["__description__"]
 
-packages = ["wlanpi_webui"]
-
-requires = ["flask"]
+requires = ["flask==1.1.2", "gunicorn==20.0.4"]
 
 setup(
     name=about["__title__"],
@@ -36,7 +34,7 @@ setup(
         "Intended Audience :: System Administrators",
         "Topic :: Utilities",
     ],
-    packages=packages,
+    packages=find_packages(),
     project_urls={
         "Documentation": "https://docs.wlanpi.com",
         "Source": "https://github.com/joshschmelzle/wlanpi-webui",
@@ -44,5 +42,4 @@ setup(
     zip_safe=False,
     include_package_data=True,
     install_requires=requires,
-    entry_points={"console_scripts": ["wlanpi_webui=wlanpi_webui.__main__:main"]},
 )
