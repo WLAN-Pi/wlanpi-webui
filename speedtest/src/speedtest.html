@@ -9,7 +9,13 @@
 function I(i){return document.getElementById(i);}
 //INITIALIZE SPEEDTEST
 var s=new Speedtest(); //create speedtest object
-
+//CUSTOM SETTINGS HERE
+s.setParameter("time_auto", false); // automatically determine duration of DL and UL tests
+s.setParameter("test_order","IP_D_U"); // order tests are performed
+s.setParameter("time_dl_max",15); //num seconds for the download test
+s.setParameter("time_ul_max",15); //num seconds for the upload test
+s.setParameter("count_ping",25); //how many pings to perform. this measures XHR NOT ICMP!
+s.setParameter("garbagePhp_chunkSize",10); //size of chunks sent by garbage.php in megabytes
 var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#EAEAEA":"#80808040";
 var dlColor="#6060AA",
 	ulColor="#616161";
@@ -257,6 +263,5 @@ function initUI(){
 	</div>
 </div>
 <script>setTimeout(function(){initUI()},100);</script>
-<script src="subdocument.js"></script>
 </body>
 </html>

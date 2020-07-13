@@ -9,22 +9,22 @@
     <meta name="description" content="Tools for Wireless LAN Professionals">
     <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
     <meta name="msapplication-TileColor" content="#fff">
-    <meta name="msapplication-TileImage" content="{{ url_for('img', filename='ms-icon-144x144.png') }}">
+    <meta name="msapplication-TileImage" content="{{ url_for('static', filename='ms-icon-144x144.png') }}">
     <meta name="theme-color" content="#fff">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.min.css') }}">
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('img', filename='apple-icon-57x57.png') }}">
-    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('img', filename='apple-icon-60x60.png') }}">
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('img', filename='apple-icon-72x72.png') }}">
-    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('img', filename='apple-icon-76x76.png') }}">
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('img', filename='apple-icon-114x114.png') }}">
-    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('img', filename='apple-icon-120x120.png') }}">
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('img', filename='apple-icon-144x144.png') }}">
-    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('img', filename='apple-icon-152x152.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('img', filename='apple-icon-180x180.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('img', filename='android-icon-192x192.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('img', filename='favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('img', filename='favicon-96x96.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('img', filename='favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='img/apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='img/apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='img/apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='img/apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='img/apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='img/apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='img/apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='img/apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='img/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   </head>
   <body>
@@ -47,11 +47,11 @@
         <div class="uk-container uk-container-expand">
           <nav class="uk-navbar" id="navbar" data-uk-navbar>
             <div class="uk-navbar-left">
-<a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('img', filename='favicon-96x96.png') }}" alt="WLAN Pi logo" style="width:64px;"></a>
+<a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('static', filename='img/favicon-96x96.png') }}" alt="WLAN Pi logo" style="width:64px;"></a>
               <ul class="uk-navbar-nav uk-visible@m">
-                <li><a href="{{ url_for('speedtest') }}">Speedtest</a></li>
-                <li><a href="{{ url_for('profiler') }}">Profiler</a></li>
-                <li><a href="{{ url_for('fpms') }}">FPMS</a></li>
+                <li><a href="{{ url_for('speedtest.speedtest') }}">Speedtest</a></li>
+                <li><a href="{{ url_for('profiler.profiler') }}">Profiler</a></li>
+                <li><a href="{{ url_for('fpms.networkinfo') }}">FPMS</a></li>
                 <li><a href="{{ url_for('cockpit') }}">Admin Panel (Cockpit)</a></li>
               </ul>
             </div>
@@ -102,9 +102,9 @@
           <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
             <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
             <ul class="uk-nav uk-nav-default">
-              <li><a href="{{ url_for('speedtest') }}">Speedtest</a></li>
-              <li><a href="{{ url_for('profiler') }}">Profiler</a></li>
-              <li><a href="{{ url_for('fpms') }}">FPMS</a></li>
+              <li><a href="{{ url_for('speedtest.speedtest') }}">Speedtest</a></li>
+              <li><a href="{{ url_for('profiler.profiler') }}">Profiler</a></li>
+              <li><a href="{{ url_for('fpms.networkinfo') }}">FPMS</a></li>
               <li><a href="{{ url_for('cockpit') }}">Admin Panel (Cockpit)</a></li> 
             </ul>
           </div>

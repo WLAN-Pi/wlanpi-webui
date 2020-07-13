@@ -1,0 +1,20 @@
+[Unit]
+Description=Gunicorn daemon to serve wlanpi-webui
+Requires=wlanpi_webui.socket
+After=network.target
+
+[Service]
+Type=notify
+User=wlanpi
+Group=wlanpi
+#RuntimeDirectory=gunicorn
+WorkingDirectory=/opt/wlanpi/pipx/venvs/wlanpi-webui/lib/python3.7/site-packages/wlanpi_webui
+#Environment="PATH=/opt/wlanpi/pipx/venvs/wlanpi-webui/bin"
+ExecStart=/opt/wlanpi/pipx/bin/gunicorn --workers 2 --bind unix:gunicorn.sock -m 007 wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
