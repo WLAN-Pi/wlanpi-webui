@@ -1,3 +1,3 @@
-# wlanpi-webui
+# wlanpi-webui (work in progress)
 
-This is a local WebUI customized for the WLAN Pi.
+this is a custom WebUI designed to run directly on the [WLAN Pi](https://github.com/WLAN-Pi).
