@@ -43,7 +43,7 @@ def profiler_file_listing():
                     seen[defolder] = []
                 if contents:
                     seen[defolder].append(
-                        "&nbsp;&nbsp;{0} -- <a href='#_{4}' uk-toggle>{3}</a><div id='_{4}' class='uk-modal-container' uk-modal><div class='uk-modal-dialog uk-modal-body'><h2 class='uk-modal-title'>{3}</h2><button class='uk-modal-close-default' type='button' uk-close></button><pre>{5}</pre><div class='uk-modal-footer uk-text-right'><button class='uk-button uk-button-default uk-modal-close' type='button'>Cancel</button> <a href='{1}{2}'><button class='uk-button uk-button-primary' type='button'>Save</button></a></div></div></div>".format(
+                        "&nbsp;&nbsp;{0} --- <a href='#_{4}' uk-toggle>{3}</a><div id='_{4}' class='uk-modal-container' uk-modal><div class='uk-modal-dialog uk-modal-body'><h2 class='uk-modal-title'>{3}</h2><button class='uk-modal-close-default' type='button' uk-close></button><pre>{5}</pre><div class='uk-modal-footer uk-text-right'><button class='uk-button uk-button-default uk-modal-close' type='button'>Cancel</button> <a href='{1}{2}'><button class='uk-button uk-button-primary' type='button'>Save</button></a></div></div></div>".format(
                             date,
                             request.url_root,
                             client,
@@ -54,7 +54,7 @@ def profiler_file_listing():
                     )
                 else:
                     seen[defolder].append(
-                        "&nbsp;&nbsp;{0} -- <a href='{1}{2}'>{3}</a>".format(
+                        "&nbsp;&nbsp;{0} --- <a href='{1}{2}'>{3}</a>".format(
                             date, request.url_root, client, friendly
                         )
                     )
@@ -68,7 +68,7 @@ def profiler_file_listing():
             report = report.replace(root_dir, "")
             friendly = report.replace("profiler/reports/", "")
             result.append(
-                "&nbsp;&nbsp;{0} -- <a href='{1}{2}'>{3}</a>".format(
+                "&nbsp;&nbsp;{0} --- <a href='{1}{2}'>{3}</a>".format(
                     date, request.url_root, report, friendly
                 )
             )
@@ -86,7 +86,10 @@ def profiler_file_listing():
 def profiler():
     """ route setup for /profiler """
     links = profiler_file_listing()
-    listing = "<br />".join(links)
+    if not links:
+        listing = "<p>profiled clients will show here. see instructions to get started.</p>"
+    else:
+        listing = "<br />".join(links)
     return render_template(
         "public/profiler.html",
         wlanpi_version=current_app.config['WLANPI_VERSION'],
