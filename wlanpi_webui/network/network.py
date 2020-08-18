@@ -1,9 +1,9 @@
 import os, subprocess, queue, threading
 from flask import render_template, current_app
-from wlanpi_webui.fpms import bp
+from wlanpi_webui.network import bp
 
-@bp.route("/networkinfo")
-def networkinfo():
+@bp.route("/network")
+def network():
     """  fpms screen """
     FPMS_QUEUE = queue.Queue()
 
@@ -71,8 +71,8 @@ def networkinfo():
             ipconfig = result[1]
 
     return render_template(
-        "public/networkinfo.html",
-        title="networkinfo",
+        "public/network.html",
+        title="network",
         wlanpi_version=current_app.config['WLANPI_VERSION'], 
         webui_version=current_app.config['WEBUI_VERSION'],   
         reachability=reachability,
