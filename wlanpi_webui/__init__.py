@@ -20,14 +20,14 @@ def create_app(config_class=Config):
     from wlanpi_webui.profiler import bp as profiler_bp
     app.register_blueprint(profiler_bp)
 
-    from wlanpi_webui.fpms import bp as fpms_bp
-    app.register_blueprint(fpms_bp)
+    from wlanpi_webui.network import bp as network_bp
+    app.register_blueprint(network_bp)
 
-    @app.route("/cockpit")                          
-    def cockpit():                                 
-        cp_port = "9090"                           
+    @app.route("/admin")                          
+    def admin():                                 
+        COCKPIT_PORT = "9090"                           
         base = request.host.split(":")[0]          
-        return redirect(f"http://{base}:{cp_port}")
+        return redirect(f"http://{base}:{COCKPIT_PORT}")
 
     @app.route("/static/img/<path:filename>")
     def img(filename):
