@@ -30,7 +30,7 @@ InstallPipx() {
 SetupWebui() {
     display_alert "Installing WebUI" "" "info"
     # install with pip via pipx
-	pipx install --include-deps git+https://github.com/joshschmelzle/wlanpi-webui@dev#egg=wlanpi_webui
+	pipx install --include-deps git+https://github.com/joshschmelzle/wlanpi-webui@main#egg=wlanpi_webui
    
     # setup config required to support the webui
     git clone -b dev https://github.com/joshschmelzle/wlanpi-webui.git 
