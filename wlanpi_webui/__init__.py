@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -7,26 +8,31 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask, send_from_directory, redirect, request
 from wlanpi_webui.config import Config
 
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
     from wlanpi_webui.errors import bp as errors_bp
+
     app.register_blueprint(errors_bp)
 
     from wlanpi_webui.speedtest import bp as speedtest_bp
+
     app.register_blueprint(speedtest_bp)
 
     from wlanpi_webui.profiler import bp as profiler_bp
+
     app.register_blueprint(profiler_bp)
 
     from wlanpi_webui.network import bp as network_bp
+
     app.register_blueprint(network_bp)
 
-    @app.route("/admin")                          
-    def admin():                                 
-        COCKPIT_PORT = "9090"                           
-        base = request.host.split(":")[0]          
+    @app.route("/admin")
+    def admin():
+        COCKPIT_PORT = "9090"
+        base = request.host.split(":")[0]
         return redirect(f"http://{base}:{COCKPIT_PORT}")
 
     @app.route("/static/img/<path:filename>")
@@ -37,12 +43,12 @@ def create_app(config_class=Config):
             abort(404)
 
     if not app.debug and not app.testing:
-        if app.config['LOG_TO_STDOUT']:
+        if app.config["LOG_TO_STDOUT"]:
             stream_handler = logging.StreamHandler()
             stream_handler.setLevel(logging.INFO)
             app.logger.addHandler(stream_handler)
 
         app.logger.setLevel(logging.INFO)
-        app.logger.info('wlanpi_webui startup')
+        app.logger.info("wlanpi_webui startup")
 
     return app

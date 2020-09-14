@@ -1,6 +1,7 @@
 from flask import render_template, current_app, request
 from wlanpi_webui.speedtest import bp
 
+
 @bp.route("/")
 @bp.route("/speedtest")
 def speedtest():
@@ -9,11 +10,12 @@ def speedtest():
     iframe = f"http://{base}:{spt_port}/speedtest.html"
     return render_template(
         "/public/speedtest.html",
-        wlanpi_version=current_app.config['WLANPI_VERSION'],
-        webui_version=current_app.config['WEBUI_VERSION'],
+        wlanpi_version=current_app.config["WLANPI_VERSION"],
+        webui_version=current_app.config["WEBUI_VERSION"],
         title="speedtest",
         iframe=iframe,
     )
+
 
 @bp.route("/speedtest2")
 def speedtest2():
@@ -22,8 +24,8 @@ def speedtest2():
     iframe = f"http://{base}:{spt_port}/wip/speedtest.html"
     return render_template(
         "/public/speedtest.html",
-        wlanpi_version=current_app.config['WLANPI_VERSION'],
-        webui_version=current_app.config['WEBUI_VERSION'],
+        wlanpi_version=current_app.config["WLANPI_VERSION"],
+        webui_version=current_app.config["WEBUI_VERSION"],
         title="speedtest",
         iframe=iframe,
     )

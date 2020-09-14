@@ -2,6 +2,7 @@
 import os
 from wlanpi_webui.__version__ import __version__
 
+
 def get_wlanpi_version():
     wlanpi_version = ""
     try:
@@ -16,7 +17,8 @@ def get_wlanpi_version():
         pass
     return wlanpi_version
 
+
 class Config(object):
-    WLANPI_VERSION = get_wlanpi_version() 
-    WEBUI_VERSION = f"{__version__}" 
-    LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
+    WLANPI_VERSION = get_wlanpi_version()
+    WEBUI_VERSION = f"{__version__}"
+    LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")
