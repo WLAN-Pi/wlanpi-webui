@@ -23,7 +23,7 @@ def profiler_file_listing():
         if not os.path.isdir(_file):
             if os.path.isfile(_file):
                 modifytime = datetime.fromtimestamp(os.path.getmtime(_file)).strftime(
-                    "%Y-%m-%d %H:%M:%S%z" #"%Y-%m-%d %H:%M"
+                    "%Y-%m-%d %H:%M:%S%z"  # "%Y-%m-%d %H:%M"
                 )
                 if any(x in _file for x in [".pcap", ".pcapng"]):
                     files.append((_file, modifytime, ""))
@@ -87,13 +87,15 @@ def profiler():
     """ route setup for /profiler """
     links = profiler_file_listing()
     if not links:
-        listing = "<p>profiled clients will show here. see instructions to get started.</p>"
+        listing = (
+            "<p>profiled clients will show here. see instructions to get started.</p>"
+        )
     else:
         listing = "<br />".join(links)
     return render_template(
         "public/profiler.html",
-        wlanpi_version=current_app.config['WLANPI_VERSION'],
-        webui_version=current_app.config['WEBUI_VERSION'],  
+        wlanpi_version=current_app.config["WLANPI_VERSION"],
+        webui_version=current_app.config["WEBUI_VERSION"],
         title="profiler",
         content=listing,
     )
