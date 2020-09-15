@@ -19,16 +19,6 @@ def network():
         name = script.strip().split("/")[-1]
         return name, run(script)
 
-    def read(path: str) -> str:
-        result = ""
-        if os.path.exists(path):
-            content = Path(path).read_text()
-        else:
-            content = "Cannot find file"
-        # result = '<br />'.join([i.replace('\n', '') for i in content.readlines()])
-        result += f"{content}: R_OK {os.access(path, os.R_OK)}; W_OK {os.access(path, os.W_OK)}; X_OK {os.access(path, os.X_OK)}; F_OK {os.access(path, os.F_OK)}"
-        return result
-
     def run(script: str) -> str:
         result = ""
         if os.path.exists(script):
@@ -60,16 +50,19 @@ def network():
     for thread in threads:
         thread.join()
 
-    cdpneigh = "/tmp/cdpneigh.txt"
-    lldpneigh = "/tmp/lldpneigh.txt"
-
     def readlines(_file):
         out = ""
-        with open(_file, "r") as reader:
-            for line in reader.readlines():
-                line = line.replace("\n", "<br />")
-                out += line
+        if os.path.exists(_file):
+            with open(_file, "r") as reader:
+                for line in reader.readlines():
+                    line = line.replace("\n", "<br />")
+                    out += line
+        else:
+            out += f"{_file} does not exist"
         return out
+
+    cdpneigh = "/tmp/cdpneigh.txt"
+    lldpneigh = "/tmp/lldpneigh.txt"
 
     cdp = readlines(cdpneigh)
     lldp = readlines(lldpneigh)
