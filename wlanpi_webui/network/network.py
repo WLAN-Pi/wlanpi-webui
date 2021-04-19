@@ -1,6 +1,6 @@
 import os, subprocess, queue, threading
 from flask import render_template, current_app
-from wlanpi_webui.network import bp
+from __init__ import bp
 
 
 @bp.route("/network")

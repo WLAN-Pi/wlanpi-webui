@@ -1,5 +1,5 @@
 from flask import render_template, current_app
-from wlanpi_webui.errors import bp
+from __init__ import bp
 
 
 @bp.app_errorhandler(404)

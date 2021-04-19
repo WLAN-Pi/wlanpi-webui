@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from flask import render_template, current_app, request, safe_join, send_file
-from wlanpi_webui.profiler import bp
+from __init__ import bp
 
 
 root_dir = "/var/www/html/"

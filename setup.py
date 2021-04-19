@@ -9,12 +9,12 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # load the package's __version__.py module as a dictionary
 about = {}
-with open(os.path.join(here, "wlanpi-webui", "__version__.py"), "r", "utf-8") as f:
+with open(os.path.join(here, "wlanpi_webui", "__version__.py"), "r", "utf-8") as f:
     exec(f.read(), about)
 
 readme = about["__description__"]
 
-packages = ["wlanpi-webui"]
+packages = ["wlanpi_webui"]
 
 requires = ["flask==1.1.2", "gunicorn==20.0.4"]
 
@@ -41,7 +41,6 @@ setup(
         "Documentation": "https://docs.wlanpi.com",
         "Source": "https://github.com/wlan-pi/wlanpi-webui",
     },
-    zip_safe=False,
     include_package_data=True,
     install_requires=requires,
 )

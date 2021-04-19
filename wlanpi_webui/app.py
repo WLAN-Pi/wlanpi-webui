@@ -6,26 +6,27 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask, send_from_directory, redirect, request
-from wlanpi_webui.config import Config
+
+from config import Config
 
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    from wlanpi_webui.errors import bp as errors_bp
+    from .errors import bp as errors_bp
 
     app.register_blueprint(errors_bp)
 
-    from wlanpi_webui.speedtest import bp as speedtest_bp
+    from speedtest import bp as speedtest_bp
 
     app.register_blueprint(speedtest_bp)
 
-    from wlanpi_webui.profiler import bp as profiler_bp
+    from profiler import bp as profiler_bp
 
     app.register_blueprint(profiler_bp)
 
-    from wlanpi_webui.network import bp as network_bp
+    from network import bp as network_bp
 
     app.register_blueprint(network_bp)
 

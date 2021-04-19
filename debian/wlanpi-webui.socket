@@ -1,7 +1,7 @@
 # wlanpi-webui.socket
 
 [Unit]
-Description=gunicorn socket
+Description=wlanpi-webui gunicorn socket
 
 [Socket]
 ListenStream=/run/gunicorn.sock

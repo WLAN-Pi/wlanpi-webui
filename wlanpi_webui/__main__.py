@@ -9,7 +9,7 @@ a custom WebUI made to run locally on the WLAN Pi
 
 import logging
 from logging.handlers import RotatingFileHandler
-from .__init__ import create_app
+from app import create_app
 
 if __name__ == "__main__":
     app = create_app()

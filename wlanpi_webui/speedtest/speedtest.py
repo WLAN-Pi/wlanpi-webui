@@ -1,5 +1,5 @@
 from flask import render_template, current_app, request
-from wlanpi_webui.speedtest import bp
+from __init__ import bp
 
 
 @bp.route("/")
