@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WLAN Pi: {{ title }}</title>
+    <meta name="author" content="Josh Schmelzle">
+    <meta name="description" content="Tools for Wireless LAN Professionals">
+    <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
+    <meta name="msapplication-TileColor" content="#fff">
+    <meta name="msapplication-TileImage" content="{{ url_for('static', filename='ms-icon-144x144.png') }}">
+    <meta name="theme-color" content="#fff">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.min.css') }}">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='img/apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='img/apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='img/apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='img/apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename='img/apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ url_for('static', filename='img/apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ url_for('static', filename='img/apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='img/apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/android-icon-192x192.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='img/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  </head>
+  <body>
+    <!--HANDLE MOBILE-->
+    <style>
+      #thebiglebowski {
+        min-height: 100vh; 
+      }
+      @media (max-width: 600px) {
+        #thebiglebowski {
+          min-height: 130vh;
+          }
+      }
+    </style>
+    <!--/HANDLE MOBILE-->
+
+    <div id="thebiglebowski" class="uk-flex uk-flex-column">
+      <!--HEADER-->
+      <div class="uk-box-shadow-small uk-flex-first uk-dark uk-background-muted">
+        <div class="uk-container uk-container-expand">
+          <nav class="uk-navbar" id="navbar" data-uk-navbar>
+            <div class="uk-navbar-left">
+<a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('static', filename='img/favicon-96x96.png') }}" alt="WLAN Pi logo" style="width:64px;"></a>
+              <ul class="uk-navbar-nav uk-visible@m">
+                <li><a href="{{ url_for('speedtest.speedtest') }}">SPEEDTEST</a></li>
+                <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
+                <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+                <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
+              </ul>
+            </div>
+              <div class="uk-navbar-right"> 
+              <div class="uk-navbar-item">
+ <a class="uk-navbar-toggle uk-hidden@m" data-uk-toggle data-uk-navbar-toggle-icon href="#offcanvas-nav"></a>               
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <!--/HEADER-->
+
+      <!--CONTENT-->
+      <!--<div class="uk-flex uk-flex-auto uk-dark uk-background-muted">-->
+      <div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">
+          {% block content %}
+          {% endblock %}
+      </div>
+        <!--/CONTENT-->
+
+        <!--FOOTER-->
+        <div class="uk-light uk-section-secondary">
+          <div class="uk-section uk-section-xsmall">
+            <div class="uk-container">
+              <div class="uk-grid uk-child-width-1-2@s uk-text-center uk-text-left@s" data-uk-grid>
+                <div class="uk-text-small uk-text-muted">
+                  <ul class="uk-list">
+                    <li><a href="https://docs.wlanpi.com" target="_blank" title="Visit WLAN Pi documentation" data-uk-tooltip>Documentation</a></li>
+                    <li><a href="https://wlanpi.com" target="_blank" title="Visit WLAN Pi project page" data-uk-tooltip>WLANPi.com</a></li>
+                    <li><a href="https://github.com/WLAN-Pi" target="_blank"><span uk-icon="icon: github; ratio: 2"></span></a> <a href="https://twitter.com/wlanpi" target="_blank"><span uk-icon="icon: twitter; ratio: 2"></span></a></li>
+                  </ul>
+                </div>
+                <div class="uk-text-small uk-text-muted uk-text-center uk-text-right@s">
+                  <ul class="uk-list">
+                    <li>Built with UIkit <a href="http://getuikit.com" title="Visit UIkit" target="_blank" data-uk-tooltip><span data-uk-icon="uikit"></span></a> and <a href="https://flask.palletsprojects.com/" target="_blank" title="Flask; web development, one drop at a time" data-uk-tooltop>Flask</a></li>
+                    <li>System version: {{ wlanpi_version }}</li>
+                    <li>WebUI version: {{ webui_version }}</li>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--/FOOTER-->
+    </div>
+        <!--OFFCANVAS-->
+        <div id="offcanvas-nav" data-uk-offcanvas="flip: true; overlay: true">
+          <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
+            <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
+            <ul class="uk-nav uk-nav-default">
+             <li><a href="{{ url_for('speedtest.speedtest') }}">SPEEDTEST</a></li>
+              <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
+              <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
+              <li><a href="{{ url_for('admin') }}">ADMIN</a></li> 
+            </ul>
+          </div>
+        </div>
+        <!--/OFFCANVAS-->
+      <!--JS FILES-->
+      <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
+      <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
+      <!--/JS FILES-->
+  </body>
+</html>
