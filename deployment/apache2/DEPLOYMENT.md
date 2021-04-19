@@ -14,7 +14,7 @@ sudo chown $USER /opt/wlanpi
 2. Clone repo into `/opt/wlanpi`:
 
 ```
-git clone git@github.com:joshschmelzle/wlanpi-webui.git /opt/wlanpi/wlanpi-webui
+git clone git@github.com:wlan-pi/wlanpi-webui.git /opt/wlanpi/wlanpi-webui
 ```
 
 2. Setup virtualenv and requirements 

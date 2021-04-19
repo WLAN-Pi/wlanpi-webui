@@ -37,7 +37,7 @@ setup(
     packages=find_packages(),
     project_urls={
         "Documentation": "https://docs.wlanpi.com",
-        "Source": "https://github.com/joshschmelzle/wlanpi-webui",
+        "Source": "https://github.com/wlan-pi/wlanpi-webui",
     },
     zip_safe=False,
     include_package_data=True,

@@ -9,9 +9,9 @@
 
 __title__ = "wlanpi_webui"
 __description__ = "a custom WebUI made for the WLAN Pi"
-__url__ = "https://github.com/joshschmelzle/wlanpi-webui"
+__url__ = "https://github.com/wlan-pi/wlanpi-webui"
 __author__ = "Josh Schmelzle"
 __author_email__ = "josh@joshschmelzle.com"
-__version__ = "1.0.0-b3"
+__version__ = "1.0.1-b1"
 __status__ = "alpha"
 __license__ = "BSD-3-Clause"

@@ -11,7 +11,7 @@ echo "start..."
 
 # MAIN APP
 
-webui_repo="https://github.com/joshschmelzle/wlanpi-webui.git"
+webui_repo="https://github.com/wlan-pi/wlanpi-webui.git"
 webui_repo_name="wlanpi-webui"
 app_dir="/opt/wlanpi"
 user="wlanpi"
