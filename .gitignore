@@ -6,6 +6,16 @@ __pycache__/
 # C extensions
 *.so
 
+
+# dh-virtualenv
+.pybuild/
+debian/.debhelper/
+debian/files
+debian/wlanpi-webui.postrm.debhelper
+debian/wlanpi-webui.postinst.debhelper
+debian/wlanpi-webui.substvars
+debian/wlanpi-webui/
+
 # Distribution / packaging
 .Python
 build/
