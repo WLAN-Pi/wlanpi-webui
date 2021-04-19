@@ -5,7 +5,7 @@
         "**/.git/objects/**": true,
         "**/.git/subtree-cache/**": true,
         "**/venv/*/**": true,
-        "**/debian/wlanpi-webui/*/**": true
+        "**/debian/wlanpi-webui/*/**": true,
         "**/debian/.debhelper/*/**": true
     }
 }
