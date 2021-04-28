@@ -1,4 +1,4 @@
-![BSD](https://img.shields.io/badge/license-BSD-green)
+![BSD](https://img.shields.io/badge/license-BSD-green) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
 # wlanpi-webui
 
 wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/WLAN-Pi).
@@ -192,9 +192,9 @@ sudo tail -f /var/log/webui_error.log
 
 Contributions are always welcome!
 
-See `contributing.md` for ways to get started.
+See [`contributing.md`](CONTRIBUTING.md) for ways to get started.
 
-Please adhere to this project's `code of conduct`.
+Please adhere to this project's [`code of conduct`](CODE_OF_CONDUCT.md).
 
 ## Related
 
