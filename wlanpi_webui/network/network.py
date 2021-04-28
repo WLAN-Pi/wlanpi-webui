@@ -1,11 +1,16 @@
-import os, subprocess, queue, threading
-from flask import render_template, current_app
-from __init__ import bp
+import os
+import queue
+import subprocess
+import threading
+
+from flask import current_app, render_template
+
+from wlanpi_webui.network import bp
 
 
 @bp.route("/network")
 def network():
-    """  fpms screen """
+    """fpms screen"""
     FPMS_QUEUE = queue.Queue()
 
     def storeInQueue(f):

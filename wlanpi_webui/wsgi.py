@@ -7,6 +7,6 @@ wlanpi_webui
 a custom local WebUI made for the WLAN Pi
 """
 
-from app import create_app
+from wlanpi_webui.app import create_app
 
 app = create_app()

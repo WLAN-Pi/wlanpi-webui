@@ -1,34 +1,38 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
-import os
 import logging
-from logging.handlers import RotatingFileHandler
 
-from flask import Flask, send_from_directory, redirect, request
+from flask import Flask, abort, redirect, request, send_from_directory
 
-from config import Config
+from wlanpi_webui.config import Config
 
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.logger.debug("app.py create_app reached")
 
-    from .errors import bp as errors_bp
+    app.logger.debug("registering errors blueprint")
+    from wlanpi_webui.errors import bp as errors_bp
 
     app.register_blueprint(errors_bp)
+    app.logger.debug("errors blueprint registered")
 
-    from speedtest import bp as speedtest_bp
+    app.logger.debug("registering speedtest blueprint")
+    from wlanpi_webui.speedtest import bp as speedtest_bp
 
     app.register_blueprint(speedtest_bp)
+    app.logger.debug("speedtest blueprint registered")
 
-    from profiler import bp as profiler_bp
+    app.logger.debug("registering profiler blueprint")
+    from wlanpi_webui.profiler import bp as profiler_bp
 
     app.register_blueprint(profiler_bp)
+    app.logger.debug("profiler blueprint registered")
 
-    from network import bp as network_bp
+    app.logger.debug("registering network blueprint")
+    from wlanpi_webui.network import bp as network_bp
 
     app.register_blueprint(network_bp)
+    app.logger.debug("network blueprint registered")
 
     @app.route("/admin")
     def admin():

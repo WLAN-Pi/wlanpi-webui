@@ -2,4 +2,4 @@ from flask import Blueprint
 
 bp = Blueprint("speedtest", __name__)
 
-from . import speedtest
+from wlanpi_webui.speedtest import speedtest

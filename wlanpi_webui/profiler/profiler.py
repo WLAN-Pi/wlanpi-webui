@@ -1,17 +1,18 @@
-import os, glob
+import glob
+import os
 from datetime import datetime
 from pathlib import Path
 
-from flask import render_template, current_app, request, safe_join, send_file
-from __init__ import bp
+from flask import current_app, render_template, request, safe_join, send_file
 
+from wlanpi_webui.profiler import bp
 
 root_dir = "/var/www/html/"
 profiler_dir = "/var/www/html/profiler/"
 
 
 def profiler_file_listing():
-    """ custom file listing for profiler results """
+    """custom file listing for profiler results"""
     _glob = glob.glob(f"{profiler_dir}**", recursive=True)
     try:
         _glob.sort(key=os.path.getmtime, reverse=True)
@@ -84,7 +85,7 @@ def profiler_file_listing():
 
 @bp.route("/profiler")
 def profiler():
-    """ route setup for /profiler """
+    """route setup for /profiler"""
     links = profiler_file_listing()
     if not links:
         listing = (
@@ -103,7 +104,7 @@ def profiler():
 
 @bp.route("/profiler/<path:filename>")
 def get_profiler_results(filename):
-    """ handle when user downloading profiler results """
+    """handle when user downloading profiler results"""
     safe_path = safe_join(profiler_dir, filename)
     print(safe_path)
     try:

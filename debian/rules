@@ -6,7 +6,7 @@ SNAKE=/usr/bin/python3
 PACKAGE=$(shell dh_listpackages)
 VERSION=$(shell parsechangelog | grep ^Version: | sed -re 's/[^0-9]+([^-]+).*/\1/')
 SDIST_DIR=debian/$(PACKAGE)-$(VERSION)
-EXTRA_REQUIREMENTS=--upgrade-pip --preinstall "setuptools>=18.1" --preinstall "wheel"
+EXTRA_REQUIREMENTS=--upgrade-pip --preinstall "setuptools>=21.1" --preinstall "wheel"
 DH_VENV_ARGS=--builtin-venv --python ${SNAKE} $(EXTRA_REQUIREMENTS) \
 			--extra-pip-arg=--progress-bar=pretty
 

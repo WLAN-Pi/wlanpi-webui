@@ -1,0 +1,3 @@
+/etc/nginx/nginx.conf /etc/nginx
+/etc/nginx/wlanpi_speedtest.conf /etc/nginx/sites-enabled
+/etc/nginx/wlanpi_webui.conf /etc/nginx/sites-enabled

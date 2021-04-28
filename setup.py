@@ -3,7 +3,7 @@
 import os
 from codecs import open
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,9 +14,7 @@ with open(os.path.join(here, "wlanpi_webui", "__version__.py"), "r", "utf-8") as
 
 readme = about["__description__"]
 
-packages = ["wlanpi_webui"]
-
-requires = ["flask==1.1.2", "gunicorn==20.0.4"]
+requires = ["flask==1.1.2", "gunicorn==20.1.0"]
 
 setup(
     name=about["__title__"],
@@ -36,11 +34,12 @@ setup(
         "Intended Audience :: System Administrators",
         "Topic :: Utilities",
     ],
-    packages=packages,
+    packages=find_packages(), # you need this for setuptools to find the flask blueprints!
     project_urls={
         "Documentation": "https://docs.wlanpi.com",
         "Source": "https://github.com/wlan-pi/wlanpi-webui",
     },
     include_package_data=True,
+    zip_safe=False,
     install_requires=requires,
 )

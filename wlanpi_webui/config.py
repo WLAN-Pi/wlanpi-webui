@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 import os
-from __version__ import __version__
+
+from wlanpi_webui.__version__ import __version__
 
 
 def get_wlanpi_version():
