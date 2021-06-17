@@ -6,7 +6,7 @@ wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/
 ## Authors
 
 - [@joshschmelzle](https://www.github.com/joshschmelzle)
-## Acknowledgements
+## OSS
 
  - [flask](https://github.com/pallets/flask)
  - [librespeed](https://github.com/librespeed/speedtest)
@@ -30,26 +30,36 @@ CSS:
 
 ## Ports
 
-- `:80` - flask (main app)
-- `:8080` - speedtest
-- `:9090` - cockpit
+- `:80` - flask (main WSGI app)
+- `:8080` - speedtest (html5 speedtest based on LibreSpeed)
+- `:9090` - cockpit (installed separately and handled by the WLAN Pi image build process)
 
-## Run From WLAN PI
+## Run Package On WLAN Pi
 
-This package is included in the WLAN Pi image and you do not need to do anything special to use it other than point a web browser to the network address of the WLAN Pi.
+This package is included in the WLAN Pi image. You do not need to do anything special to use it other than point a web browser to the network address of the WLAN Pi.
 
-For the curious, we are using systemd unit files to run and control the processes which make the WebUI work.
+### The Gory Details
 
-Check service
+For the curious, we are using systemd unit files to run and control the processes which make the web UI work.
+
+Check nginx service (used as a proxy):
+
+```bash
+  systemctl status nginx
+  nginx -t
+```
+
+Check wsgi/gunicorn service:
 
 ```bash
   systemctl status wlanpi_webui
 ```
 
-Controlling the service
+Controlling the services
 
 ```bash
   sudo service wlanpi_webui [start|stop|restart]
+  sudo service nginx [start|stop|restart]
 ```
 
 ## Run Locally (Development)
@@ -84,7 +94,7 @@ Install dependencies
   pip install -r requirements
 ```
 
-Start the server
+Starting the development server
 
 ```bash
   gunicorn wlanpi_webui.wsgi:app
@@ -104,7 +114,7 @@ Install Python depends:
 python3 -m pip install mock
 ```
 
-This is required, otherwise the tooling will fail when tries to evaluate which tests to run.
+This is required, otherwise if missing, the tooling will fail when tries to evaluate which tests to run.
 
 From the root directory of this repository run:
 
@@ -121,7 +131,11 @@ wlanpi-webui_1.0.2b1_arm64.changes
 wlanpi-webui_1.0.2b1_arm64.deb
 ```
 
-### Hacky Install
+### Debian Package Configuration File Conflicts
+
+Two Debian packages can not share the same configuration files, because of this, we are putting our desired `nginx` configuration files in `/etc/wlanpi-webui/nginx` and symlinking is a dependency handled outside of this package.
+
+#### If you want to hack it
 
 To get around a conflict overriding `/etc/nginx/nginx.conf`:
 
@@ -173,10 +187,19 @@ ps aux | grep gunicorn
 
 Commands for looking at and starting the Gunicorn service:
 
-```
+```bash
 sudo systemctl is-active wlanpi_webui
 sudo systemctl status wlanpi_webui.service
 sudo service wlanpi_webui start
+```
+
+Commands for looking at nginx:
+
+```bash
+sudo systemctl is-active nginx
+sudo systemctl status nginx
+sudo service nginx restart
+sudo nginx -t
 ```
 
 ### Logs
@@ -200,7 +223,7 @@ Please adhere to this project's [`code of conduct`](CODE_OF_CONDUCT.md).
 
 Here are some related projects:
 
-[webstack](https://github.com/WLAN-Pi/webstack) - this is where future WebUI work is currently happening!
+[webstack](https://github.com/WLAN-Pi/webstack) - this is where future WebUI work is currently happening! The goal is to separate the backend and frontend using APIs. 
 
 ## License
 

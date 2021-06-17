@@ -25,3 +25,9 @@ jobs:
         with:
           distro: ${{ matrix.distro }}
           arch: ${{ matrix.arch }}
+
+      - name: Upload Artifact to GitHub
+        uses: actions/upload-artifact@v2
+        with:
+          name: wlanpi-webui_package
+          path: ${{ steps.build-debian-package.outputs.deb-package }}

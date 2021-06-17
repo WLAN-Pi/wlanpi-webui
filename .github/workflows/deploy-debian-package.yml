@@ -26,7 +26,13 @@ jobs:
           distro: ${{ matrix.distro }}
           arch: ${{ matrix.arch }}
 
-      - name: Upload package
+      - name: Upload Artifact to GitHub
+        uses: actions/upload-artifact@v2
+        with:
+          name: wlanpi-webui_package
+          path: ${{ steps.build-debian-package.outputs.deb-package }}
+
+      - name: Upload Package to Gemfury
         uses: danielmundi/upload-gemfury@main
         with:
           package-name: ${{ steps.build-debian-package.outputs.deb-package }}
