@@ -1,0 +1,27 @@
+
+name: Build Debian Packages
+on:
+  pull_request:
+    paths:
+      - 'debian/changelog'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        distro: [buster]
+        arch: [armhf,arm64]
+    
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Debian package
+        uses: danielmundi/sbuild-debian-package@main
+        id: build-debian-package
+        with:
+          distro: ${{ matrix.distro }}
+          arch: ${{ matrix.arch }}

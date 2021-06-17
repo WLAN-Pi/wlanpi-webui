@@ -10,8 +10,13 @@ EXTRA_REQUIREMENTS=--upgrade-pip --preinstall "setuptools>=21.1" --preinstall "w
 DH_VENV_ARGS=--builtin-venv --python ${SNAKE} $(EXTRA_REQUIREMENTS) \
 			--extra-pip-arg=--progress-bar=pretty
 
+PKG_PREFIX=debian/wlanpi-webui
+PKG_WWW_DIR=$(PKG_PREFIX)/var/www/speedtest
+
 %:
 	dh $@ --with python3,python-virtualenv --buildsystem=pybuild
 
 override_dh_virtualenv:
+	mkdir -p $(PKG_CFG_DIR) $(PKG_WWW_DIR)
+	cp -ra ./speedtest/src/* $(PKG_WWW_DIR)
 	dh_virtualenv $(DH_VENV_ARGS)

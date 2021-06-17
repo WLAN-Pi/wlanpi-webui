@@ -1,3 +1,7 @@
-/etc/nginx/nginx.conf /etc/nginx
-/etc/nginx/wlanpi_speedtest.conf /etc/nginx/sites-enabled
-/etc/nginx/wlanpi_webui.conf /etc/nginx/sites-enabled
+/etc/nginx/nginx.conf /etc/wlanpi-webui/nginx
+/etc/nginx/wlanpi_speedtest.conf /etc/wlanpi-webui/nginx/sites-enabled
+/etc/nginx/wlanpi_webui.conf /etc/wlanpi-webui/nginx/sites-enabled
+/etc/nginx/link.sh /etc/wlanpi-webui/link.sh
+/etc/nginx/unlink.sh /etc/wlanpi-webui/unlink.sh
+/etc/nginx/unlink.sh /etc/wlanpi-webui/unlink.sh
+/etc/nginx/fixpermissions.sh /etc/wlanpi-webui/fixpermissions.sh
