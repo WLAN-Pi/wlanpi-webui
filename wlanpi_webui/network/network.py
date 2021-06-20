@@ -85,7 +85,7 @@ def network():
 
     return render_template(
         "public/network.html",
-        title="network",
+        title="Network",
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
         reachability=reachability,

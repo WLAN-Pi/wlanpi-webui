@@ -1,4 +1,13 @@
-# -*- encoding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+wlanpi_webui.config
+~~~~~~~~~~~~~~~~~~~
+
+globals that will be passed around the app
+"""
+
 import os
 
 from wlanpi_webui.__version__ import __version__

@@ -1,3 +1,13 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+wlanpi_webui.app
+~~~~~~~~~~~~~~~~
+
+the main flask app
+"""
+
 import logging
 
 from flask import Flask, abort, redirect, request, send_from_directory

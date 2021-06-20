@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from flask import current_app, render_template, request, safe_join, send_file
+from flask import current_app, render_template, request, safe_join, send_file, abort
 
 from wlanpi_webui.profiler import bp
 
@@ -97,7 +97,7 @@ def profiler():
         "public/profiler.html",
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
-        title="profiler",
+        title="Profiler",
         content=listing,
     )
 
@@ -111,3 +111,5 @@ def get_profiler_results(filename):
         return send_file(safe_path, as_attachment=True)
     except FileNotFoundError:
         abort(404)
+    except IsADirectoryError:
+        abort(405)

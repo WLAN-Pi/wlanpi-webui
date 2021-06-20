@@ -12,6 +12,6 @@ do
     shift
 done
 
-cd ../wlanpi_webui
+cd ..
 
-exec gunicorn -b 0.0.0.0:8000 --access-logfile - --error-logfile - $reload wsgi:app 
+exec gunicorn -b 0.0.0.0:8000 --access-logfile - --error-logfile - $reload wlanpi_webui.wsgi:app

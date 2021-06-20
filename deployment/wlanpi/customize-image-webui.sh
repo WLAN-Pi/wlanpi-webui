@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# NOTE
+# this was used in the builder for armbian images
+# pi-gen will be using the debian package
+
 Main() {
 	SetupPipxEnviro
     InstallPipx
