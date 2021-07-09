@@ -11,4 +11,4 @@ Package: wlanpi-webui
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3 (>=3.7), python3-distutils, ${misc:Pre-Depends}
 Depends: ${python3:Depends}, ${misc:Depends}, nginx-light
-Description: A Wi-Fi client capabilities profiler
+Description: A web interface for the WLAN Pi
