@@ -1,8 +1,11 @@
 #!/bin/bash
 
-# NOTE
-# this was used in the builder for armbian images
-# pi-gen will be using the debian package
+# ### NOTE ###
+#
+# This is an example for the armbian builder which uses pipx. 
+# For RBPi based development, pi-gen will be using a debian package instead.
+#
+# ### END NOTE ###
 
 Main() {
 	SetupPipxEnviro

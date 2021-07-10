@@ -214,7 +214,3 @@ Look at the apache2 error log:
 ```
 tail -f /var/log/apache2/error.log
 ```
-
-## nginx
-
-TBD

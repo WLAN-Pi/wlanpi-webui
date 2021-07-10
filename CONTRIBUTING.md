@@ -3,6 +3,12 @@
 To get the greatest chance of helpful responses, please observe the
 following additional notes.
 
+## Before You Start
+
+To increase the chances of Pull Request (PR) approval, first, talk to one of the core [WLAN Pi](https://github.com/WLAN-Pi/) [team members](https://github.com/orgs/WLAN-Pi/people).
+
+Aligning your ideas with the project team (before doing the work) will save everybody's time. 
+
 ## Questions
 
 The GitHub issue tracker is for *bug reports* and *feature requests*. Please do
@@ -48,19 +54,11 @@ Please be aware of the following things when filing bug reports:
    fix your problem. If we ask you to clarify these and you never respond, we
    will close your issue without fixing it.
 
-## Code Contributions
-
 ### Development Environment
 
 Use whatever you want to develop. 
 
 Need help? Consider using PyCharm or Visual Studio Code with the official Python and Pylance extensions from Microsoft (recommended).
-
-### Before You Start
-
-To increase the chances of Pull Request (PR) approval, first, talk to one of the core [WLAN Pi](https://github.com/WLAN-Pi/) [team members](https://github.com/orgs/WLAN-Pi/people).
-
-Aligning your ideas with the project team (prior to doing the work) will save everybody's time. 
 
 ### Pull Requests
 

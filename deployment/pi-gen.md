@@ -2,7 +2,11 @@
 
 This note describes the dependencies outside of the debianization of wlanpi-webui.
 
+RBPi based units will be using pi-gen which will install wlanpi-webui from a cloud repo.
+
 ## freeing up and disabling services that may conflict
+
+for development:
 
 ```
 # disable apache2
