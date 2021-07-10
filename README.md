@@ -131,13 +131,26 @@ wlanpi-webui_1.0.2b1_arm64.changes
 wlanpi-webui_1.0.2b1_arm64.deb
 ```
 
+Install with dpkg:
+
+```sudo dpkg -i wlanpi-webui_1.0.2b1_arm64.deb 
+Selecting previously unselected package wlanpi-webui.
+(Reading database ... 77019 files and directories currently installed.)
+Preparing to unpack wlanpi-webui_1.0.2b1_arm64.deb ...
+Unpacking wlanpi-webui (1.0.2b1) ...
+Setting up wlanpi-webui (1.0.2b1) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/wlanpi-webui.service → /lib/systemd/system/wlanpi-webui.service.
+Created symlink /etc/systemd/system/sockets.target.wants/wlanpi-webui.socket → /lib/systemd/system/wlanpi-webui.socket.
+Processing triggers for man-db (2.8.5-2) ...
+```
+
 ### Debian Package Configuration File Conflicts
 
 Two Debian packages can not share the same configuration files, because of this, we are putting our desired `nginx` configuration files in `/etc/wlanpi-webui/nginx` and symlinking is a dependency handled outside of this package.
 
-#### If you want to hack it
+#### Example of what happens when there are conflicting config files across packages
 
-To get around a conflict overriding `/etc/nginx/nginx.conf`:
+When we have a conflicting configuration file we get someting like this:
 
 ```
 dpkg: error processing archive /home/wlanpi/dev/wlanpi-webui_1.0.2b1_arm64.deb (--unpack):
@@ -148,7 +161,7 @@ Errors were encountered while processing:
 E: Sub-process /usr/bin/dpkg returned an error code (1)
 ```
 
-Try using `-o Dpkg::Options::="--force-overwrite"`:
+This is __not__ a best practice, but to get around a conflict overriding `/etc/nginx/nginx.conf`, try using `-o Dpkg::Options::="--force-overwrite"`:
 
 ```
 (venv) wlanpi@rbpi4b-8gb:[~/dev]: sudo apt -o Dpkg::Options::="--force-overwrite" install ~/dev/wlanpi-webui_1.0.2b1_arm64.deb

@@ -1,34 +1,47 @@
 {% extends "public/layout.html" %} {% block content %}
+<script>
+  function textToClipboard(text) {
+}
+  function copyCardToClipboard(card) {
+    var dummy = document.createElement("textarea");
+    document.body.appendChild(dummy);
+    dummy.value = document.getElementById(card).textContent;
+    dummy.select();
+    dummy.setSelectionRange(0, 99999); /* For mobile devices */
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+}
+</script>
 <div class="uk-flex uk-padding uk-flex-column">
 <div class="uk-grid uk-child-width-1-3@m" uk-grid uk-height-match="target: > div > .uk-card">
     <div>   
       <div class="uk-card uk-card-default uk-card-medium uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Reachability</h3>
-      {% autoescape false %}<p>{{ reachability }}</p> {% endautoescape %}
+      <h3 class="uk-card-title">Reachability <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('reachability')"></span></h3>
+      {% autoescape false %}<p id="reachability">{{ reachability }}</p> {% endautoescape %}
       </div>
     </div>
     <div>   
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Public IP</h3>
-      {% autoescape false %}<p>{{ publicip }}</p> {% endautoescape %}
+      <h3 class="uk-card-title">Public IP <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('publicip')"></span></h3>
+      {% autoescape false %}<p id="publicip">{{ publicip }}</p> {% endautoescape %}
       </div>
     </div>
     <div>   
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Eth0 IP Config</h3>
-      {% autoescape false %}<p>{{ ipconfig }}</p> {% endautoescape %}
+      <h3 class="uk-card-title">Eth0 IP Config <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('ipconfig')"></span></h3>
+      {% autoescape false %}<p id="ipconfig">{{ ipconfig }}</p> {% endautoescape %}
       </div>
     </div>
     <div>   
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">LLDP Neighbour</h3>
-      {% autoescape false %}<p>{{ lldp }}</p> {% endautoescape %}
+      <h3 class="uk-card-title">LLDP Neighbour <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('lldp')"></span></h3>
+      {% autoescape false %}<p id="lldp">{{ lldp }}</p> {% endautoescape %}
       </div>
     </div>
     <div>   
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">CDP Neighbour</h3>
-      {% autoescape false %}<p>{{ cdp }}</p> {% endautoescape %}
+      <h3 class="uk-card-title">CDP Neighbour <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('cdp')"></span></h3>
+      {% autoescape false %}<p id="cdp">{{ cdp }}</p> {% endautoescape %}
       </div>
     </div>
 </div>
