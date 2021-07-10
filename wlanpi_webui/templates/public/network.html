@@ -1,16 +1,29 @@
 {% extends "public/layout.html" %} {% block content %}
 <script>
-  function textToClipboard(text) {
-}
   function copyCardToClipboard(card) {
-    var dummy = document.createElement("textarea");
-    document.body.appendChild(dummy);
-    dummy.value = document.getElementById(card).textContent;
-    dummy.select();
-    dummy.setSelectionRange(0, 99999); /* For mobile devices */
-    document.execCommand("copy");
-    document.body.removeChild(dummy);
-}
+    if (window.clipboardData && window.clipboardData.setData) {
+        // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+        return window.clipboardData.setData("Text", text);
+    }
+    else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+      var input = document.createElement("textarea");
+      // we're copying from a <p> tag in this instance
+      input.innerHTML = document.getElementById(card).innerText;
+      input.style.position = "fixed";
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand("copy");
+      }
+      catch (ex) {
+        console.warn("Copy to clipboard failed.", ex);
+        return false;
+      }
+      finally {
+        document.body.removeChild(input);
+      }
+    }
+  }
 </script>
 <div class="uk-flex uk-padding uk-flex-column">
 <div class="uk-grid uk-child-width-1-3@m" uk-grid uk-height-match="target: > div > .uk-card">

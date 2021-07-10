@@ -31,7 +31,7 @@ def network():
             result = str(content.stdout, "utf-8")
             result = result.replace("\n", "<br />")
         else:
-            result = f"{script.strip().split('/')[-1]} does not exist"
+            result = f"Error: required {script.strip().split('/')[-1]} not found."
         return result
 
     def dumpQueue(queue):
@@ -63,7 +63,7 @@ def network():
                     line = line.replace("\n", "<br />")
                     out += line
         else:
-            out += f"{_file} does not exist"
+            out += f"Error: required {_file} not found."
         return out
 
     cdpneigh = "/tmp/cdpneigh.txt"
