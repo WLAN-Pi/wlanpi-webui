@@ -1,14 +1,16 @@
-% WLANPI-WEBUI(1) a WebUI for the WLAN Pi
+% WLANPI-WEBUI(1) a web interface for the WLAN Pi
 
 # NAME
 
-wlanpi-webui - a local WebUI for the WLAN Pi
+wlanpi-webui - a web interface for the WLAN Pi
 
 # DESCRIPTION
 
-wlanpi-webui is a local web app built with Flask and UIKit for the WLAN Pi.
+wlanpi-webui is a local web interface built with Python, Flask, and UIKit for the WLAN Pi.
 
-It provides graphical access through a web browser to only a few of the toolkit included in the WLAN Pi image.
+It provides graphical access through a web browser to a few of the toolkits shipped in the WLAN Pi image.
+
+Open a browser and navigate to `http://<WLAN Pi IP address>`
 
 # LOCALE
 
