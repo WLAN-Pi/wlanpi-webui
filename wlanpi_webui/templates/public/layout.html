@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>WLAN Pi: {{ title }}</title>
+    <title>{{ title }}</title>
     <meta name="author" content="josh@joshschmelzle.com">
     <meta name="description" content="Tools for Wireless LAN Professionals">
     <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
@@ -87,13 +87,16 @@
                 </div>
                 <div class="uk-text-small uk-text-muted uk-text-center uk-text-right@s">
                   <ul class="uk-list">
-                    <li>Built with UIkit <a href="http://getuikit.com" title="Visit UIkit" target="_blank" data-uk-tooltip><span data-uk-icon="uikit"></span></a> and <a href="https://flask.palletsprojects.com/" target="_blank" title="Flask; web development, one drop at a time" data-uk-tooltop>Flask</a></li>
+                    {%- if hostname -%}
+                    <li>Hostname: {{ hostname }}</li>
+                    {%- endif -%}
                     {%- if wlanpi_version -%}
                     <li>System version: {{ wlanpi_version }}</li>
                     {%- endif -%}
                     {%- if webui_version -%}
                     <li>WebUI version: {{ webui_version }}</li>
                     {%- endif -%}
+                    <li>Built with UIkit <a href="http://getuikit.com" title="Visit UIkit" target="_blank" data-uk-tooltip><span data-uk-icon="uikit"></span></a> and <a href="https://flask.palletsprojects.com/" target="_blank" title="Flask; web development, one drop at a time" data-uk-tooltop>Flask</a></li>
                 </div>
               </div>
             </div>

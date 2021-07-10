@@ -95,9 +95,10 @@ def profiler():
         listing = "<br />".join(links)
     return render_template(
         "public/profiler.html",
+        hostname=current_app.config["HOSTNAME"],
+        title=current_app.config["TITLE"],
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
-        title="Profiler",
         content=listing,
     )
 

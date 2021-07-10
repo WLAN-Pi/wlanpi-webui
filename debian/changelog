@@ -1,5 +1,8 @@
 wlanpi-webui (1.0.2b1) unstable; urgency=low
 
-  * Initial release.
+  * Initial debian release
+  * Update UIkit 3.5.4 to 3.7.0
+  * Add hostname to web interface (if default use eth0 48-bit MAC address)
+  * Minor cosmetic changes
 
  --  Josh Schmelzle <josh@joshschmelzle.com>  Sun, 18 Apr 2021 21:20:40 -0400

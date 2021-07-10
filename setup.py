@@ -14,7 +14,7 @@ with open(os.path.join(here, "wlanpi_webui", "__version__.py"), "r", "utf-8") as
 
 readme = about["__description__"]
 
-requires = ["flask==1.1.2", "gunicorn==20.1.0"]
+requires = ["flask==1.1.2", "gunicorn==20.1.0", "psutil==5.8.0"]
 
 setup(
     name=about["__title__"],

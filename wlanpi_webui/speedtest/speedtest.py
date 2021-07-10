@@ -13,7 +13,8 @@ def speedtest():
         "/public/speedtest.html",
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
-        title="Speedtest",
+        hostname=current_app.config["HOSTNAME"],
+        title=current_app.config["TITLE"],
         iframe=iframe,
     )
 
@@ -27,6 +28,7 @@ def speedtest2():
         "/public/speedtest.html",
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
-        title="Speedtest2",
+        hostname=current_app.config["HOSTNAME"],
+        title=current_app.config["TITLE"],
         iframe=iframe,
     )
