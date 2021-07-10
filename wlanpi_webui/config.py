@@ -11,31 +11,31 @@ globals that will be passed around the app
 import os
 import socket
 
-from wlanpi_webui.__version__ import __version__
-
 import psutil
+
+from wlanpi_webui.__version__ import __version__
 
 
 def get_mac(interface: str) -> str:
-    """ retrive 6 byte mac address for a given interface """
+    """retrive 6 byte mac address for a given interface"""
     mac = ""
     ifaces = psutil.net_if_addrs()
     for i in ifaces:
         if interface == i:
             for snic in ifaces[interface]:
                 if socket.AddressFamily.AF_PACKET in snic:
-                    mac = snic.address.replace(':','')
+                    mac = snic.address.replace(":", "")
                     break
     return mac
 
 
 def get_interfaces() -> str:
-    """ retrieve a list of interfaces found on host """
+    """retrieve a list of interfaces found on host"""
     return list(psutil.net_if_addrs().keys())
 
 
 def get_hostname() -> str:
-    """ retrieve system hostname for web interface """
+    """retrieve system hostname for web interface"""
     hostname = socket.gethostname()
     # if hostname is the WLAN Pi default, attempt to return something more useful
     if hostname == "wlanpi":
@@ -46,7 +46,7 @@ def get_hostname() -> str:
 
 
 def get_wlanpi_version() -> str:
-    """ retrieve wlanpi version from wlanpi-release for web interface """
+    """retrieve wlanpi version from wlanpi-release for web interface"""
     wlanpi_version = ""
     try:
         with open("/etc/wlanpi-release") as _file:
