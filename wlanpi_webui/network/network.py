@@ -1,11 +1,16 @@
-import os, subprocess, queue, threading
-from flask import render_template, current_app
+import os
+import queue
+import subprocess
+import threading
+
+from flask import current_app, render_template
+
 from wlanpi_webui.network import bp
 
 
 @bp.route("/network")
 def network():
-    """  fpms screen """
+    """fpms screen"""
     FPMS_QUEUE = queue.Queue()
 
     def storeInQueue(f):
@@ -26,7 +31,7 @@ def network():
             result = str(content.stdout, "utf-8")
             result = result.replace("\n", "<br />")
         else:
-            result = f"{script.strip().split('/')[-1]} does not exist"
+            result = f"Error: required {script.strip().split('/')[-1]} not found."
         return result
 
     def dumpQueue(queue):
@@ -58,7 +63,7 @@ def network():
                     line = line.replace("\n", "<br />")
                     out += line
         else:
-            out += f"{_file} does not exist"
+            out += f"Error: required {_file} not found."
         return out
 
     cdpneigh = "/tmp/cdpneigh.txt"
@@ -80,7 +85,8 @@ def network():
 
     return render_template(
         "public/network.html",
-        title="network",
+        hostname=current_app.config["HOSTNAME"],
+        title=current_app.config["TITLE"],
         wlanpi_version=current_app.config["WLANPI_VERSION"],
         webui_version=current_app.config["WEBUI_VERSION"],
         reachability=reachability,

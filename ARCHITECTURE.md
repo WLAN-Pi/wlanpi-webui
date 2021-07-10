@@ -1,4 +1,4 @@
-# WLANPI WebUI Deployment Documentation
+# WLAN PI Web Interface Architecture
 
 The `wlanpi-webui` application consists of a Flask application built for the WLAN Pi.
 
@@ -31,7 +31,7 @@ Gunicorn 'Green Unicorn' is a Python WSGI HTTP Server for UNIX. It's a pre-fork 
 
 # The Glue
 
-> nginx (web server/proxy) <-> gunicorn (WSGI application server) <-> flask app (remember flask is a framework - not a web server).
+> nginx (web server/proxy) <-> gunicorn (WSGI application server) <-> flask app (note that flask is a framework - not a web server).
 
 # Appendix
 
