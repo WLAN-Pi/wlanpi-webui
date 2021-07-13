@@ -17,7 +17,7 @@ from wlanpi_webui.__version__ import __version__
 
 
 def get_mac(interface: str) -> str:
-    """retrive 6 byte mac address for a given interface"""
+    """Retrive 6 byte mac address for a given interface"""
     mac = ""
     ifaces = psutil.net_if_addrs()
     for i in ifaces:
@@ -30,12 +30,12 @@ def get_mac(interface: str) -> str:
 
 
 def get_interfaces() -> str:
-    """retrieve a list of interfaces found on host"""
+    """Retrieve a list of interfaces found on host"""
     return list(psutil.net_if_addrs().keys())
 
 
 def get_hostname() -> str:
-    """retrieve system hostname for web interface"""
+    """Retrieve system hostname for web interface"""
     hostname = socket.gethostname()
     # if hostname is the WLAN Pi default, attempt to return something more useful
     if hostname == "wlanpi":
@@ -46,7 +46,7 @@ def get_hostname() -> str:
 
 
 def get_wlanpi_version() -> str:
-    """retrieve wlanpi version from wlanpi-release for web interface"""
+    """Retrieve wlanpi version from wlanpi-release for web interface"""
     wlanpi_version = ""
     try:
         with open("/etc/wlanpi-release") as _file:
@@ -67,3 +67,5 @@ class Config(object):
     WLANPI_VERSION = get_wlanpi_version()
     WEBUI_VERSION = f"{__version__}"
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")
+    FILES_ROOT_DIR = "/var/www/html/"
+    PROFILER_DIR = "/var/www/html/profiler/"
