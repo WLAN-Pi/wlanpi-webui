@@ -57,7 +57,7 @@ def get_profiler_file_listing_html() -> list:
     files = get_files()
     reports = []
     results = []
-    results.append('<h3 class="uk-h3">Results</h3>')
+    results.append('<div><h3 class="uk-h3">Results</h3>')
     seen_hash = {}
     try:
         if len(files) == 0:
@@ -65,8 +65,11 @@ def get_profiler_file_listing_html() -> list:
         for profile in files:
             client = profile.filepath.replace(current_app.config["FILES_ROOT_DIR"], "")
             friendly = client.replace("profiler/clients/", "")
+            _key = friendly.rsplit(".", 1)[0]
             modifytime = profile.modifytime
             if len(friendly.split("/")) == 2:
+                defolder, friendly = friendly.split("/")
+                _key = friendly.rsplit(".", 1)[0]
                 text = ""
                 if profile.profiletype == ProfileResultType.TEXT:
                     div_id = friendly.split("/")[-1].replace(".txt", "")
@@ -78,7 +81,7 @@ def get_profiler_file_listing_html() -> list:
                         div_id,
                         clean_div_id,
                         profile.content,
-                        f'Download {client.split("/")[-1]}',
+                        f'View text report for {client.split("/")[-1]}',
                     )
 
                 pcap = ""
@@ -91,8 +94,7 @@ def get_profiler_file_listing_html() -> list:
                         f'Download {client.split("/")[-1]} ',
                     )
 
-                defolder, friendly = friendly.split("/")
-                if defolder not in seen_hash.keys():
+                if _key not in seen_hash.keys():
                     _profile = Profile(
                         client,
                         friendly,
@@ -101,37 +103,46 @@ def get_profiler_file_listing_html() -> list:
                         profile.band,
                         ProfileContent(text, pcap),
                     )
-                    seen_hash[defolder] = _profile
+                    seen_hash[_key] = _profile
                 else:
                     if pcap:
-                        seen_hash[defolder].content.pcap = pcap
+                        seen_hash[_key].content.pcap = pcap
                     if text:
-                        seen_hash[defolder].content.text = text
+                        seen_hash[_key].content.text = text
             if profile.profiletype == ProfileResultType.REPORT:
                 reports.append(profile)
 
-        results.append("<p>Output is sorted by last modification timestamp first.</p>")
-        results.append("<h4>Profiles</h4>")
-        results.append('<div><table class="uk-table uk-table-small">')
+        results.append(
+            '<div class="uk-alert-primary" uk-alert><a class="uk-alert-close" uk-close></a><p>Output is sorted by last modification timestamp.</p></div>'
+        )
+        results.append("<h4>Profiles</h4></div>")
+        results.append(
+            '<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">'
+        )
         results.append("<thead>")
         for _key, _attrs in seen_hash.items():
             results.append(
-                "<tr><th>Last Modification</th><th>Client MAC</th><th>Band</th><th>Text Report</th><th>PCAP file</th></tr>"
+                '<tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small uk-text-no-wrap">Client MAC</th><th class="uk-width-small">Band</th><th class="uk-width-small">Text Report</th><th>Download</th></tr>'
             )
             break
         results.append("</thead>")
         results.append("<tbody>")
         for key, attrs in seen_hash.items():
+            client_mac_value = key.split("_")[0]
+            if "diff" in attrs.content.text:
+                client_mac_value += " (diff)"
             results.append(
-                f"<tr><td>{attrs.modifytime}</td><td>{key}</td><td>{attrs.band}</td><td>{attrs.content.text}</td><td>{attrs.content.pcap}</td></tr>"
+                f'<tr><td class="uk-width-small uk-text-nowrap">{attrs.modifytime}</td><td class="uk-width-small uk-text-nowrap">{client_mac_value}</td><td>{attrs.band}</td><td>{attrs.content.text}</td><td>{attrs.content.pcap}</td></tr>'
             )
         results.append("</tbody></table></div>")
 
         if reports:
-            results.append("<h4>Reports</h4>")
-            results.append('<div><table class="uk-table uk-table-small">')
+            results.append('<div class="uk-flex uk-flex-column"><h4>Reports</h4></div>')
             results.append(
-                "<thead><tr><th>Last Modification Timestamp</th><th>Report</th><th>Download</th></tr></thead><tbody>"
+                '<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">'
+            )
+            results.append(
+                '<thead><tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small">Report</th><th>Download</th></tr></thead><tbody>'
             )
             for attrs in reports:
                 report = attrs.filepath.replace(
@@ -139,7 +150,7 @@ def get_profiler_file_listing_html() -> list:
                 )
                 friendly = report.replace("profiler/reports/", "")
                 results.append(
-                    "<tr><td>{0}</td><td>{3}</td><td><a href='{1}{2}'><button class='uk-button uk-button-default uk-button-small' uk-tooltip='Download report for {3}'>CSV</button></a></td></tr>".format(
+                    "<tr><td class='uk-width-small uk-text-nowrap'>{0}</td><td class='uk-width-small uk-text-nowrap'>{3}</td><td><a href='{1}{2}'><button class='uk-button uk-button-default uk-button-small' uk-tooltip='Download report for {3}'>CSV</button></a></td></tr>".format(
                         attrs.modifytime,
                         request.url_root,
                         report,
@@ -172,11 +183,11 @@ def get_files() -> list:
                     "%Y-%m-%d %H:%M:%S%z"  # "%Y-%m-%d %H:%M"
                 )
                 if any(x in _file for x in [".pcap"]):
-                    band = _file.split("_")[-1].split(".pcap")[0]
+                    band = _file.split("_")[1].split(".pcap")[0]
                     profiletype = ProfileResultType.PCAP
                 content = ""
                 if any(x in _file for x in [".txt"]):
-                    band = _file.split("_")[-1].split(".txt")[0]
+                    band = _file.split("_")[1].split(".txt")[0]
                     profiletype = ProfileResultType.TEXT
                     content = Path(_file).read_text()
                 if ".csv" in _file:
@@ -212,7 +223,7 @@ def purge():
     """Purges profiler files"""
     files = purge_all_profiler_files()
     content = "\r\n".join([f"rm {file}" for file in files])
-    listing = f"<p>The <tt>wlanpi-webui</tt> process does not have permission to remove files.</p><p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{content}</pre></p>"
+    listing = f"<div><p>The <tt>wlanpi-webui</tt> process does not have permission to remove files.</p><p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{content}</pre></p></div>"
     if not files:
         listing = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
     return render_template(
@@ -233,7 +244,7 @@ def profiler():
         _content = '<div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See instructions above to get started.</p></div>'
     else:
         _content = "".join(custom_output)
-        _content += '<br/><div class="uk-position-center uk-position-relative"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
+        _content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
     return render_template(
         "public/profiler.html",
         hostname=current_app.config["HOSTNAME"],
