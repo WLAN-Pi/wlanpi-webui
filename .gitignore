@@ -9,6 +9,13 @@ __pycache__/
 # flask
 app.log
 
+# dpkg ignores
+
+*.build
+*.deb
+*.changes
+*.buildinfo
+
 # dh-virtualenv
 .pybuild/
 debian/.debhelper/

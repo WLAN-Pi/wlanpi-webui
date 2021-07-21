@@ -26,37 +26,82 @@
   }
 </script>
 <div class="uk-flex uk-padding uk-flex-column">
-<div class="uk-grid uk-child-width-1-3@m" uk-grid uk-height-match="target: > div > .uk-card">
-    <div>   
-      <div class="uk-card uk-card-default uk-card-medium uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Reachability <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('reachability')"></span></h3>
-      {% autoescape false %}<p id="reachability">{{ reachability }}</p> {% endautoescape %}
+  <div class="uk-grid uk-child-width-1-3@m" uk-grid uk-height-match="target: > div > .uk-card">
+    <div>
+      <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+        <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+          <div class="uk-grid-small uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Reachability</h3>
+              </div>
+              <div class="uk-width-expand">
+                  <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button" uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('reachability')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+              </div>
+          </div>
+        </div>
+        {% autoescape false %}<p id="reachability">{{ reachability }}</p> {% endautoescape %}
+      </div> 
+    </div>
+    <div>
+      <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+        <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+          <div class="uk-grid-small uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Public IP</h3>
+              </div>
+              <div class="uk-width-expand">
+                  <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button" uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('publicip')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+              </div>
+          </div>
+        </div>
+        {% autoescape false %}<p id="publicip">{{ publicip }}</p> {% endautoescape %}
       </div>
     </div>
-    <div>   
+    <div>
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Public IP <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('publicip')"></span></h3>
-      {% autoescape false %}<p id="publicip">{{ publicip }}</p> {% endautoescape %}
-      </div>
-    </div>
-    <div>   
-      <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">Eth0 IP Config <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('ipconfig')"></span></h3>
+        <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+          <div class="uk-grid-small uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Eth0 IP Config</h3>
+              </div>
+              <div class="uk-width-expand">
+                  <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button" uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('ipconfig')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+              </div>
+          </div>
+        </div>
       {% autoescape false %}<p id="ipconfig">{{ ipconfig }}</p> {% endautoescape %}
       </div>
     </div>
-    <div>   
+    <div>
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">LLDP Neighbour <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('lldp')"></span></h3>
+        <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+          <div class="uk-grid-small uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">LLDP Neighbour</h3>
+              </div>
+              <div class="uk-width-expand">
+                  <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button" uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('lldp')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+              </div>
+          </div>
+        </div>
       {% autoescape false %}<p id="lldp">{{ lldp }}</p> {% endautoescape %}
       </div>
     </div>
-    <div>   
+    <div>
       <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
-      <h3 class="uk-card-title">CDP Neighbour <span uk-icon="icon: copy; ratio: 1" class="uk-icon-button" uk-tooltip="Tap to copy card contents" onclick="copyCardToClipboard('cdp')"></span></h3>
+        <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+          <div class="uk-grid-small uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">CDP Neighbour</h3>
+              </div>
+              <div class="uk-width-expand">
+                  <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button" uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('cdp')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+              </div>
+          </div>
+        </div>
       {% autoescape false %}<p id="cdp">{{ cdp }}</p> {% endautoescape %}
       </div>
     </div>
-</div>
+  </div>
 </div>
 {% endblock %}
