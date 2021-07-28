@@ -182,6 +182,7 @@ def get_files() -> list:
                 modifytime = datetime.fromtimestamp(os.path.getmtime(_file)).strftime(
                     "%Y-%m-%d %H:%M:%S%z"  # "%Y-%m-%d %H:%M"
                 )
+                band = ""
                 if any(x in _file for x in [".pcap"]):
                     band = _file.split("_")[1].split(".pcap")[0]
                     profiletype = ProfileResultType.PCAP
