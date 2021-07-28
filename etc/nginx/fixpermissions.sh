@@ -1,3 +1,5 @@
 #!/bin/bash
+#
+# run with root
 
-  chown -R www-data:www-data /var/www/speedtest
+chown -R www-data:www-data /var/www/speedtest

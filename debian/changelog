@@ -1,6 +1,6 @@
 wlanpi-webui (1.0.2b2) unstable; urgency=low
 
-  * Improve handling of nginx during install 
+  * Improve handling of nginx configuration during install 
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 28 Jul 2021 15:32:36 -0400
 
