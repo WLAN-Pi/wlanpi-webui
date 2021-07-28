@@ -1,0 +1,5 @@
+#!/bin/bash
+
+unlink /etc/nginx/nginx.conf
+unlink /etc/nginx/sites-enabled/wlanpi_speedtest.conf
+unlink /etc/nginx/sites-enabled/wlanpi_webui.conf

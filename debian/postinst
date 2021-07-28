@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# if conf is not a symlink, create backup.
+NGINX_CONF=/etc/nginx/nginx.conf
+if [[ -L "$NGINX_CONF" ]]; then
+    # ignore
+else
+    echo "Creating backup of $NGINX_CONF"
+    TSTAMP=`date '+%s'`
+    mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.$TSTAMP
+fi
+
+# if default site is enabled, disable it.
+DEFAULT_FILE=/etc/nginx/sites-enabled/default
+if test -f "$DEFAULT_FILE"; then
+    echo "Removing $DEFAULT_FILE"
+    unlink $DEFAULT_FILE
+fi
+
+ln -s /etc/wlanpi-webui/nginx/nginx.conf /etc/nginx/nginx.conf
+
+ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_speedtest.conf /etc/nginx/sites-enabled/wlanpi_speedtest.conf
+
+ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_webui.conf /etc/nginx/sites-enabled/wlanpi_webui.conf
+
+nginx -t
+
+systemctl restart nginx.service
+
+# ensure permissions are correct for speedtest files
+
+chown -R www-data:www-data /var/www/speedtest
