@@ -4,6 +4,7 @@ wlanpi-webui (1.0.2b1) unstable; urgency=low
   * Update UIkit 3.5.4 to 3.7.0
   * Add hostname to web interface (if default use eth0 48-bit MAC address)
   * Minor cosmetic changes
+  * Bug fixes
   * Profiler tab updates
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 21 Jul 2021 10:39:02 -0400
