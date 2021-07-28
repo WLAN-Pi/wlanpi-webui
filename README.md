@@ -215,6 +215,12 @@ sudo service nginx restart
 sudo nginx -t
 ```
 
+See an Internal Server Error? Please look at and gather the journal logs:
+
+```bash
+journalctl -u wlanpi-webui.service
+```
+
 ### Logs
 
 Check error log:
