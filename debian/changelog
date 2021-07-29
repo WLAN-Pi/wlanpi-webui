@@ -1,3 +1,9 @@
+wlanpi-webui (1.0.2b3) unstable; urgency=low
+
+  * Bump version to align debian and python package. 
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 28 Jul 2021 20:53:23 -0400
+
 wlanpi-webui (1.0.2b2) unstable; urgency=low
 
   * Improve handling of nginx configuration during install 
