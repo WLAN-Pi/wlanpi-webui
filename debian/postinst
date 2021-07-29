@@ -8,6 +8,7 @@
 
 #DEBHELPER#
 
+# function to check if a path is a symlink
 function isValidSymlink() {
     if [ -L "$1" ]; then
         return 0
@@ -16,7 +17,9 @@ function isValidSymlink() {
     fi
 }
 
-# if conf is not a symlink, create backup.
+CONF_CHANGED=1
+
+# if conf is not a symlink, and exists as a file, create backup.
 NGINX_CONF=/etc/nginx/nginx.conf
 if ! isValidSymlink $NGINX_CONF; then
     if [ -f "$NGINX_CONF" ]; then
@@ -27,6 +30,7 @@ if ! isValidSymlink $NGINX_CONF; then
     fi
     echo "Linking our nginx.conf config..."
     ln -s /etc/wlanpi-webui/nginx/nginx.conf $NGINX_CONF
+    $CONF_CHANGED=0
 fi
 
 # if default site is enabled, disable it.
@@ -36,26 +40,29 @@ if isValidSymlink $DEFAULT_FILE; then
     unlink $DEFAULT_FILE
 fi
 
+# if wlanpi_speedtest.conf is not a symlink, create symlink.
 WLANPI_SPEEDTEST=/etc/nginx/sites-enabled/wlanpi_speedtest.conf
-
 if ! isValidSymlink $WLANPI_SPEEDTEST; then
     echo "Linking wlanpi_speedtest.conf..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_speedtest.conf $WLANPI_SPEEDTEST
+    $CONF_CHANGED=0
 fi
 
+# if wlanpi_webui.conf is not a symlink, create symlink.
 WLANPI_WEBUI=/etc/nginx/sites-enabled/wlanpi_webui.conf
-
 if ! isValidSymlink $WLANPI_WEBUI; then
     echo "Linking wlanpi_webui.conf..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_webui.conf $WLANPI_WEBUI
+    $CONF_CHANGED=0
 fi
 
-nginx -t
+# if we changed a nginx config file, test config, and restart nginx.
+if [ $CONF_CHANGED -eq 0 ]; then
+    nginx -t
+    systemctl restart nginx.service
+fi
 
-systemctl restart nginx.service
-
-# ensure permissions are correct for speedtest files
-
+# fix up permissions
 chown -R www-data:www-data /var/www/speedtest
 
 exit 0

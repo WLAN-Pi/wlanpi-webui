@@ -18,19 +18,11 @@ this may be solved by simply not installing these services by default.
 
 ## nginx config
 
-pi-gen will symlink the following:
-
-```
-/etc/wlanpi-webui/nginx.conf /etc/nginx/nginx.conf
-/etc/wlanpi-webui/wlanpi_speedtest.conf /etc/nginx/sites-enabled/wlanpi_speedtest.conf
-/etc/wlanpi-webui/wlanpi_webui.conf /etc/nginx/sites-enabled/wlanpi_webui.conf
-```
-
-example is in `repo/etc/nginx/link.sh`.
+`postinst` is handling nginx configuration linking.
 
 ## user
 
-web server is run as `www-data` and needs set up if it is not included by default, but it _should_ be there by default.
+`wlanpi-webui` expects to be run as `www-data` and needs set up if it is not included by default, but it _should_ be there by default.
 
 ## ufw
 
