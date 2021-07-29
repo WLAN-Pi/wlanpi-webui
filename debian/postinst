@@ -30,7 +30,7 @@ if ! isValidSymlink $NGINX_CONF; then
     fi
     echo "Linking our nginx.conf config..."
     ln -s /etc/wlanpi-webui/nginx/nginx.conf $NGINX_CONF
-    $CONF_CHANGED=0
+    CONF_CHANGED=0
 fi
 
 # if default site is enabled, disable it.
@@ -45,7 +45,7 @@ WLANPI_SPEEDTEST=/etc/nginx/sites-enabled/wlanpi_speedtest.conf
 if ! isValidSymlink $WLANPI_SPEEDTEST; then
     echo "Linking wlanpi_speedtest.conf..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_speedtest.conf $WLANPI_SPEEDTEST
-    $CONF_CHANGED=0
+    CONF_CHANGED=0
 fi
 
 # if wlanpi_webui.conf is not a symlink, create symlink.
@@ -53,7 +53,7 @@ WLANPI_WEBUI=/etc/nginx/sites-enabled/wlanpi_webui.conf
 if ! isValidSymlink $WLANPI_WEBUI; then
     echo "Linking wlanpi_webui.conf..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_webui.conf $WLANPI_WEBUI
-    $CONF_CHANGED=0
+    CONF_CHANGED=0
 fi
 
 # if we changed a nginx config file, test config, and restart nginx.
