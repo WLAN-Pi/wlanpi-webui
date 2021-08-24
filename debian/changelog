@@ -1,3 +1,9 @@
+wlanpi-webui (1.0.2b5) unstable; urgency=low
+
+  * Fix path to networkinfo scripts
+
+ -- Jiri Brejcha <jirka@jiribrejcha.net>  Tue, 24 Aug 2021 05:15:46 -0500
+ 
 wlanpi-webui (1.0.2b4) unstable; urgency=low
 
   * Fix postinst syntax errors 
