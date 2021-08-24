@@ -41,10 +41,10 @@ def network():
         return results
 
     reachability = (
-        "/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/reachability.sh"
+        "/opt/wlanpi-common/networkinfo/reachability.sh"
     )
-    publicip = "/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/publicip.sh"
-    ipconfig = "/usr/share/fpms/BakeBit/Software/Python/scripts/networkinfo/ipconfig.sh"
+    publicip = "/opt/wlanpi-common/networkinfo/publicip.sh"
+    ipconfig = "/opt/wlanpi-common/networkinfo/ipconfig.sh"
 
     threads = []
     for script in [reachability, publicip, ipconfig]:
