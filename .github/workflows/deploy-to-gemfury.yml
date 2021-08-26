@@ -1,11 +1,11 @@
 
 name: Build and Upload Debian Packages
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'debian/changelog'
+#on:
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - 'debian/changelog'
 
 jobs:
   build:
