@@ -1,3 +1,10 @@
+wlanpi-webui (1.1.0-b2) unstable; urgency=medium
+
+  * Update nginx configuration to include all configuration files found in
+    sites-enabled.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 06 Sep 2021 22:59:54 -0400
+
 wlanpi-webui (1.1.0-b1) unstable; urgency=low
 
   * Remove wlanpi-common from pre-depends and add as depends
