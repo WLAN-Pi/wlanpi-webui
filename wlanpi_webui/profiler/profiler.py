@@ -184,11 +184,17 @@ def get_files() -> list:
                 )
                 band = ""
                 if any(x in _file for x in [".pcap"]):
-                    band = _file.split("_")[1].split(".pcap")[0]
+                    try:
+                        band = _file.split("_")[1].split(".pcap")[0]
+                    except IndexError:
+                        pass
                     profiletype = ProfileResultType.PCAP
                 content = ""
                 if any(x in _file for x in [".txt"]):
-                    band = _file.split("_")[1].split(".txt")[0]
+                    try:
+                        band = _file.split("_")[1].split(".txt")[0]
+                    except IndexError:
+                        pass
                     profiletype = ProfileResultType.TEXT
                     content = Path(_file).read_text()
                 if ".csv" in _file:

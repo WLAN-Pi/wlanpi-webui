@@ -1,3 +1,9 @@
+wlanpi-webui (1.1.0-b3) unstable; urgency=medium
+
+  * Handle server error when profiles do not have a band identifier in the filename.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 02 Nov 2021 23:25:41 -0400
+
 wlanpi-webui (1.1.0-b2) unstable; urgency=medium
 
   * Update nginx configuration to include all configuration files found in
