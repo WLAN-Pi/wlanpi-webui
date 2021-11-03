@@ -16,6 +16,21 @@ readme = about["__description__"]
 
 requires = ["flask==1.1.2", "gunicorn==20.1.0", "psutil==5.8.0"]
 
+extras = {
+    "testing": [
+        "tox",
+        "black",
+        "isort",
+        "autoflake",
+        "mypy",
+        "flake8",
+        "pytest",
+        "pytest-cov",
+        "coverage-badge",
+        "pytest-mock",
+    ],
+}
+
 setup(
     name=about["__title__"],
     version=about["__version__"],
@@ -41,4 +56,5 @@ setup(
     },
     include_package_data=True,
     install_requires=requires,
+    extras_require=extras,
 )
