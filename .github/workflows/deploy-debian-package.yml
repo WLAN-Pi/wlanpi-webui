@@ -1,9 +1,9 @@
 
-name: Build and Upload Debian Packages
+name: Build and Upload Debian Package to Gemfury
 on:
   push:
     branches:
-      - main
+      - legacy-1.0.x
     paths:
       - 'debian/changelog'
 
@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         distro: [buster]
-        arch: [armhf,arm64]
+        arch: [armhf]
   
     environment: GEMFURY
 
