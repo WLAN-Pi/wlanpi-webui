@@ -47,7 +47,7 @@ jobs:
           packagecloud-distrib: raspbian/${{ matrix.distro }}
           packagecloud-token: ${{ secrets.PACKAGECLOUD_TOKEN }}
 
- slack-workflow-status:
+  slack-workflow-status:
     if: always()
     name: Post Workflow Status to Slack
     needs:

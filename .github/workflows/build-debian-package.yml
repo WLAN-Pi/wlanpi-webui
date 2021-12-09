@@ -1,4 +1,3 @@
-
 name: Build Debian Packages
 
 on:
@@ -36,7 +35,7 @@ jobs:
           name: wlanpi-webui-${{ matrix.distro }}-${{ matrix.arch }}
           path: ${{ steps.build-debian-package.outputs.deb-package }}
 
- slack-workflow-status:
+  slack-workflow-status:
     if: always()
     name: Post Workflow Status to Slack
     needs:
