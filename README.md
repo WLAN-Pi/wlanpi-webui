@@ -232,17 +232,11 @@ sudo tail -f /var/log/webui_error.log
 
 ## Contributing
 
-Contributions are always welcome!
+Contributions are always welcome! Please sync with us before starting work.
 
 See [`contributing.md`](CONTRIBUTING.md) for ways to get started.
 
 Please adhere to this project's [`code of conduct`](CODE_OF_CONDUCT.md).
-
-## Related
-
-Here are some related projects:
-
-[webstack](https://github.com/WLAN-Pi/webstack) - this is where future WebUI work is currently happening! The goal is to separate the backend and frontend using APIs. 
 
 ## License
 
