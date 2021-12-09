@@ -1,3 +1,9 @@
+wlanpi-webui (1.1.1) UNRELEASED; urgency=medium
+
+  * Bullseye
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 09 Dec 2021 00:27:39 -0500
+
 wlanpi-webui (1.1.0-b3) unstable; urgency=medium
 
   * Handle server error when profiles do not have a band identifier in the filename.

@@ -4,7 +4,7 @@
 Description=wlanpi-webui gunicorn socket
 
 [Socket]
-ListenStream=/run/gunicorn.sock
+ListenStream=/run/wlanpi_webui.sock
 User=wlanpi
 
 [Install]
