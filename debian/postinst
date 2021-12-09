@@ -17,6 +17,19 @@ function isValidSymlink() {
     fi
 }
 
+# get python version, remove spaces, get Python3.7 or Python3.9, lowercase
+PYTHONSTUB=`python3 -V 2>&1 | sed 's/ //g' | grep -oP '(\w+\.\d+)' | tr 'P' 'p'`
+
+# target working directory
+WORKINGDIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
+
+# link
+LINK=/opt/wlanpi-webui/workingdirectory
+
+if ! isValidSymlink $WORKINGDIRECTORY; then
+    ln -s $WORKINGDIRECTORY $LINK
+fi
+
 CONF_CHANGED=1
 
 # if conf is not a symlink, and exists as a file, create backup.
