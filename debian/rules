@@ -20,5 +20,5 @@ PKG_WWW_DIR=$(PKG_PREFIX)/var/www/librespeed
 
 override_dh_virtualenv:
 	mkdir -p $(PKG_WWW_DIR)
-	cp -r -a ./install/var/www/librespeed/* $(PKG_WWW_DIR)
+	cp -ra ./install/var/www/librespeed/* $(PKG_WWW_DIR)
 	dh_virtualenv $(DH_VENV_ARGS)
