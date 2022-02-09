@@ -20,14 +20,18 @@ function isValidSymlink() {
 # get python version, remove spaces, get Python3.7 or Python3.9, lowercase
 PYTHONSTUB=`python3 -V 2>&1 | sed 's/ //g' | grep -oP '(\w+\.\d+)' | tr 'P' 'p'`
 
-# target working directory
-WORKINGDIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
+# the actual target working directory (this is a workaround so we can support multiple Python versions at build)
+THE_REAL_DIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
 
-# link
-LINK=/opt/wlanpi-webui/workingdirectory
+# this is the parent directory which holds our linked working directory
+TARGET_PARENT_DIRECTORY=/opt/wlanpi-webui/workingdirectory
 
-if ! isValidSymlink $WORKINGDIRECTORY; then
-    ln -s $WORKINGDIRECTORY $LINK
+# this is the path that we need to check if is already a link
+TARGET_PATH=/opt/wlanpi-webui/workingdirectory/wlanpi_webui
+
+# if link doesn't exist, create it
+if ! isValidSymlink $TARGET_PATH; then
+    ln -s $THE_REAL_DIRECTORY $TARGET_PARENT_DIRECTORY
 fi
 
 CONF_CHANGED=1
