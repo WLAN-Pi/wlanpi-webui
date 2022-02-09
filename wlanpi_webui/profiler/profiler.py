@@ -113,7 +113,7 @@ def get_profiler_file_listing_html() -> list:
                 reports.append(profile)
 
         results.append(
-            '<div class="uk-alert-primary" uk-alert><a class="uk-alert-close" uk-close></a><p>Output is sorted by last modification timestamp.</p></div>'
+            '<div uk-alert><a class="uk-alert-close" uk-close></a><h3>Note</h3><p>Output below is sorted by last modification timestamps. Recent profiles show on top.</p></div>'
         )
         results.append("<h4>Profiles</h4></div>")
         results.append(
