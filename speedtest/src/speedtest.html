@@ -19,8 +19,8 @@ s.setParameter("url_dl","backend/garbage.dat");
 s.setParameter("url_ul","backend/empty.dat");
 s.setParameter("url_ping","backend/empty.dat");
 var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#EAEAEA":"#80808040";
-var dlColor="#6060AA",
-	ulColor="#616161";
+var dlColor="#6f6f91",
+	ulColor="#d5a500";
 var progColor=meterBk;
 
 //CODE FOR GAUGES
@@ -125,7 +125,9 @@ function initUI(){
 	}
 	body{
 		text-align:center;
-		font-family:"Roboto",sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+		font-size: 16px;
+		font-weight: normal;
 	}
 	h1{
 		color:#404040;
@@ -135,7 +137,7 @@ function initUI(){
 		margin:0 auto;
 		color:#6060AA;
 		background-color:rgba(0,0,0,0);
-		border:0.15em solid #6060FF;
+		border:0.15em solid #6f6f91;
 		border-radius:0.3em;
 		transition:all 0.3s;
 		box-sizing:border-box;
@@ -148,15 +150,15 @@ function initUI(){
 		box-shadow: 0 0 2em rgba(0,0,0,0.1), inset 0 0 1em rgba(0,0,0,0.1);
 	}
 	#startStopBtn.running{
-		background-color:#FF3030;
-		border-color:#FF6060;
+		background-color:#d5a500;
+		border-color:#d5a500;
 		color:#FFFFFF;
 	}
 	#startStopBtn:before{
-		content:"Start";
+		content:"START";
 	}
 	#startStopBtn.running:before{
-		content:"Abort";
+		content:"STOP";
 	}
 	#test{
 		margin-top:2em;
@@ -171,7 +173,7 @@ function initUI(){
 	}
 	div.testArea2{
 		display:inline-block;
-		width:14em;
+		width:16em;
 		height:7em;
 		position:relative;
 		box-sizing:border-box;
@@ -179,15 +181,15 @@ function initUI(){
 	}
 	div.testArea div.testName{
 		position:absolute;
-		top:0.1em; left:0;
+		top:0.2em; left:0; bottom:0.5em;
 		width:100%;
-		font-size:1.4em;
+		font-size:1.5em;
 		z-index:9;
 	}
 	div.testArea2 div.testName{
         display:block;
         text-align:center;
-        font-size:1.4em;
+        font-size:1.5em;
 	}
 	div.testArea div.meterText{
 		position:absolute;
@@ -236,12 +238,12 @@ function initUI(){
         <div class="testGroup">
 			<div class="testArea2">
 				<div class="testName">Ping</div>
-				<div id="pingText" class="meterText" style="color:#AA6060"></div>
+				<div id="pingText" class="meterText" style="color:#b7b7b7"></div>
 				<div class="unit">ms</div>
 			</div>
 			<div class="testArea2">
 				<div class="testName">Jitter</div>
-				<div id="jitText" class="meterText" style="color:#AA6060"></div>
+				<div id="jitText" class="meterText" style="color:#b7b7b7"></div>
 				<div class="unit">ms</div>
 			</div>
 		</div>
