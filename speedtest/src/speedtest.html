@@ -89,7 +89,6 @@ function updateUI(forced){
 	if(!forced&&s.getState()!=3) return;
 	if(uiData==null) return;
 	var status=uiData.testState;
-	I("ip").textContent=uiData.clientIp;
 	I("dlText").textContent=(status==1&&uiData.dlStatus==0)?"...":format(uiData.dlStatus);
 	drawMeter(I("dlMeter"),mbpsToAmount(Number(uiData.dlStatus*(status==1?oscillate():1))),meterBk,dlColor,Number(uiData.dlProgress),progColor);
 	I("ulText").textContent=(status==3&&uiData.ulStatus==0)?"...":format(uiData.ulStatus);
@@ -260,9 +259,6 @@ function initUI(){
 				<div id="ulText" class="meterText"></div>
 				<div class="unit">Mbps</div>
 			</div>
-		</div>
-		<div id="ipArea">
-			<span id="ip"></span>
 		</div>
 		<div>
 			<span>Powered by <a href="https://github.com/librespeed/speedtest">LibreSpeed</a>.</span>
