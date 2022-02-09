@@ -1,11 +1,10 @@
-wlanpi-webui (1.1.2) unstable; urgency=medium
+wlanpi-webui (1.1.2-1) unstable; urgency=medium
 
   * minor styling changes on speedtest.html
   * bump uikit framework to 3.11.1
   * bump speedtest.js and _worker.js to v5.2.5
   * add LibreSpeed attribution on speedtest.html
-  * add php-fpm to depends so the local client IP is displayed during
-    speedtest
+  * remove client IP from speedtest page because it depended on php
   * changes required to support bullseye
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 09 Dec 2021 00:27:39 -0500
