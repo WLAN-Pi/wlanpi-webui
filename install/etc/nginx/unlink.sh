@@ -8,5 +8,5 @@ function unlink_if_existing() {
 }
 
 unlink_if_existing /etc/nginx/nginx.conf
-unlink_if_existing /etc/nginx/sites-enabled/wlanpi_speedtest.conf
+unlink_if_existing /etc/nginx/sites-enabled/wlanpi_librespeed.conf
 unlink_if_existing /etc/nginx/sites-enabled/wlanpi_webui.conf

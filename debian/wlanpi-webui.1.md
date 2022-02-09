@@ -29,4 +29,4 @@ https://github.com/wlan-pi/wlanpi-webui
 
 # COPYRIGHT
 
-Copyright © 2021 Josh Schmelzle. License BSD-3-Clause.
+Copyright © 2022 Josh Schmelzle. License BSD-3-Clause.

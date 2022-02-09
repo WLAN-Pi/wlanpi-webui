@@ -8,7 +8,7 @@
 
 #DEBHELPER#
 
-# function to check if a path is a symlink
+# function to check if a given path is a symlink
 function isValidSymlink() {
     if [ -L "$1" ]; then
         return 0
@@ -20,14 +20,18 @@ function isValidSymlink() {
 # get python version, remove spaces, get Python3.7 or Python3.9, lowercase
 PYTHONSTUB=`python3 -V 2>&1 | sed 's/ //g' | grep -oP '(\w+\.\d+)' | tr 'P' 'p'`
 
-# target working directory
-WORKINGDIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
+# the actual target working directory (this is a workaround so we can support multiple Python versions at build)
+THE_REAL_DIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
 
-# link
-LINK=/opt/wlanpi-webui/workingdirectory
+# this is the parent directory which holds our linked working directory
+TARGET_PARENT_DIRECTORY=/opt/wlanpi-webui/workingdirectory
 
-if ! isValidSymlink $WORKINGDIRECTORY; then
-    ln -s $WORKINGDIRECTORY $LINK
+# this is the path that we need to check if is already a link
+TARGET_PATH=/opt/wlanpi-webui/workingdirectory/wlanpi_webui
+
+# if link doesn't exist, create it
+if ! isValidSymlink $TARGET_PATH; then
+    ln -s $THE_REAL_DIRECTORY $TARGET_PARENT_DIRECTORY
 fi
 
 CONF_CHANGED=1
@@ -38,7 +42,7 @@ if ! isValidSymlink $NGINX_CONF; then
     if [ -f "$NGINX_CONF" ]; then
         TSTAMP=`date '+%s'`
         NEW_CONF="$NGINX_CONF.$TSTAMP"
-        echo "Existing nginx.conf detected; moving to $NEW_CONF..."
+        echo "Existing nginx.conf detected; backing it up and moving it to $NEW_CONF..."
         mv $NGINX_CONF $NEW_CONF
     fi
     echo "Linking our nginx.conf config..."
@@ -53,11 +57,11 @@ if isValidSymlink $DEFAULT_FILE; then
     unlink $DEFAULT_FILE
 fi
 
-# if wlanpi_speedtest.conf is not a symlink, create symlink.
-WLANPI_SPEEDTEST=/etc/nginx/sites-enabled/wlanpi_speedtest.conf
-if ! isValidSymlink $WLANPI_SPEEDTEST; then
-    echo "Linking wlanpi_speedtest.conf..."
-    ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_speedtest.conf $WLANPI_SPEEDTEST
+# if wlanpi_librespeed.conf is not a symlink, create symlink.
+WLANPI_LIBRESPEED=/etc/nginx/sites-enabled/wlanpi_librespeed.conf
+if ! isValidSymlink $WLANPI_LIBRESPEED; then
+    echo "Linking wlanpi_librespeed.conf..."
+    ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_librespeed.conf $WLANPI_LIBRESPEED
     CONF_CHANGED=0
 fi
 
@@ -71,11 +75,16 @@ fi
 
 # if we changed a nginx config file, test config, and restart nginx.
 if [ $CONF_CHANGED -eq 0 ]; then
-    nginx -t
-    systemctl restart nginx.service
+    # check nginx actually exists first
+    if which nginx; then
+        nginx -t
+        systemctl restart nginx.service
+    fi
 fi
 
 # fix up permissions
-chown -R www-data:www-data /var/www/speedtest
+if [ -d /var/www/librespeed ]; then
+    chown -R www-data:www-data /var/www/librespeed
+fi
 
 exit 0

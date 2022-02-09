@@ -5,7 +5,7 @@
     <p><b>profiler</b> is a tool that helps determine the capabilities of wireless clients. This is accomplished by automating the analysis of association frames.</p>
       <ul uk-accordion="">
         <li>
-          <a class="uk-accordion-title" href="#">Instructions</a>
+          <a class="uk-accordion-title" href="#">Getting started</a>
           <div class="uk-accordion-content">
             <p>Starting the profiler system process:</p>
             <ul class="uk-list uk-list-hyphen">
@@ -15,11 +15,16 @@
             </ul>
             <p>Profiling a client:</p>
             <ul class="uk-list uk-list-hyphen">
-            <li>Once started the configured SSID will broadcast (default: "Profiler xxx" where xxx is last 3 of the eth0 MAC address).</li>
+            <li>Once started the configured SSID will broadcast (default: "<kbd>Profiler xxx</kbd>" where <kbd>xxx</kbd> is last 3 of the eth0 MAC address).</li>
             <li>Connect your client by FPMS QR code or enter any random 8 characters for the PSK.</li>
             <li>The client will expectedly fail authentication but we should receive the association request.</li>
             </ul>
-            <p>Once a client is profiled, refresh this page to see new results.</p>
+            <p>Once a czlient is profiled, refresh this page to see new results.</p>
+            <p>Power users:</p>
+            <ul class="uk-list uk-list-hyphen">
+              <li>You can also run profiler from the terminal.</li>
+              <li>Run <kbd>$ profiler -h</kbd>to print usage.</li>
+            </ul>
           </div>
         </li>
       </ul>

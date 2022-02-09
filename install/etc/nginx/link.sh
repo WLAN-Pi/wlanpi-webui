@@ -28,11 +28,11 @@ if isValidSymlink $DEFAULT_FILE; then
     unlink $DEFAULT_FILE
 fi
 
-WLANPI_SPEEDTEST=/etc/nginx/sites-enabled/wlanpi_speedtest.conf
+WLANPI_LIBRESPEED=/etc/nginx/sites-enabled/wlanpi_librespeed.conf
 
-if ! isValidSymlink $WLANPI_SPEEDTEST; then
-    echo "Linking wlanpi_speedtest.conf..."
-    ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_speedtest.conf $WLANPI_SPEEDTEST
+if ! isValidSymlink $WLANPI_LIBRESPEED; then
+    echo "Linking wlanpi_librespeed.conf..."
+    ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_librespeed.conf $WLANPI_LIBRESPEED
 fi
 
 WLANPI_WEBUI=/etc/nginx/sites-enabled/wlanpi_webui.conf
