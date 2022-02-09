@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.2-1) unstable; urgency=medium
+wlanpi-webui (1.1.2-2) unstable; urgency=medium
 
   * minor styling changes on speedtest.html
   * bump uikit framework to 3.11.1
