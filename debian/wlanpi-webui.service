@@ -1,7 +1,7 @@
 # wlanpi-webui.socket
 
 [Unit]
-Description=Gunicorn daemon to serve wlanpi-webui
+Description=Gunicorn daemon serving wlanpi-webui frontend
 Requires=wlanpi-webui.socket
 After=network.target
 
@@ -11,6 +11,7 @@ User=wlanpi
 Group=wlanpi
 
 # workingdirectory is mapped during install via maintainer scripts
+# for support multiple versions of Python because unit files will not follow symlinks
 WorkingDirectory=/opt/wlanpi-webui/workingdirectory
 
 ExecStart=/opt/wlanpi-webui/bin/gunicorn --workers 1 --bind unix:wlanpi_webui.sock wsgi:app

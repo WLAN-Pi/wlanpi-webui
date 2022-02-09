@@ -26,11 +26,11 @@ def create_app(config_class=Config):
     app.register_blueprint(errors_bp)
     app.logger.debug("errors blueprint registered")
 
-    app.logger.debug("registering speedtest blueprint")
-    from wlanpi_webui.speedtest import bp as speedtest_bp
+    app.logger.debug("registering librespeed blueprint")
+    from wlanpi_webui.librespeed import bp as librespeed_bp
 
-    app.register_blueprint(speedtest_bp)
-    app.logger.debug("speedtest blueprint registered")
+    app.register_blueprint(librespeed_bp)
+    app.logger.debug("librespeed blueprint registered")
 
     app.logger.debug("registering profiler blueprint")
     from wlanpi_webui.profiler import bp as profiler_bp
@@ -49,6 +49,12 @@ def create_app(config_class=Config):
         COCKPIT_PORT = "9090"
         base = request.host.split(":")[0]
         return redirect(f"http://{base}:{COCKPIT_PORT}")
+
+    @app.route("/terminal")
+    def terminal():
+        COCKPIT_PORT = "9090"
+        base = request.host.split(":")[0]
+        return redirect(f"http://{base}:{COCKPIT_PORT}/system/terminal")
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

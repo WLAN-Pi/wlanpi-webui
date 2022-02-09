@@ -45,14 +45,23 @@
       <!--HEADER-->
       <div class="uk-box-shadow-small uk-flex-first uk-dark uk-background-muted">
         <div class="uk-container uk-container-expand">
-          <nav class="uk-navbar" id="navbar" data-uk-navbar>
+          <nav class="uk-navbar-container" id="navbar" data-uk-navbar>
             <div class="uk-navbar-left">
               <a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('static', filename='img/favicon-96x96.png') }}" alt="WLAN Pi logo" style="width:64px;"></a>
               <ul class="uk-navbar-nav uk-visible@m">
-                <li><a href="{{ url_for('speedtest.speedtest') }}">SPEEDTEST</a></li>
+                <li>
+                  <a href="#">SPEEDTEST</a>
+                  <div class="uk-navbar-dropdown">
+                    <ul class="uk-nav uk-navbar-dropdown-nav">
+                      <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRASPEED</a></li>
+                      <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRASPEED (BETA)</a></li>
+                    </ul>
+                  </div>
+                </li>
                 <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
                 <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
                 <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
+                <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li>
               </ul>
             </div>
               <div class="uk-navbar-right"> 
@@ -109,10 +118,12 @@
       <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
         <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
         <ul class="uk-nav uk-nav-default">
-          <li><a href="{{ url_for('speedtest.speedtest') }}">SPEEDTEST</a></li>
+          <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRASPEED</a></li>
+          <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRASPEED (BETA)</a></li>
           <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
           <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
-          <li><a href="{{ url_for('admin') }}">ADMIN</a></li> 
+          <li><a href="{{ url_for('admin') }}">ADMIN</a></li>       
+          <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
         </ul>
       </div>
     </div>

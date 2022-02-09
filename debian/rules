@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-#export DH_VERBOSE=1
+export DH_VERBOSE=1
 export DH_VIRTUALENV_INSTALL_ROOT=/opt
 export PYBUILD_NAME=wlanpi-webui
 SNAKE=/usr/bin/python3
@@ -11,12 +11,14 @@ DH_VENV_ARGS=--builtin-venv --python ${SNAKE} $(EXTRA_REQUIREMENTS) \
 			--extra-pip-arg=--progress-bar=pretty
 
 PKG_PREFIX=debian/wlanpi-webui
-PKG_WWW_DIR=$(PKG_PREFIX)/var/www/speedtest
+
+# define destination for librespeed speedtest files
+PKG_WWW_DIR=$(PKG_PREFIX)/var/www/librespeed
 
 %:
 	dh $@ --with python3,python-virtualenv --buildsystem=pybuild
 
 override_dh_virtualenv:
-	mkdir -p $(PKG_CFG_DIR) $(PKG_WWW_DIR)
-	cp -ra ./speedtest/src/* $(PKG_WWW_DIR)
+	mkdir -p $(PKG_WWW_DIR)
+	cp -r -a ./install/var/www/librespeed/* $(PKG_WWW_DIR)
 	dh_virtualenv $(DH_VENV_ARGS)

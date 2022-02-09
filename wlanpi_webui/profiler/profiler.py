@@ -57,7 +57,6 @@ def get_profiler_file_listing_html() -> list:
     files = get_files()
     reports = []
     results = []
-    results.append('<div><h3 class="uk-h3">Results</h3>')
     seen_hash = {}
     try:
         if len(files) == 0:
@@ -113,8 +112,9 @@ def get_profiler_file_listing_html() -> list:
                 reports.append(profile)
 
         results.append(
-            '<div uk-alert><a class="uk-alert-close" uk-close></a><h3>Note</h3><p>Output below is sorted by last modification timestamps. Recent profiles show on top.</p></div>'
+            '<div uk-alert><a class="uk-alert-close" uk-close></a><h3>Note</h3><p>Output below is sorted by last modification timestamps. Most recent profiles will show on top.</p></div>'
         )
+        results.append('<div><h3 class="uk-h3">Results</h3>')
         results.append("<h4>Profiles</h4></div>")
         results.append(
             '<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">'
@@ -248,7 +248,7 @@ def profiler():
     """Route setup for /profiler"""
     custom_output = get_profiler_file_listing_html()
     if not custom_output:
-        _content = '<div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See instructions above to get started.</p></div>'
+        _content = '<div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See the getting started instructions above to get started.</p></div>'
     else:
         _content = "".join(custom_output)
         _content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
