@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="style.css">
+<script src="Chart.bundle.min.js"></script>
+<script src="jquery.min.js"></script>
+<script src="speedtest_base.js"></script>
+</head>
+<body>
+<div class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></div>
+<div id="test">
+	<div class="test_group">
+		<div class="test_area">
+			<div class="test_name">Ping</div>
+			<canvas id="ping_meter" class="meter"></canvas>
+			<div id="ping_text" class="meter_text"></div>
+			<div class="unit">ms</div>
+		</div>
+		<div class="test_area">
+			<div class="test_name">Jitter</div>
+			<canvas id="jitter_meter" class="meter"></canvas>
+			<div id="jitter_text" class="meter_text"></div>
+			<div class="unit">ms</div>
+		</div>
+		<canvas id="chart_pj_area"></canvas>
+	</div>
+	<div class="test_group">
+		<div class="test_area">
+			<div class="test_name">Download</div>
+			<canvas id="dl_meter" class="meter"></canvas>
+			<div id="dl_text" class="meter_text"></div>
+			<div class="unit">Mbps</div>
+		</div>
+		<div class="test_area">
+			<div class="test_name">Upload</div>
+			<canvas id="ul_meter" class="meter"></canvas>
+			<div id="ul_text" class="meter_text"></div>
+			<div class="unit">Mbps</div>
+		</div>
+		<canvas id="chart_du_area"></canvas>
+	</div>
+</div>
+<div class="btn" id="show_advanced"><script>trw('show_advanced');</script></div>
+<div id="advanced">
+		<div class="test_group">
+			<h3><script>trw('settings');</script></h3>
+			<table id="settings_table" class="left_tables">
+				<tr>
+					<th><script>trw('test_length');</script></th><td><input id="length" type="number" step=1 min=4 max=60>s</td>
+				</tr>
+			</table>
+			<h3><script>trw('stats');</script></h3>
+			<table id="stats_table" class="left_tables"></table>
+		</div>
+		<div class="test_group">
+			<h3>Download</h3>
+			<table id="results_table_download" class="right_tables"></table>
+			<h3>Upload</h3>
+			<table id="results_table_upload" class="right_tables"></table>
+		</div>
+</div>
+<div id="footer">
+	<p class="footer"><span class="clickable" id="show_speedtest_info"><script>trw('show_detailed_a');</script></span> <script>trw('show_detailed_b');</script></p>
+	<div class="footer" id="speedtest_info">
+		<ul>
+			<li><script>trw('desc_ping');</script></li>
+			<li><script>trw('desc_jitter');</script></li>
+			<li><script>trw('desc_down_up');</script></li>
+			<li><script>trw('desc_final');</script></li>
+		</ul>
+	</div>
+</div>
+<script type="text/javascript">setTimeout(initUI,100);</script>
+</body>
+</html>
