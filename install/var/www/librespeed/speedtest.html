@@ -149,19 +149,15 @@ function initUI(){
 		box-shadow: 0 0 2em rgba(0,0,0,0.1), inset 0 0 1em rgba(0,0,0,0.1);
 	}
 	#startStopBtn.running{
-		background-color:#d5a500;
-		border-color:#d5a500;
-		color:#FFFFFF;
+		background-color:#ee395b;
+		border-color:#ee395b;
+		color:#ffffff;
 	}
 	#startStopBtn:before{
 		content:"START";
 	}
 	#startStopBtn.running:before{
 		content:"STOP";
-	}
-	#test{
-		margin-top:2em;
-		margin-bottom:12em;
 	}
 	div.testArea{
 			display:inline-block;
@@ -233,18 +229,17 @@ function initUI(){
 <title>WLAN Pi: LibreSpeed</title>
 </head>
 <body>
-<div id="testWrapper">
+<div>
 	<div id="startStopBtn" onclick="startStop()"></div>
-	<div id="test">
         <div class="testGroup">
 			<div class="testArea2">
 				<div class="testName">Ping</div>
-				<div id="pingText" class="meterText" style="color:#b7b7b7"></div>
+				<div id="pingText" class="meterText" style="color:#202020"></div>
 				<div class="unit">ms</div>
 			</div>
 			<div class="testArea2">
 				<div class="testName">Jitter</div>
-				<div id="jitText" class="meterText" style="color:#b7b7b7"></div>
+				<div id="jitText" class="meterText" style="color:#202020"></div>
 				<div class="unit">ms</div>
 			</div>
 		</div>

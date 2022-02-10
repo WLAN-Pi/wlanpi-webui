@@ -48,7 +48,7 @@ a {
     margin:0 auto;
     color:#6060AA;
     background-color:rgba(0,0,0,0);
-    border:0.15em solid rgb(96, 96, 255);
+    border:0.15em solid rgb(111, 111, 145);
     border-radius:0.3em;
     transition:all 0.3s;
     box-sizing:border-box;
@@ -64,8 +64,8 @@ a {
     background-color: rgba(96, 96, 255, 0.2);
 }
 #startStopBtn.running{
-    background-color:#d5a500;
-    border-color:#d5a500;
+    background-color:#ee395b;
+    border-color:#ee395b;
     color:#FFFFFF;
 }
 #startStopBtn.disabled{

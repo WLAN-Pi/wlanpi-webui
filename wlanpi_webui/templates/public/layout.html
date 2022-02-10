@@ -11,7 +11,7 @@
     <meta name="msapplication-TileColor" content="#fff">
     <meta name="msapplication-TileImage" content="{{ url_for('static', filename='ms-icon-144x144.png') }}">
     <meta name="theme-color" content="#fff">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
     <link rel="apple-touch-icon" sizes="57x57" href="{{ url_for('static', filename='img/apple-icon-57x57.png') }}">
     <link rel="apple-touch-icon" sizes="60x60" href="{{ url_for('static', filename='img/apple-icon-60x60.png') }}">
     <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename='img/apple-icon-72x72.png') }}">
@@ -33,9 +33,9 @@
       #thebiglebowski {
         min-height: 100vh; 
       }
-      @media (max-width: 600px) {
+      @media (max-width: 640px) {
         #thebiglebowski {
-          min-height: 135vh;
+          min-height: 139vh;
           }
       }
     </style>
@@ -43,7 +43,7 @@
 
     <div id="thebiglebowski" class="uk-flex uk-flex-column">
       <!--HEADER-->
-      <div class="uk-box-shadow-small uk-flex-first uk-dark uk-background-muted">
+      <div class="uk-box-shadow-small uk-flex-first uk-background-muted">
         <div class="uk-container uk-container-expand">
           <nav class="uk-navbar-container" id="navbar" data-uk-navbar>
             <div class="uk-navbar-left">
@@ -58,7 +58,15 @@
                     </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
+                <li>
+                  <a href="#">PROFILER</a>
+                  <div class="uk-navbar-dropdown">
+                    <ul class="uk-nav uk-navbar-dropdown-nav">
+                      <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
+                      <li><a href="{{ url_for('profiler.purge') }}">PURGE SCRIPT</a></li>
+                    </ul>
+                  </div>
+                </li>
                 <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
                 <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
                 <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li>
@@ -76,26 +84,27 @@
 
       <!--CONTENT-->
       <!--<div class="uk-flex uk-flex-auto uk-dark uk-background-muted">-->
-      <div class="uk-flex uk-flex-1 uk-flex-auto uk-flex-center uk-dark uk-background-muted">
+        <!-- uk-flex uk-flex-1   -->
+      <div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">
           {% block content %}
           {% endblock %}
       </div>
       <!--/CONTENT-->
 
       <!--FOOTER-->
-      <div class="uk-light uk-section-secondary">
+      <div class="uk-section-secondary">
         <div class="uk-section uk-section-xsmall">
           <div class="uk-container">
             <div class="uk-grid uk-child-width-1-2@s uk-text-center uk-text-left@s" data-uk-grid>
-              <div class="uk-text-small uk-text-muted">
-                <ul class="uk-list">
+              <div class="uk-text-small">
+                <ul class="uk-list uk-list-collapse">
                   <li><a href="https://docs.wlanpi.com" target="_blank" title="Visit WLAN Pi documentation" data-uk-tooltip>Documentation</a></li>
                   <li><a href="https://wlanpi.com" target="_blank" title="Visit WLAN Pi project page" data-uk-tooltip>WLANPi.com</a></li>
                   <li><a href="https://github.com/WLAN-Pi" target="_blank"><span uk-icon="icon: github; ratio: 2"></span></a> <a href="https://twitter.com/wlanpi" target="_blank"><span uk-icon="icon: twitter; ratio: 2"></span></a></li>
                 </ul>
               </div>
-              <div class="uk-text-small uk-text-muted uk-text-center uk-text-right@s">
-                <ul class="uk-list">
+              <div class="uk-text-small uk-text-center uk-text-right@s">
+                <ul class="uk-list uk-list-collapse">
                   {%- if hostname -%}
                   <li>Hostname: {{ hostname }}</li>
                   {%- endif -%}

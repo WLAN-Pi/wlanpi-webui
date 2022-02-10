@@ -207,7 +207,7 @@ def get_files() -> list:
     return files
 
 
-def purge_all_profiler_files() -> list:
+def get_profiler_files_to_purge() -> list:
     """Provide a purge list for all profiler files"""
     files = []
     _glob = glob.glob(f"{current_app.config['PROFILER_DIR']}**", recursive=True)
@@ -228,7 +228,7 @@ def purge_all_profiler_files() -> list:
 @bp.route("/profiler/purge")
 def purge():
     """Purges profiler files"""
-    files = purge_all_profiler_files()
+    files = get_profiler_files_to_purge()
     content = "\r\n".join([f"rm {file}" for file in files])
     listing = f"<div><p>The <tt>wlanpi-webui</tt> process does not have permission to remove files.</p><p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{content}</pre></p></div>"
     if not files:

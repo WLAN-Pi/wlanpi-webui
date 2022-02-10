@@ -18,7 +18,7 @@ html {
   -webkit-text-size-adjust: 100%;
   /* 3 */
   background: #fff;
-  color: #666;
+  color: #333; /* WLAN Pi style */
 }
 /*
  * Remove the margin in all browsers.

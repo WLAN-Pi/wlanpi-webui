@@ -24,7 +24,7 @@ function trw(t) {
   (trans.settings = []),
   (trans.settings["en-US"] = "Settings"),
   (trans.stats = []),
-  (trans.stats["en-US"] = "Stats"),
+  (trans.stats["en-US"] = "Statistics"),
   (trans.test_length = []),
   (trans.test_length["en-US"] = "Test length:"),
   (trans.time = []),
