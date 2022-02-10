@@ -50,11 +50,11 @@
               <a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('static', filename='img/favicon-96x96.png') }}" alt="WLAN Pi logo" style="width:64px;"></a>
               <ul class="uk-navbar-nav uk-visible@m">
                 <li>
-                  <a href="#">SPEEDTEST</a>
+                  <a href="#">SPEED TEST</a>
                   <div class="uk-navbar-dropdown">
-                    <ul class="uk-nav uk-navbar-dropdown-nav">
-                      <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRASPEED</a></li>
-                      <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRASPEED (BETA)</a></li>
+                    <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
+                      <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
+                      <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (ADVANCED)</a></li>
                     </ul>
                   </div>
                 </li>
@@ -127,8 +127,8 @@
       <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
         <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
         <ul class="uk-nav uk-nav-default">
-          <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRASPEED</a></li>
-          <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRASPEED (BETA)</a></li>
+          <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
+          <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (ADVANCED)</a></li>
           <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
           <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
           <li><a href="{{ url_for('admin') }}">ADMIN</a></li>       
