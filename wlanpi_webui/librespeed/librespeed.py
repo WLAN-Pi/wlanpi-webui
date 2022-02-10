@@ -19,7 +19,7 @@ def librespeed():
     )
 
 
-@bp.route("/librespeed_beta")
+@bp.route("/librespeed/details")
 def librespeed2():
     spt_port = "8080"
     base = request.host.split(":")[0]
