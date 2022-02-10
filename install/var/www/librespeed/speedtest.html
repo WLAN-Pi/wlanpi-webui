@@ -11,7 +11,7 @@ function I(i){return document.getElementById(i);}
 var s=new Speedtest(); //create speedtest object
 //CUSTOM SETTINGS HERE
 s.setParameter("time_auto", false); // automatically determine duration of DL and UL tests
-s.setParameter("test_order","IP_D_U"); // order tests are performed
+s.setParameter("test_order","P_D_U"); // order tests are performed
 s.setParameter("time_dl_max",15); //num seconds for the download test
 s.setParameter("time_ul_max",15); //num seconds for the upload test
 s.setParameter("count_ping",25); //how many pings to perform. this measures XHR NOT ICMP!
@@ -114,7 +114,6 @@ function initUI(){
 	I("ulText").textContent="";
 	I("pingText").textContent="";
 	I("jitText").textContent="";
-	I("ip").textContent="";
 }
 </script>
 <style type="text/css">

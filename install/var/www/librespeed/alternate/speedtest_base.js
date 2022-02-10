@@ -101,7 +101,7 @@ var chart1,
   sampling = !1,
   data = [],
   timers = [],
-  parameters = { overheadCompensationFactor: 1, enable_quirks: !0, time_ul_max: 15, time_dl_max: 15, time_ulGraceTime: 3, time_dlGraceTime: 1.5, count_ping: 35, time_auto: !1 },
+  parameters = { overheadCompensationFactor: 1, time_ul_max: 15, time_dl_max: 15, time_ulGraceTime: 3, time_dlGraceTime: 1.5 },
   max_upload = 0,
   min_upload = 0,
   max_download = 0,
@@ -353,15 +353,7 @@ function updateStats() {
       tr("maximal_upload") +
       "</th><td>" +
       max_upload +
-      " Mbps</td></tr>        <tr><th>" +
-      tr("total_download") +
-      "</th><td>" +
-      Math.round(total_download / 1024 / 1024) +
-      " MB</td></tr>        <tr><th>" +
-      tr("total_upload") +
-      "</th><td>" +
-      Math.round(total_upload / 1024 / 1024) +
-      " MB</td></tr>        "
+      " Mbps</td></tr>"
   );
 }
 function startStop() {
