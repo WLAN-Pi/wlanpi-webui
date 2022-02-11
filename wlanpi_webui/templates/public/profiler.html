@@ -1,35 +1,37 @@
 {% extends "public/layout.html" %} {% block content %}
-<div class="uk-section uk-padding-remove-top uk-padding-remove-bottom">
-<div class="uk-flex uk-flex-column uk-width-1 uk-padding">
-  <div>
-    <p><b>Profiler</b> is a tool that helps determine the capabilities of wireless clients. Through automating the analysis of association frames.</p>
-      <ul uk-accordion="">
-        <li>
-          <a class="uk-accordion-title" href="#">Getting started</a>
-          <div class="uk-accordion-content">
-            <p>Starting the profiler system process:</p>
-            <ul class="uk-list uk-list-hyphen">
-              <li>Install a supported WLAN NIC into the WLAN Pi.</li>
-              <li>Start the profiler process using the Front Panel Menu System (FPMS).</li>
-              <li><kbd>Menu &gt; Apps &gt; Profiler &gt; Start</kbd></li>
-            </ul>
-            <p>Profiling a client:</p>
-            <ul class="uk-list uk-list-hyphen">
-            <li>On start a fake soft AP will broadcast (default SSID is <kbd>Profiler xxx</kbd> where <kbd>xxx</kbd> is the last 3 characters of the eth0 MAC address).</li>
-            <li>Connect your client by QR code on FPMS or enter any random 8 characters for the PSK.</li>
-            <li>The client will expectedly fail authentication but we should receive the association request.</li>
-            </ul>
-            <p>After associating a client to the profiler SSID, refresh this page to view the result.</p>
-            <p>Power users:</p>
-            <ul class="uk-list uk-list-hyphen">
-              <li>You can also run profiler from the terminal on this device.</li>
-              <li>Run <kbd>$ profiler -h</kbd>to print usage.</li>
-            </ul>
-          </div>
-        </li>
-      </ul>
+<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">
+  <div class="uk-section uk-padding-remove-top uk-padding-remove-bottom">
+    <div class="uk-flex uk-flex-column uk-width-1 uk-padding">
+      <div>
+        <p><b>Profiler</b> is a tool that helps determine the capabilities of wireless clients. Through automating the analysis of association frames.</p>
+          <ul uk-accordion="">
+            <li>
+              <a class="uk-accordion-title" href="#">Getting started</a>
+              <div class="uk-accordion-content">
+                <p>Starting the profiler system process:</p>
+                <ul class="uk-list uk-list-hyphen">
+                  <li>Install a supported WLAN NIC into the WLAN Pi.</li>
+                  <li>Start the profiler process using the Front Panel Menu System (FPMS).</li>
+                  <li><kbd>Menu &gt; Apps &gt; Profiler &gt; Start</kbd></li>
+                </ul>
+                <p>Profiling a client:</p>
+                <ul class="uk-list uk-list-hyphen">
+                <li>On start a fake soft AP will broadcast (default SSID is <kbd>Profiler xxx</kbd> where <kbd>xxx</kbd> is the last 3 characters of the eth0 MAC address).</li>
+                <li>Connect your client by QR code on FPMS or enter any random 8 characters for the PSK.</li>
+                <li>The client will expectedly fail authentication but we should receive the association request.</li>
+                </ul>
+                <p>After associating a client to the profiler SSID, refresh this page to view the result.</p>
+                <p>Power users:</p>
+                <ul class="uk-list uk-list-hyphen">
+                  <li>You can also run profiler from the terminal on this device.</li>
+                  <li>Run <kbd>$ profiler -h</kbd>to print usage.</li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+      </div>
+      {% autoescape false %} {{ content }} {% endautoescape %}
+    </div>
   </div>
-  {% autoescape false %} {{ content }} {% endautoescape %}
-</div>
 </div>
 {% endblock %}

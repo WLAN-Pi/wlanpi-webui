@@ -32,6 +32,7 @@
     <style>
       #thebiglebowski {
         min-height: 100vh; 
+        min-width: 20em;
       }
       @media (max-width: 640px) {
         #thebiglebowski {
@@ -83,12 +84,10 @@
       <!--/HEADER-->
 
       <!--CONTENT-->
-      <!--<div class="uk-flex uk-flex-auto uk-dark uk-background-muted">-->
-        <!-- uk-flex uk-flex-1   -->
-      <div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">
+      <!--<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">-->
           {% block content %}
           {% endblock %}
-      </div>
+      <!--</div>-->
       <!--/CONTENT-->
 
       <!--FOOTER-->
