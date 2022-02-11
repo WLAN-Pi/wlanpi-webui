@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.3-6) unstable; urgency=medium
+wlanpi-webui (1.1.3-7) unstable; urgency=medium
 
   * speedtest refactored to librespeed
   * add alternate librespeed page
@@ -8,7 +8,7 @@ wlanpi-webui (1.1.3-6) unstable; urgency=medium
   * nginx header tweaks for librespeed config
   * improvements to network cards on devices with small viewports
 
- -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 10 Feb 2022 16:00:08 -0500
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 10 Feb 2022 17:00:08 -0500
 
 wlanpi-webui (1.1.2-2) unstable; urgency=medium
 
