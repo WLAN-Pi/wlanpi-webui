@@ -82,6 +82,18 @@ if [ $CONF_CHANGED -eq 0 ]; then
     fi
 fi
 
+# generate garbage.dat file
+GARBAGE=/var/www/librespeed/librespeed/garbage.dat
+GARBAGE_PARENT_DIR=/var/www/librespeed/librespeed
+if [ ! -d $GARBAGE_PARENT_DIR ]; then
+    mkdir $GARBAGE_PARENT_DIR
+fi
+
+if [ ! -f $GARBAGE ]; then
+    echo "Creating 10 MB garbage.dat for librespeed..."
+    dd if=/dev/urandom of=$GARBAGE bs=10485760 count=1
+fi
+
 # fix up permissions
 if [ -d /var/www/librespeed ]; then
     chown -R www-data:www-data /var/www/librespeed

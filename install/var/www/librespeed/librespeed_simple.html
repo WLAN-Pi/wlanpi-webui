@@ -10,14 +10,16 @@ function I(i){return document.getElementById(i);}
 //INITIALIZE SPEEDTEST
 var s=new Speedtest(); //create speedtest object
 //CUSTOM SETTINGS HERE
-s.setParameter("time_auto", false); // automatically determine duration of DL and UL tests
-s.setParameter("test_order","P_D_U"); // order tests are performed
+s.setParameter("time_auto",false); // automatically determine duration of DL and UL tests
+s.setParameter("test_order","IP_D_U"); // order tests are performed
 s.setParameter("time_dl_max",15); //num seconds for the download test
 s.setParameter("time_ul_max",15); //num seconds for the upload test
-s.setParameter("count_ping",25); //how many pings to perform. this measures XHR NOT ICMP!
-s.setParameter("url_dl","backend/garbage.dat");
-s.setParameter("url_ul","backend/empty.dat");
-s.setParameter("url_ping","backend/empty.dat");
+s.setParameter("count_ping",35); //how many pings to perform. this measures XHR NOT ICMP!
+s.setParameter("url_dl","librespeed/garbage.dat");
+s.setParameter("url_ul","librespeed/empty.dat");
+s.setParameter("url_ping","librespeed/empty.dat");
+s.setParameter("url_getIp","librespeed/getip");
+s.setParameter("getIp_ispInfo",false);
 var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#dadada":"#80808040";
 var dlColor="#6060aa",
 	ulColor="#309030";
@@ -89,6 +91,7 @@ function updateUI(forced){
 	if(!forced&&s.getState()!=3) return;
 	if(uiData==null) return;
 	var status=uiData.testState;
+	I("ip").textContent=uiData.clientIp;
 	I("dlText").textContent=(status==1&&uiData.dlStatus==0)?"...":format(uiData.dlStatus);
 	drawMeter(I("dlMeter"),mbpsToAmount(Number(uiData.dlStatus*(status==1?oscillate():1))),meterBk,dlColor,Number(uiData.dlProgress),progColor);
 	I("ulText").textContent=(status==3&&uiData.ulStatus==0)?"...":format(uiData.ulStatus);
@@ -256,8 +259,11 @@ function initUI(){
 				<div class="unit">Mbps</div>
 			</div>
 		</div>
+		<div id="ipArea">
+			<span id="ip"></span>
+		</div>
 		<div>
-			<span>Powered by <a href="https://github.com/librespeed/speedtest" target="_blank">LibreSpeed</a>.</span>
+			<span>Powered by <a href="https://github.com/librespeed/speedtest" target="_blank">LibreSpeed</a></span>
 		</div>
 	</div>
 </div>

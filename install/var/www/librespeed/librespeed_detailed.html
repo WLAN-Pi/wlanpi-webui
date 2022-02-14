@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="Chart.bundle.min.js"></script>
 <script src="jquery.min.js"></script>
-<script src="speedtest_base.js"></script>
+<script src="librespeed_detailed_base.js"></script>
 </head>
 <body>
 <div class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></div>
@@ -43,7 +43,7 @@
 	</div>
 </div>
 <div class="btn" id="show_advanced"><script>trw('show_advanced');</script></div>
-<div id="advanced">
+	<div id="advanced">
 		<div class="test_group">
 			<h3><script>trw('settings');</script></h3>
 			<table id="settings_table" class="left_tables">
@@ -52,7 +52,13 @@
 				</tr>
 			</table>
 			<h3><script>trw('stats');</script></h3>
-			<table id="stats_table" class="left_tables"></table>
+			<table id="ip_table" class="left_tables">
+				<tr>
+					<th><script>trw('ip_address');</script></th><td id="ip"></td>
+				</tr>
+			</table>
+			<table id="stats_table" class="left_tables">
+			</table>
 		</div>
 		<div class="test_group">
 			<h3>Download</h3>

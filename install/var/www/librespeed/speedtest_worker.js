@@ -17,6 +17,9 @@ var ulProgress = 0; //progress of upload test 0-1
 var pingProgress = 0; //progress of ping+jitter test 0-1
 var testId = null; //test ID (sent back by telemetry if used, null otherwise)
 
+var totDownload = 0.0;
+var totUpload = 0.0;
+
 var log = ""; //telemetry log
 function tlog(s) {
 	if (settings.telemetry_level >= 2) {
@@ -102,7 +105,9 @@ this.addEventListener("message", function(e) {
 				dlProgress: dlProgress,
 				ulProgress: ulProgress,
 				pingProgress: pingProgress,
-				testId: testId
+				testId: testId,
+				dlAmount: totDownload,
+				ulAmount: totUpload
 			})
 		);
 	}
@@ -348,6 +353,7 @@ function dlTest(done) {
 					var loadDiff = event.loaded <= 0 ? 0 : event.loaded - prevLoaded;
 					if (isNaN(loadDiff) || !isFinite(loadDiff) || loadDiff < 0) return; // just in case
 					totLoaded += loadDiff;
+					totDownload = totLoaded;
 					prevLoaded = event.loaded;
 				}.bind(this);
 				xhr[i].onload = function() {
@@ -478,6 +484,7 @@ function ulTest(done) {
 						xhr[i].onload = xhr[i].onerror = function() {
 							tverb("ul stream progress event (ie11wa)");
 							totLoaded += reqsmall.size;
+							totUpload = totLoaded;
 							testStream(i, 0);
 						};
 						xhr[i].open("POST", settings.url_ul + url_sep(settings.url_ul) + (settings.mpot ? "cors=true&" : "") + "r=" + Math.random(), true); // random string to prevent caching
@@ -499,6 +506,7 @@ function ulTest(done) {
 							var loadDiff = event.loaded <= 0 ? 0 : event.loaded - prevLoaded;
 							if (isNaN(loadDiff) || !isFinite(loadDiff) || loadDiff < 0) return; // just in case
 							totLoaded += loadDiff;
+							totUpload = totLoaded;
 							prevLoaded = event.loaded;
 						}.bind(this);
 						xhr[i].upload.onload = function() {
