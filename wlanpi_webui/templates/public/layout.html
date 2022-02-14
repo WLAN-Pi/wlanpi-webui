@@ -64,7 +64,7 @@
                   <div class="uk-navbar-dropdown">
                     <ul class="uk-nav uk-navbar-dropdown-nav">
                       <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
-                      <li><a href="{{ url_for('profiler.purge') }}">PURGE SCRIPT</a></li>
+                      <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA</a></li>
                     </ul>
                   </div>
                 </li>
@@ -128,9 +128,10 @@
         <ul class="uk-nav uk-nav-default">
           <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
           <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
-          <li><a href="{{ url_for('profiler.profiler') }}">PROFILER</a></li>
+          <li><a href="{{ url_for('profiler.profiler') }}">PROFILER: PROFILES</a></li>
+          <li><a href="{{ url_for('profiler.purge') }}">PROFILER: PURGE DATA</a></li>
           <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
-          <li><a href="{{ url_for('admin') }}">ADMIN</a></li>       
+          <li><a href="{{ url_for('admin') }}">ADMINISTRATION</a></li>       
           <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
         </ul>
       </div>
