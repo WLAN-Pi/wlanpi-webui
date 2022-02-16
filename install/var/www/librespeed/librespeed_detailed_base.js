@@ -39,7 +39,7 @@ function trw(t) {
 (trans.speed = []),
 (trans.speed["en-US"] = "Speed"),
 (trans.ip_address = []),
-(trans.ip_address["en-US"] = "Client IP Address:"),
+(trans.ip_address["en-US"] = "Client IP:"),
 (trans.maximal_download = []),
 (trans.maximal_download["en-US"] = "Maximal download:"),
 (trans.maximal_upload = []),
