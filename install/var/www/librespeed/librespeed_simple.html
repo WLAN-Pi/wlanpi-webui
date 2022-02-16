@@ -20,9 +20,13 @@ s.setParameter("url_ul","librespeed/empty.dat");
 s.setParameter("url_ping","librespeed/empty.dat");
 s.setParameter("url_getIp","librespeed/getip");
 s.setParameter("getIp_ispInfo",false);
-var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#dadada":"#80808040";
-var dlColor="#6060aa",
-	ulColor="#309030";
+s.setParameter("enable_quirks",true);
+s.setParameter("overheadCompensationFactor",1); // 1 = raw performance                                       
+s.setParameter("forceIE11Workaround",false); // if true, performance hits on Chrome      
+s.setParameter("mpot",false);                                                            
+var meterBk=/Trident.*rv:(\d+\.\d+)/i.test(navigator.userAgent)?"#dadada":"#80808040";   
+var dlColor="#6060aa";                                                                   
+var ulColor="#309030";                                                                   
 var progColor=meterBk;
 
 //CODE FOR GAUGES
@@ -91,7 +95,11 @@ function updateUI(forced){
 	if(!forced&&s.getState()!=3) return;
 	if(uiData==null) return;
 	var status=uiData.testState;
-	I("ip").textContent=uiData.clientIp;
+	if (uiData.clientIp.length != 0) {
+		I("ip").textContent="Client IP: " + uiData.clientIp;
+	} else {
+		I("ip").textContent=""
+	}
 	I("dlText").textContent=(status==1&&uiData.dlStatus==0)?"...":format(uiData.dlStatus);
 	drawMeter(I("dlMeter"),mbpsToAmount(Number(uiData.dlStatus*(status==1?oscillate():1))),meterBk,dlColor,Number(uiData.dlProgress),progColor);
 	I("ulText").textContent=(status==3&&uiData.ulStatus==0)?"...":format(uiData.ulStatus);
@@ -231,7 +239,7 @@ function initUI(){
 <title>WLAN Pi: LibreSpeed</title>
 </head>
 <body>
-<div>
+<div>s
 	<div id="startStopBtn" onclick="startStop()"></div>
         <div class="testGroup">
 			<div class="testArea2">
@@ -263,7 +271,8 @@ function initUI(){
 			<span id="ip"></span>
 		</div>
 		<div>
-			<span>Powered by <a href="https://github.com/librespeed/speedtest" target="_blank">LibreSpeed</a></span>
+			<span>Works best on Chrome, Edge, and Firefox browsers.</span><br>
+			<span>Powered by <a href="https://github.com/librespeed/speedtest" target="_blank">LibreSpeed</a></span><br>
 		</div>
 	</div>
 </div>
