@@ -1,3 +1,9 @@
+wlanpi-webui (1.1.5) stable; urgency=medium
+
+  * branding: update favicon and layout logo
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 19 Feb 2022 21:46:35 -0500
+
 wlanpi-webui (1.1.4-2) unstable; urgency=medium
 
   * :8080 index is now librespeed_simple.html
