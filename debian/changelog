@@ -1,4 +1,11 @@
-wlanpi-webui (1.1.5) stable; urgency=medium
+wlanpi-webui (1.1.5-1) stable; urgency=medium
+
+  * fix flask version
+  * nginx: ignore favicon errors and do not log them
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 19 Feb 2022 23:17:32 -0500
+
+wlanpi-webui (1.1.5) unstable; urgency=medium
 
   * branding: update favicon and layout logo
 
