@@ -14,22 +14,27 @@ with open(os.path.join(here, "wlanpi_webui", "__version__.py"), "r", "utf-8") as
 
 readme = about["__description__"]
 
-requires = ["flask==2.0.1", "gunicorn==20.1.0", "psutil==5.8.0"]
+def parse_requires(_list):
+    requires = list()
+    trims = ["#", "piwheels.org"]
+    for require in _list:
+        if any(match in require for match in trims):
+            continue
+        requires.append(require)
+    requires = list(filter(None, requires))  # remove "" from list
+    return requires
 
-extras = {
-    "testing": [
-        "tox",
-        "black",
-        "isort",
-        "autoflake",
-        "mypy",
-        "flake8",
-        "pytest",
-        "pytest-cov",
-        "coverage-badge",
-        "pytest-mock",
-    ],
-}
+with open("extras.txt") as f:
+    testing = f.read().splitlines()
+
+testing = parse_requires(testing)
+
+extras = {"testing": testing}
+
+with open("requirements.txt") as f:
+    requires = f.read().splitlines()
+    
+requires = parse_requires(requires)
 
 setup(
     name=about["__title__"],
@@ -46,6 +51,7 @@ setup(
         "Natural Language :: English",
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.9",
         "Intended Audience :: System Administrators",
         "Topic :: Utilities",
     ],
