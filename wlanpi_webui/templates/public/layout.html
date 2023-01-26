@@ -58,6 +58,7 @@
                   </div>
                 </li>
                 <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+                <li><a href="{{ url_for('kismet') }}">KISMET</a></li>
                 <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
                 <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li>
               </ul>
@@ -119,7 +120,8 @@
           <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
           <li><a href="{{ url_for('profiler.profiler') }}">PROFILER: PROFILES</a></li>
           <li><a href="{{ url_for('profiler.purge') }}">PROFILER: PURGE DATA</a></li>
-          <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
+          <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+          <li><a href="{{ url_for('kismet') }}">KISMET</a></li>             
           <li><a href="{{ url_for('admin') }}">ADMINISTRATION</a></li>       
           <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
         </ul>

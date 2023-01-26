@@ -56,6 +56,12 @@ def create_app(config_class=Config):
         base = request.host.split(":")[0]
         return redirect(f"http://{base}:{COCKPIT_PORT}/system/terminal")
 
+    @app.route("/kismet")
+    def kismet():
+        KISMET_PORT = "2501"
+        base = request.host.split(":")[0]
+        return redirect(f"http://{base}:{KISMET_PORT}")
+
     @app.route("/static/img/<path:filename>")
     def img(filename):
         try:
