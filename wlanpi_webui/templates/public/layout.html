@@ -58,6 +58,15 @@
                   </div>
                 </li>
                 <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+                <li>
+                  <a href="#">KISMET</a>
+                  <div class="uk-navbar-dropdown">
+                      <ul class="uk-nav uk-navbar-dropdown-nav">
+                          <li class="uk-nav-header">Make sure Kismet is running on the WLAN Pi</li>
+                          <li><a href="{{ url_for('kismet') }}">Open Kismet</a></li>
+                      </ul>
+                  </div>
+                </li>
                 <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
                 <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li>
               </ul>
@@ -119,7 +128,8 @@
           <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
           <li><a href="{{ url_for('profiler.profiler') }}">PROFILER: PROFILES</a></li>
           <li><a href="{{ url_for('profiler.purge') }}">PROFILER: PURGE DATA</a></li>
-          <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>             
+          <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+          <li><a href="{{ url_for('kismet') }}">KISMET</a></li>             
           <li><a href="{{ url_for('admin') }}">ADMINISTRATION</a></li>       
           <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
         </ul>

@@ -10,4 +10,4 @@ Patches and Suggestions
 
 Alphabetical order:
 
-- Add yourself here.
+- Ben Toner `@ben__toner <https://github.com/bentumbler>`_.

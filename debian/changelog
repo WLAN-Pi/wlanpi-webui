@@ -1,3 +1,9 @@
+wlanpi-webui (1.1.5-2) stable; urgency=medium
+
+  * add nav link to kismet page
+
+ -- Ben Toner <ben@numerousnetworks.co.uk>  Thu, 26 Jan 2023 19:48:32 -0000
+
 wlanpi-webui (1.1.5-1) stable; urgency=medium
 
   * fix flask version
