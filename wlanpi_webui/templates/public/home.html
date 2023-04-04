@@ -1,0 +1,198 @@
+{% extends "public/layout.html" %}
+{% block content %}
+<script>
+    
+    function loadXMLDoc()
+    {
+        var ip_text = document.getElementById("ip_addr");
+        var cpu_text = document.getElementById("cpu");
+        var cputemp_text = document.getElementById("cputemp");
+        var ram_text = document.getElementById("ram");
+        var storage_text = document.getElementById("storage");
+        var uptime_text = document.getElementById("uptime");
+        
+        if (window.XMLHttpRequest)
+        {// code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
+            xmlhttp=new XMLHttpRequest();
+        }
+        else
+        {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                data = JSON.parse(xmlhttp.responseText)
+                ip_text.innerHTML = data["IP"]
+                cpu_text.innerHTML = data["CPU"]
+                cputemp_text.innerHTML = data["CPU_TEMP"]
+                ram_text.innerHTML = data["RAM"]
+                storage_text.innerHTML = data["DISK"]
+                uptime_text.innerHTML = data["UPTIME"]
+
+            }
+        }
+        xmlhttp.open("GET", "{{ url_for('stream.stream') }}", false);
+        xmlhttp.send();
+
+    }
+    loadXMLDoc()
+    setInterval(loadXMLDoc, 2000);
+</script>
+
+<div class="uk-container uk-container-small" style="padding-top: 60px;">
+    <p class="uk-text-large">System Info</p>
+</div>
+
+<div class="uk-padding-large uk-flex-1 uk-dark uk-background-muted uk-flex-column">
+    <div class="uk-grid-small uk-child-width-1-3@s uk-child-width-1-3@m" uk-grid uk-height-match="target: > .uk-card">
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">IP</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="ip_addr" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">CPU Load</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="cpu" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">CPU Temp</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="cputemp" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Ram</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="ram" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Storage</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="storage" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+            <div class="uk-card-title uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-auto">
+                    <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Uptime</h3>
+                </div>
+            </div>
+            </div>
+            {% autoescape false %}<p id="uptime" class="uk-text-break"></p> {% endautoescape %}
+        </div>
+    </div>
+</div>
+
+<hr style="border-top: 3px solid #bbb; border-radius: 5px; margin-left: 20px; margin-right: 20px;">
+
+<div class="uk-padding uk-flex-1 uk-dark uk-background-muted uk-flex-column">
+    <!--<div class="uk-flex uk-padding uk-flex-column">-->
+      <div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-2@m" uk-grid uk-height-match="target: > div > .uk-card">
+
+        <a href="{{ url_for('librespeed.librespeed') }}" style="pointer-events: all;">
+            <div>
+            <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+                <div class="uk-card-media-top">
+                    <img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;">
+                </div>
+                <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                <div class="uk-grid-small uk-flex-middle" uk-grid>
+                    <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Speed Test</h3>
+                    </div>
+                </div>
+                </div>
+                {% autoescape false %}<p id="reachability" class="uk-text-break">speedtest using librespeed</p> {% endautoescape %}
+            </div> 
+            </div>
+        </a>
+
+        <a href="{{ url_for('profiler.profiler') }}" style="pointer-events: all;">
+            <div>
+                <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+                    <div class="uk-card-media-top">
+                        <img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;">
+                    </div>
+                <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                    <div class="uk-grid-small uk-flex-middle" uk-grid>
+                        <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Profiler</h3>
+                        </div>
+                    </div>
+                </div>
+                {% autoescape false %}<p id="reachability" class="uk-text-break">profiler page</p> {% endautoescape %}
+                </div> 
+            </div>
+        </a>
+
+          <a href="{{ url_for('network.network') }}" style="pointer-events: all;">
+            <div>
+                <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+                    <div class="uk-card-media-top">
+                        <img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;">
+                    </div>
+                <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                    <div class="uk-grid-small uk-flex-middle" uk-grid>
+                        <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Network</h3>
+                        </div>
+                    </div>
+                </div>
+                {% autoescape false %}<p id="reachability" class="uk-text-break">network page for network stats</p> {% endautoescape %}
+                </div> 
+            </div>
+            </a>
+
+          <a href="{{ url_for('kismet') }}" style="pointer-events: all;">
+            <div>
+                <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
+                    <div class="uk-card-media-top">
+                        <img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;">
+                    </div>
+                <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                    <div class="uk-grid-small uk-flex-middle" uk-grid>
+                        <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Kismet</h3>
+                        </div>
+                    </div>
+                </div>
+                {% autoescape false %}<p id="reachability" class="uk-text-break">kismet page</p> {% endautoescape %}
+                </div> 
+            </div>
+        </a>
+      </div>
+    </div>
+{% endblock %}
