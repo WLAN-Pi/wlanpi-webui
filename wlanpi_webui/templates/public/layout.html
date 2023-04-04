@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
-    <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='img/site.webmanifest') }}">
   </head>
   <body>
     <!--HANDLE MOBILE-->
@@ -33,14 +33,13 @@
 
     <div id="thebiglebowski" class="uk-flex uk-flex-column">
       <!--HEADER-->
-      <div class="uk-box-shadow-small uk-flex-first uk-background-muted">
-        <div class="uk-container uk-container-expand">
-          <nav class="uk-navbar-container" id="navbar" data-uk-navbar>
+      <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
+          <nav class="uk-navbar-container" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
             <div class="uk-navbar-left">
-              <a class="uk-navbar-item uk-logo" herf="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;"></a>
+              <a class="uk-navbar-item uk-logo" href="{{ url_for('homepage.homepage') }}"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;"></a>
               <ul class="uk-navbar-nav uk-visible@m">
                 <li>
-                  <a href="#">SPEED TEST</a>
+                  <a href="{{ url_for('librespeed.librespeed') }}" style="color: white;">SPEED TEST</a>
                   <div class="uk-navbar-dropdown">
                     <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
                       <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
@@ -49,26 +48,27 @@
                   </div>
                 </li>
                 <li>
-                  <a href="#">PROFILER</a>
+                  <a href="{{ url_for('profiler.profiler') }}" style="color: white;">PROFILER</a>
                   <div class="uk-navbar-dropdown">
                     <ul class="uk-nav uk-navbar-dropdown-nav">
                       <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
                       <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA</a></li>
                     </ul>
                   </div>
-                </li>
-                <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+                </li>        <!-- </div> -->
+                <li><a href="{{ url_for('network.network') }}" style="color: white;">NETWORK</a></li>
                 <li>
-                  <a href="#">KISMET</a>
+                  <a href="#" style="color: white;">KISMET</a>
                   <div class="uk-navbar-dropdown">
                       <ul class="uk-nav uk-navbar-dropdown-nav">
-                          <li class="uk-nav-header">Make sure Kismet is running on the WLAN Pi</li>
-                          <li><a href="{{ url_for('kismet') }}">Open Kismet</a></li>
+                          <li class="uk-nav-header">{{ kismet_message }}</li>
+                          <li><a href="{{ url_for('start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'Stop' if kismet_status else 'Start' }}</a></li>
+                          <li><a class="uk-link" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};" href="{{ url_for('kismet') }}">Open Kismet</a></li>
                       </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('admin') }}">ADMIN</a></li>
-                <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li>
+                <li><a href="{{ url_for('admin') }}" style="color: white;">ADMIN</a></li>
+                <li><a href="{{ url_for('terminal') }}" style="color: white;">TERMINAL</a></li>
               </ul>
             </div>
               <div class="uk-navbar-right"> 
@@ -77,7 +77,6 @@
               </div>
             </div>
           </nav>
-        </div>
       </div>
       <!--/HEADER-->
 

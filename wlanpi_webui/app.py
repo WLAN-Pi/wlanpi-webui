@@ -9,8 +9,9 @@ the main flask app
 """
 
 import logging
+import subprocess
 
-from flask import Flask, abort, redirect, request, send_from_directory
+from flask import Flask, abort, redirect, request, send_from_directory, url_for, Response
 
 from wlanpi_webui.config import Config
 
@@ -43,6 +44,76 @@ def create_app(config_class=Config):
 
     app.register_blueprint(network_bp)
     app.logger.debug("network blueprint registered")
+
+    app.logger.debug("registering homepage blueprint")
+    from wlanpi_webui.homepage import bp as homepage_bp
+
+    app.register_blueprint(homepage_bp)
+    app.logger.debug("homepage blueprint registered")
+
+    app.logger.debug("registering stream blueprint")
+    from wlanpi_webui.stream import bp as stream_bp
+
+    app.register_blueprint(stream_bp)
+    app.logger.debug("stream blueprint registered")
+
+    def kismet_status():
+        """
+        Checks the status of the Kismet service.
+        Returns true if Kismet is running, false otherwise.
+        """
+        try:
+            # this cmd fails if service not installed
+            cmd = "/bin/systemctl is-active --quiet kismet"
+            subprocess.run(cmd, shell=True).check_returncode()
+        except:
+            # cmd failed, so profiler service not installed
+            return False
+
+        return True
+    
+    def kismet_message():
+        """
+        Checks if Kismet is running.
+        Returns 'Kismet is running' if it is, and 'Kismet is not running' if not.
+        """
+        status = kismet_status()
+        if status:
+            return 'Kismet is running'
+        else:
+            return 'Kismet is not running'
+        
+    def redirect_url(default='/'):
+        return request.args.get('next') or request.referrer or url_for(default)
+
+    @app.context_processor
+    def inject_kismet_msg():
+        return {'kismet_message': f'{kismet_message()}', 'kismet_status': kismet_status()}
+
+    @app.context_processor
+    def inject_config():
+        return {'hostname': Config.HOSTNAME, 'wlanpi_version': Config.WLANPI_VERSION, 'webui_version': Config.WEBUI_VERSION, 'title': Config.TITLE}
+    
+    @app.route("/<task>kismet")
+    def start_stop_kismet(task):
+        if task == 'start':
+            try:
+                cmd = "/bin/systemctl start kismet"
+                subprocess.run(cmd, shell=True, timeout=10)
+                base = request.host.split(":")[0]
+                return redirect(f"http://{base}")
+            except:
+                return redirect(f"http://{base}")
+        elif task == 'stop':
+            try:
+                cmd = "/bin/systemctl stop kismet"
+                subprocess.run(cmd, shell=True, timeout=10)
+                base = request.host.split(":")[0]
+                return redirect(f"http://{base}")
+            except:
+                return redirect(f"http://{base}")
+
+    
 
     @app.route("/admin")
     def admin():
