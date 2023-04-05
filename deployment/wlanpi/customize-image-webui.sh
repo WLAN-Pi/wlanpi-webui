@@ -30,7 +30,7 @@ InstallPipx() {
 SetupWebui() {
     display_alert "Installing WebUI" "" "info"
     # install with pip via pipx
-	pipx install --include-deps git+https://github.com/joshschmelzle/wlanpi-webui@main#egg=wlanpi_webui
+	pipx install --include-deps git+https://github.com/joshschmelzle/wlanpi-webui@1.0.0-b3-2#egg=wlanpi_webui
    
     # setup config required to support the webui
     git clone -b dev https://github.com/joshschmelzle/wlanpi-webui.git 
@@ -40,10 +40,10 @@ SetupWebui() {
     systemctl disable apache2
 
     # install nginx php
-    apt install nginx-light php7.3-fpm -y
+    apt install nginx-light php7.4-fpm -y
      
-    # need to modify php fpm stuff (/etc/php/7.3/fpm) 
-    cp -a ./wlanpi-webui/deployment/php/php.ini /etc/php/7.3/fpm
+    # need to modify php fpm stuff (/etc/php/7.4/fpm) 
+    cp -a ./wlanpi-webui/deployment/php/php.ini /etc/php/7.4/fpm
 
     # setup speedtest    
     mkdir -p /var/www/speedtest
