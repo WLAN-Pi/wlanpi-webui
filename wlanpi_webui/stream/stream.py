@@ -23,21 +23,21 @@ def get_stats():
     ipStr = f"{IP}"
 
     # determine CPU load
-    cmd = "top -bn1 | grep load | awk '{printf \"%.2f\", $(NF-2)}'"
+    cmd = "top -bn1 | grep load | awk '{printf \"%.2f%%\", $(NF-2)}'"
     try:
         CPU = subprocess.check_output(cmd, shell=True).decode()
     except:
         CPU = "unknown"
 
-    # determine mem usage
-    cmd = "free -m | awk 'NR==2{printf \"%s/%s MB, %.2f%%\", $3,$2,$3*100/$2 }'"
+    # determine mem useage
+    cmd = "free -m | awk 'NR==2{printf \"%s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
     try:
         MemUsage = subprocess.check_output(cmd, shell=True).decode()
     except:
         MemUsage = "unknown"
 
     # determine disk util
-    cmd = "df -h | awk '$NF==\"/\"{printf \"%d/%d GB, %s\", $3,$2,$5}'"
+    cmd = "df -h | awk '$NF==\"/\"{printf \"%d/%dGB %s\", $3,$2,$5}'"
     try:
         Disk = subprocess.check_output(cmd, shell=True).decode()
     except:

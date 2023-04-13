@@ -1,47 +1,7 @@
 {% extends "public/layout.html" %}
 {% block content %}
-<script>
-    
-    function loadXMLDoc()
-    {
-        var ip_text = document.getElementById("ip_addr");
-        var cpu_text = document.getElementById("cpu");
-        var cputemp_text = document.getElementById("cputemp");
-        var ram_text = document.getElementById("ram");
-        var storage_text = document.getElementById("storage");
-        var uptime_text = document.getElementById("uptime");
-        
-        if (window.XMLHttpRequest)
-        {// code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
-            xmlhttp=new XMLHttpRequest();
-        }
-        else
-        {// code for IE6, IE5
-            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        xmlhttp.onreadystatechange=function()
-        {
-            if (xmlhttp.readyState==4 && xmlhttp.status==200)
-            {
-                data = JSON.parse(xmlhttp.responseText)
-                ip_text.innerHTML = data["IP"]
-                cpu_text.innerHTML = data["CPU"]
-                cputemp_text.innerHTML = data["CPU_TEMP"]
-                ram_text.innerHTML = data["RAM"]
-                storage_text.innerHTML = data["DISK"]
-                uptime_text.innerHTML = data["UPTIME"]
 
-            }
-        }
-        xmlhttp.open("GET", "{{ url_for('stream.stream') }}", false);
-        xmlhttp.send();
-
-    }
-    loadXMLDoc()
-    setInterval(loadXMLDoc, 2000);
-</script>
-
-<div class="uk-container uk-container-small" style="padding-top: 60px;">
+<!-- <div class="uk-container uk-container-small" style="padding-top: 60px;">
     <p class="uk-text-large">System Info</p>
 </div>
 
@@ -114,7 +74,7 @@
             {% autoescape false %}<p id="uptime" class="uk-text-break"></p> {% endautoescape %}
         </div>
     </div>
-</div>
+</div> -->
 
 <hr style="border-top: 3px solid #bbb; border-radius: 5px; margin-left: 20px; margin-right: 20px;">
 
@@ -176,7 +136,7 @@
             </div>
             </a>
 
-          <a href="{{ url_for('kismet') }}" style="pointer-events: all;">
+          <a href="{{ url_for('kismet.kismet') }}" style="pointer-events: all;">
             <div>
                 <div class="uk-card uk-card-default uk-card-hover uk-card-body"> 
                     <div class="uk-card-media-top">

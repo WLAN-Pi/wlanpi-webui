@@ -11,7 +11,7 @@ the main flask app
 import logging
 import subprocess
 
-from flask import Flask, abort, redirect, request, send_from_directory, url_for, Response
+from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for, Response
 
 from wlanpi_webui.config import Config
 
@@ -56,6 +56,12 @@ def create_app(config_class=Config):
 
     app.register_blueprint(stream_bp)
     app.logger.debug("stream blueprint registered")
+
+    app.logger.debug("registering kismet blueprint")
+    from wlanpi_webui.kismet import bp as kismet_bp
+
+    app.register_blueprint(kismet_bp)
+    app.logger.debug("kismet blueprint registered")
 
     def kismet_status():
         """
@@ -127,11 +133,7 @@ def create_app(config_class=Config):
         base = request.host.split(":")[0]
         return redirect(f"http://{base}:{COCKPIT_PORT}/system/terminal")
 
-    @app.route("/kismet")
-    def kismet():
-        KISMET_PORT = "2501"
-        base = request.host.split(":")[0]
-        return redirect(f"http://{base}:{KISMET_PORT}")
+    
 
     @app.route("/static/img/<path:filename>")
     def img(filename):
