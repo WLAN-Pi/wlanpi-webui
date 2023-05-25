@@ -108,7 +108,7 @@
                       </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('admin') }}" style="color: white;">ADMIN</a></li>
+                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">ADMIN</a></li>
                 <li><a href="{{ url_for('terminal') }}" style="color: white;">TERMINAL</a></li>
               </ul>
             </div>
@@ -156,6 +156,10 @@
       </div>
       
       <!-- /STATS BAR -->
+
+      <!-- COCKPIT -->
+      <!-- <iframe src="{{ cockpit_iframe }}"></iframe> -->
+      <!-- /COCKPIT -->
 
       <!--CONTENT-->
       <!--<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">-->
@@ -206,7 +210,7 @@
           <li><a href="{{ url_for('profiler.purge') }}">PROFILER: PURGE DATA</a></li>
           <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
           <li><a href="{{ url_for('kismet.kismet') }}">KISMET</a></li>             
-          <li><a href="{{ url_for('admin') }}">ADMINISTRATION</a></li>       
+          <li><a href="{{ url_for('cockpit.cockpit') }}">ADMINISTRATION</a></li>       
           <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
         </ul>
       </div>

@@ -63,6 +63,18 @@ def create_app(config_class=Config):
     app.register_blueprint(kismet_bp)
     app.logger.debug("kismet blueprint registered")
 
+    app.logger.debug("registering cockpit blueprint")
+    from wlanpi_webui.cockpit import bp as cockpit_bp
+
+    app.register_blueprint(cockpit_bp)
+    app.logger.debug("cockpit blueprint registered")
+
+    app.logger.debug("registering grafana blueprint")
+    from wlanpi_webui.grafana import bp as grafana_bp
+
+    app.register_blueprint(grafana_bp)
+    app.logger.debug("grafana blueprint registered")
+
     def kismet_status():
         """
         Checks the status of the Kismet service.
@@ -89,16 +101,15 @@ def create_app(config_class=Config):
         else:
             return 'Kismet is not running'
         
-    def redirect_url(default='/'):
-        return request.args.get('next') or request.referrer or url_for(default)
+    @app.route("/service-unavailable")
+    def service_down():
+        return "<html><p>Service unavailable. Please start it on the device.</p></html>"
+        
 
     @app.context_processor
-    def inject_kismet_msg():
-        return {'kismet_message': f'{kismet_message()}', 'kismet_status': kismet_status()}
-
-    @app.context_processor
-    def inject_config():
-        return {'hostname': Config.HOSTNAME, 'wlanpi_version': Config.WLANPI_VERSION, 'webui_version': Config.WEBUI_VERSION, 'title': Config.TITLE}
+    def inject_vars():
+        base = request.host.split(":")[0]
+        return {'hostname': Config.HOSTNAME, 'wlanpi_version': Config.WLANPI_VERSION, 'webui_version': Config.WEBUI_VERSION, 'title': Config.TITLE, 'cockpit_iframe': f"https://{base}:9090", 'kismet_iframe': (f"http://{base}:2501" if kismet_status() else f"http://{base}/service-unavailable"), 'grafana_iframe': f"http://{base}:3000", 'kismet_message': f'{kismet_message()}', 'kismet_status': kismet_status()}
     
     @app.route("/<task>kismet")
     def start_stop_kismet(task):
@@ -119,13 +130,6 @@ def create_app(config_class=Config):
             except:
                 return redirect(f"http://{base}")
 
-    
-
-    @app.route("/admin")
-    def admin():
-        COCKPIT_PORT = "9090"
-        base = request.host.split(":")[0]
-        return redirect(f"http://{base}:{COCKPIT_PORT}")
 
     @app.route("/terminal")
     def terminal():
