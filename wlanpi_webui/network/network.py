@@ -3,7 +3,7 @@ import queue
 import subprocess
 import threading
 
-from flask import current_app, render_template
+from flask import render_template
 
 from wlanpi_webui.network import bp
 
@@ -40,9 +40,7 @@ def network():
             results.append(queue.get())
         return results
 
-    reachability = (
-        "/opt/wlanpi-common/networkinfo/reachability.sh"
-    )
+    reachability = "/opt/wlanpi-common/networkinfo/reachability.sh"
     publicip = "/opt/wlanpi-common/networkinfo/publicip.sh"
     ipconfig = "/opt/wlanpi-common/networkinfo/ipconfig.sh"
 

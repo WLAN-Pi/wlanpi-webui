@@ -1,6 +1,7 @@
-from flask import current_app, render_template, request
+from flask import render_template, request
 
 from wlanpi_webui.librespeed import bp
+
 
 @bp.route("/librespeed")
 def librespeed():

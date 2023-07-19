@@ -5,8 +5,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from flask import (abort, current_app, render_template, request,
-                   send_file)
+from flask import abort, current_app, render_template, request, send_file
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp

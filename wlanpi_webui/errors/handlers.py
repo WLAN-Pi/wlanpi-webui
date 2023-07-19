@@ -1,4 +1,4 @@
-from flask import current_app, render_template
+from flask import render_template
 
 from wlanpi_webui.errors import bp
 
