@@ -33,6 +33,7 @@ CSS:
 - `:80` - flask (main WSGI app)
 - `:8080` - speedtest (html5 speedtest based on LibreSpeed)
 - `:9090` - cockpit (installed separately and handled by the WLAN Pi image build process)
+- `:2501` - kismet (installed separately and handled by the WLAN Pi image build process)
 
 ## Run Package On WLAN Pi
 
