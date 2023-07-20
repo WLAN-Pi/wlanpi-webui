@@ -75,6 +75,12 @@ def create_app(config_class=Config):
     app.register_blueprint(grafana_bp)
     app.logger.debug("grafana blueprint registered")
 
+    app.logger.debug("registering about blueprint")
+    from wlanpi_webui.about import bp as about_bp
+
+    app.register_blueprint(about_bp)
+    app.logger.debug("about blueprint registered")
+
     def kismet_status():
         """
         Checks the status of the Kismet service.
