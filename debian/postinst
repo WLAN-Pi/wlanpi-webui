@@ -83,8 +83,8 @@ if [ $CONF_CHANGED -eq 0 ]; then
 fi
 
 # generate garbage.dat file
-GARBAGE=/var/www/librespeed/librespeed/garbage.dat
-GARBAGE_PARENT_DIR=/var/www/librespeed/librespeed
+GARBAGE=/var/www/librespeed/data/garbage.dat
+GARBAGE_PARENT_DIR=/var/www/librespeed/data
 if [ ! -d $GARBAGE_PARENT_DIR ]; then
     mkdir $GARBAGE_PARENT_DIR
 fi

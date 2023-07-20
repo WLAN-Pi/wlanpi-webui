@@ -91,7 +91,7 @@ def create_app(config_class=Config):
             cmd = "/bin/systemctl is-active --quiet kismet"
             subprocess.run(cmd, shell=True).check_returncode()
         except:
-            # cmd failed, so profiler service not installed
+            # cmd failed, so kismit service not installed
             return False
 
         return True
@@ -119,13 +119,13 @@ def create_app(config_class=Config):
             "wlanpi_version": Config.WLANPI_VERSION,
             "webui_version": Config.WEBUI_VERSION,
             "title": Config.TITLE,
-            "cockpit_iframe": f"https://{base}:9090",
+            "cockpit_iframe": f"https://{base}/app/cockpit",
             "kismet_iframe": (
-                f"http://{base}:2501"
+                f"http://{base}/app/kismet"
                 if kismet_status()
                 else f"http://{base}/service-unavailable"
             ),
-            "grafana_iframe": f"http://{base}:3000",
+            "grafana_iframe": f"http://{base}/app/grafana",
             "kismet_message": f"{kismet_message()}",
             "kismet_status": kismet_status(),
         }
@@ -151,9 +151,8 @@ def create_app(config_class=Config):
 
     @app.route("/terminal")
     def terminal():
-        COCKPIT_PORT = "9090"
         base = request.host.split(":")[0]
-        return redirect(f"http://{base}:{COCKPIT_PORT}/system/terminal")
+        return redirect(f"http://{base}/app/cockpit/system/terminal")
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

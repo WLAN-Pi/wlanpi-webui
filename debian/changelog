@@ -1,6 +1,9 @@
 wlanpi-webui (1.1.6) stable; urgency=medium
 
-  * UI improvements
+  * UI improvements from Orbitix
+  * iframe improvements
+  * Proxy changes
+  * Footer moved to dedicated about page
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 07 Jul 2023 12:48:32 -0500
 
