@@ -3,9 +3,6 @@
 
 wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/WLAN-Pi).
 
-## Authors
-
-- [@joshschmelzle](https://www.github.com/joshschmelzle)
 ## OSS
 
  - [flask](https://github.com/pallets/flask)
