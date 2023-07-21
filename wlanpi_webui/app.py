@@ -121,38 +121,38 @@ def create_app(config_class=Config):
             "title": Config.TITLE,
             "cockpit_iframe": f"https://{base}/app/cockpit",
             "kismet_iframe": (
-                f"http://{base}/app/kismet"
+                f"https://{base}/app/kismet"
                 if kismet_status()
-                else f"http://{base}/service-unavailable"
+                else f"https://{base}/service-unavailable"
             ),
-            "grafana_iframe": f"http://{base}/app/grafana",
+            "grafana_iframe": f"https://{base}:3000/app/grafana",
             "kismet_message": f"{kismet_message()}",
             "kismet_status": kismet_status(),
         }
 
     @app.route("/<task>kismet")
     def start_stop_kismet(task):
+        proto = request.host_url.split(":")[0]
+        base = request.host.split(":")[0]
         if task == "start":
             try:
                 cmd = "/bin/systemctl start kismet"
                 subprocess.run(cmd, shell=True, timeout=10)
-                base = request.host.split(":")[0]
-                return redirect(f"http://{base}")
+                return redirect(f"{proto}://{base}")
             except:
-                return redirect(f"http://{base}")
+                return redirect(f"{proto}://{base}")
         elif task == "stop":
             try:
                 cmd = "/bin/systemctl stop kismet"
                 subprocess.run(cmd, shell=True, timeout=10)
-                base = request.host.split(":")[0]
-                return redirect(f"http://{base}")
+                return redirect(f"{proto}://{base}")
             except:
-                return redirect(f"http://{base}")
+                return redirect(f"{proto}://{base}")
 
-    @app.route("/terminal")
-    def terminal():
-        base = request.host.split(":")[0]
-        return redirect(f"http://{base}/app/cockpit/system/terminal")
+    # @app.route("/terminal")
+    # def terminal():
+    #     base = request.host.split(":")[0]
+    #     return redirect(f"http://{base}/app/admin/system/terminal")
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

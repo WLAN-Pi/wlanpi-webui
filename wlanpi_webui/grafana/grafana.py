@@ -6,4 +6,4 @@ from wlanpi_webui.grafana import bp
 @bp.route("/grafana")
 def grafana():
     base = request.host.split(":")[0]
-    return render_template("/public/kismet.html", iframe=f"http://{base}/app/grafana")
+    return render_template("/public/iframe.html", iframe=f"https://{base}:3000/app/grafana")

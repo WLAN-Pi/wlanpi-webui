@@ -98,7 +98,7 @@ Install dependencies
 Starting the development server
 
 ```bash
-  gunicorn wlanpi_webui.wsgi:app
+  gunicorn wlanpi_webui.wsgi:app --bind 0.0.0.0
 ```
 
 ## Build Locally (Development)

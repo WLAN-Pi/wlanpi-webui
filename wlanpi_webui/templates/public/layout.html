@@ -77,7 +77,7 @@
       <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
           <nav class="uk-navbar-container" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
             <div class="uk-navbar-left">
-              <a class="uk-navbar-item uk-logo" href="{{ url_for('homepage.homepage') }}"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;"></a>
+              <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top" href="{{ url_for('homepage.homepage') }}"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;"></a>
               <ul class="uk-navbar-nav uk-visible@m">
                 <li>
                   <a href="{{ url_for('librespeed.librespeed') }}" style="color: white;">SPEED TEST</a>
@@ -108,8 +108,8 @@
                       </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">ADMIN</a></li>
-                <li><a href="{{ url_for('terminal') }}" style="color: white;">TERMINAL</a></li>
+                <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA</a></li>
+                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">COCKPIT</a></li>
                 <li><a href="{{ url_for('about.about') }}" style="color: white;">ABOUT</a></li>
               </ul>
             </div>
@@ -155,13 +155,7 @@
         {% endautoescape %}
 
       </div>
-      
       <!-- /STATS BAR -->
-
-      <!-- COCKPIT -->
-      <!-- <iframe src="{{ cockpit_iframe }}"></iframe> -->
-      <!-- /COCKPIT -->
-
       <!--CONTENT-->
       <!--<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">-->
           {% block content %}
@@ -179,9 +173,9 @@
           <li><a href="{{ url_for('profiler.profiler') }}">PROFILER: PROFILES</a></li>
           <li><a href="{{ url_for('profiler.purge') }}">PROFILER: PURGE DATA</a></li>
           <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
-          <li><a href="{{ url_for('kismet.kismet') }}">KISMET</a></li>             
-          <li><a href="{{ url_for('cockpit.cockpit') }}">ADMINISTRATION</a></li>       
-          <li><a href="{{ url_for('terminal') }}">TERMINAL</a></li> 
+          <li><a href="{{ url_for('kismet.kismet') }}">KISMET</a></li>           
+          <li><a href="{{ url_for('grafana.grafana') }}">GRAFANA</a></li>             
+          <li><a href="{{ url_for('cockpit.cockpit') }}">COCKPIT</a></li> 
           <li><a href="{{ url_for('about.about') }}">ABOUT</a></li>
         </ul>
       </div>
