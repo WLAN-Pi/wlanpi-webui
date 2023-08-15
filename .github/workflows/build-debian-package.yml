@@ -7,12 +7,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-22.04'
 
     strategy:
       matrix:
-        distro: [buster]
-        arch: [armhf,arm64]
+        distro: [buster,bullseye]
+        arch: [armhf]
     
 
     steps:

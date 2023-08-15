@@ -1,3 +1,9 @@
+wlanpi-webui (1.0.3) unstable; urgency=low
+
+  * Build for bullseye and buster
+
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Tue, 15 Aug 2023 17:22:41 -0500
+
 wlanpi-webui (1.0.2b4-1) unstable; urgency=low
 
   * Bump version to replace gemfury package with postinst error

@@ -11,11 +11,11 @@ jobs:
   build:
     name: sbuild ${{ matrix.distro }}+${{ matrix.arch }}
 
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-22.04'
 
     strategy:
       matrix:
-        distro: [buster]
+        distro: [buster,bullseye]
         arch: [armhf]
   
     environment: GEMFURY
