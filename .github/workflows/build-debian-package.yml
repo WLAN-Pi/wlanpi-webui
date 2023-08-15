@@ -1,6 +1,9 @@
 
 name: Build Debian Packages (Legacy)
 on:
+  # Allow manual runs of workflow from Actions tab
+  workflow_dispatch:
+  
   pull_request:
     branches:
       - legacy-1.0.x
