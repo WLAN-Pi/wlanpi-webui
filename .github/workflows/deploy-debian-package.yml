@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        distro: [buster,bullseye]
+        distro: [buster]
         arch: [armhf]
   
     environment: GEMFURY
