@@ -77,7 +77,7 @@ fi
 if [ $CONF_CHANGED -eq 0 ]; then
     # check nginx actually exists first
     if which nginx; then
-        nginx -t
+        echo "Restarting nginx..."
         systemctl restart nginx.service
     fi
 fi
