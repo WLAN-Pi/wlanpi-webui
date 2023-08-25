@@ -136,14 +136,14 @@ def create_app(config_class=Config):
         base = request.host.split(":")[0]
         if task == "start":
             try:
-                cmd = "/bin/systemctl start kismet"
+                cmd = "curl -X 'POST' 'http://127.0.0.1:31415/api/v1/system/service/start?name=kismet' -H 'accept: application/json' -d ''"
                 subprocess.run(cmd, shell=True, timeout=10)
                 return redirect(f"{proto}://{base}")
             except:
                 return redirect(f"{proto}://{base}")
         elif task == "stop":
             try:
-                cmd = "/bin/systemctl stop kismet"
+                cmd = "curl -X 'POST' 'http://127.0.0.1:31415/api/v1/system/service/stop?name=kismet' -H 'accept: application/json' -d ''"
                 subprocess.run(cmd, shell=True, timeout=10)
                 return redirect(f"{proto}://{base}")
             except:
