@@ -10,6 +10,7 @@ the main flask app
 
 import logging
 import subprocess
+import requests
 
 from flask import Flask, abort, redirect, request, send_from_directory
 
@@ -134,17 +135,22 @@ def create_app(config_class=Config):
     def start_stop_kismet(task):
         proto = request.host_url.split(":")[0]
         base = request.host.split(":")[0]
+        headers = {
+            'accept': 'application/json',
+            'content-type': 'application/x-www-form-urlencoded',
+        }
+        params = {
+            'name': 'kismet',
+        }
         if task == "start":
             try:
-                cmd = "curl -X 'POST' 'http://127.0.0.1:31415/api/v1/system/service/start?name=kismet' -H 'accept: application/json' -d ''"
-                subprocess.run(cmd, shell=True, timeout=10)
+                requests.post('http://127.0.0.1:31415/api/v1/system/service/start', params=params, headers=headers)
                 return redirect(f"{proto}://{base}")
             except:
                 return redirect(f"{proto}://{base}")
         elif task == "stop":
             try:
-                cmd = "curl -X 'POST' 'http://127.0.0.1:31415/api/v1/system/service/stop?name=kismet' -H 'accept: application/json' -d ''"
-                subprocess.run(cmd, shell=True, timeout=10)
+                requests.post('http://127.0.0.1:31415/api/v1/system/service/stop', params=params, headers=headers)
                 return redirect(f"{proto}://{base}")
             except:
                 return redirect(f"{proto}://{base}")

@@ -8,12 +8,18 @@
 
 blinker==1.6.2
     # via flask
-click==8.1.6
+certifi==2023.7.22
+    # via requests
+charset-normalizer==3.2.0
+    # via requests
+click==8.1.7
     # via flask
-flask==2.3.2
+flask==2.3.3
     # via -r requirements.in
 gunicorn==21.2.0
     # via -r requirements.in
+idna==3.4
+    # via requests
 importlib-metadata==6.8.0
     # via flask
 itsdangerous==2.1.2
@@ -28,7 +34,11 @@ packaging==23.1
     # via gunicorn
 psutil==5.9.5
     # via -r requirements.in
-werkzeug==2.3.6
+requests==2.31.0
+    # via -r requirements.in
+urllib3==2.0.4
+    # via requests
+werkzeug==2.3.7
     # via flask
 zipp==3.16.2
     # via importlib-metadata
