@@ -133,8 +133,6 @@ def create_app(config_class=Config):
 
     @app.route("/<task>kismet")
     def start_stop_kismet(task):
-        proto = request.host_url.split(":")[0]
-        base = request.host.split(":")[0]
         headers = {
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",
