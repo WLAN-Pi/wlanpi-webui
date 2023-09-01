@@ -12,7 +12,7 @@ function unlink_if_existing() {
 unlink_if_existing /etc/nginx/nginx.conf
 unlink_if_existing /etc/nginx/sites-enabled/wlanpi_librespeed.conf
 unlink_if_existing /etc/nginx/sites-enabled/wlanpi_webui.conf
-unlink_if_existing /opt/wlanpi-core/workingdirectory
+unlink_if_existing /opt/wlanpi-webui/workingdirectory
 
 GARBAGE=/var/www/librespeed/librespeed/garbage.dat
 

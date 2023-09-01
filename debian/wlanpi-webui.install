@@ -4,3 +4,5 @@
 /install/etc/nginx/link.sh /etc/wlanpi-webui/scripts
 /install/etc/nginx/unlink.sh /etc/wlanpi-webui/scripts
 /install/etc/nginx/fixpermissions.sh /etc/wlanpi-webui/scripts
+/install/etc/cockpit/cockpit.conf /etc/cockpit
+/install/etc/grafana/grafana.ini /etc/grafana

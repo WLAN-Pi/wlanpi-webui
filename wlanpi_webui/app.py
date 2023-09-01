@@ -149,9 +149,9 @@ def create_app(config_class=Config):
                     params=params,
                     headers=headers,
                 )
-                return redirect(f"{proto}://{base}")
+                return redirect(request.referrer)
             except:
-                return redirect(f"{proto}://{base}")
+                return redirect(request.referrer)
         elif task == "stop":
             try:
                 requests.post(
@@ -159,14 +159,9 @@ def create_app(config_class=Config):
                     params=params,
                     headers=headers,
                 )
-                return redirect(f"{proto}://{base}")
+                return redirect(request.referrer)
             except:
-                return redirect(f"{proto}://{base}")
-
-    # @app.route("/terminal")
-    # def terminal():
-    #     base = request.host.split(":")[0]
-    #     return redirect(f"http://{base}/app/admin/system/terminal")
+                return redirect(request.referrer)
 
     @app.route("/static/img/<path:filename>")
     def img(filename):
