@@ -92,7 +92,7 @@ def create_app(config_class=Config):
             cmd = "/bin/systemctl is-active --quiet kismet"
             subprocess.run(cmd, shell=True).check_returncode()
         except:
-            # cmd failed, so kismit service not installed
+            # cmd failed, so Kismet service not installed
             return False
 
         return True
