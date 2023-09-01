@@ -10,8 +10,8 @@ the main flask app
 
 import logging
 import subprocess
-import requests
 
+import requests
 from flask import Flask, abort, redirect, request, send_from_directory
 
 from wlanpi_webui.config import Config
@@ -136,21 +136,29 @@ def create_app(config_class=Config):
         proto = request.host_url.split(":")[0]
         base = request.host.split(":")[0]
         headers = {
-            'accept': 'application/json',
-            'content-type': 'application/x-www-form-urlencoded',
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
         }
         params = {
-            'name': 'kismet',
+            "name": "kismet",
         }
         if task == "start":
             try:
-                requests.post('http://127.0.0.1:31415/api/v1/system/service/start', params=params, headers=headers)
+                requests.post(
+                    "http://127.0.0.1:31415/api/v1/system/service/start",
+                    params=params,
+                    headers=headers,
+                )
                 return redirect(f"{proto}://{base}")
             except:
                 return redirect(f"{proto}://{base}")
         elif task == "stop":
             try:
-                requests.post('http://127.0.0.1:31415/api/v1/system/service/stop', params=params, headers=headers)
+                requests.post(
+                    "http://127.0.0.1:31415/api/v1/system/service/stop",
+                    params=params,
+                    headers=headers,
+                )
                 return redirect(f"{proto}://{base}")
             except:
                 return redirect(f"{proto}://{base}")
