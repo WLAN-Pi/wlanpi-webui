@@ -73,6 +73,13 @@ if ! isValidSymlink $WLANPI_WEBUI; then
     CONF_CHANGED=0
 fi
 
+if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ]; then
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+        -nodes -keyout /etc/nginx/ssl/self-signed-wlanpi.key -out /etc/nginx/ssl/self-signed-wlanpi.cert \
+        -subj "/CN=wlanpi.local/O=wlanpi/OU=wlanpi"
+    CONF_CHANGED=0
+fi
+
 # if we changed a nginx config file, test config, and restart nginx.
 if [ $CONF_CHANGED -eq 0 ]; then
     # check nginx actually exists first
