@@ -92,6 +92,8 @@ def create_app(config_class=Config):
             "profiler_message": systemd_service_message("wlanpi-profiler"),
             "kismet_message": systemd_service_message("kismet"),
             "kismet_status": systemd_service_status("kismet"),
+            "grafana_message": systemd_service_message("grafana-server"),
+            "grafana_status": systemd_service_status("grafana-server"),
         }
 
     @app.route("/static/img/<path:filename>")

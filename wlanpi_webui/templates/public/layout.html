@@ -109,7 +109,14 @@
                       </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA</a></li>
+                <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA</a>
+                  <div class="uk-navbar-dropdown">
+                      <ul class="uk-nav uk-navbar-dropdown-nav">
+                          <li class="uk-nav-header">{{ grafana_message }}</li>
+                          <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA-SERVER' if grafana_status else 'START GRAFANA-SERVER' }}</a></li>
+                      </ul>
+                  </div>
+                </li>
                 <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">COCKPIT</a></li>
                 <li><a href="{{ url_for('about.about') }}" style="color: white;">ABOUT</a></li>
               </ul>
