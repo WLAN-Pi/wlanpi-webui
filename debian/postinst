@@ -21,17 +21,17 @@ function isValidSymlink() {
 PYTHONSTUB=`python3 -V 2>&1 | sed 's/ //g' | grep -oP '(\w+\.\d+)' | tr 'P' 'p'`
 
 # the actual target working directory (this is a workaround so we can support multiple Python versions at build)
-THE_REAL_DIRECTORY=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
+SOURCE_DIR=/opt/wlanpi-webui/lib/$PYTHONSTUB/site-packages/wlanpi_webui
 
 # this is the parent directory which holds our linked working directory
-TARGET_PARENT_DIRECTORY=/opt/wlanpi-webui/workingdirectory
+LINK_DIR=/opt/wlanpi-webui/workingdirectory
 
 # this is the path that we need to check if is already a link
-TARGET_PATH=/opt/wlanpi-webui/workingdirectory/wlanpi_webui
+TEST_PATH=/opt/wlanpi-webui/workingdirectory/wlanpi_webui
 
 # if link doesn't exist, create it
-if ! isValidSymlink $TARGET_PATH; then
-    ln -s $THE_REAL_DIRECTORY $TARGET_PARENT_DIRECTORY
+if ! isValidSymlink $TEST_PATH; then
+    ln -s $SOURCE_DIR $LINK_DIR
 fi
 
 CONF_CHANGED=1
@@ -45,7 +45,7 @@ if ! isValidSymlink $NGINX_CONF; then
         echo "Existing nginx.conf detected; backing it up and moving it to $NEW_CONF..."
         mv $NGINX_CONF $NEW_CONF
     fi
-    echo "Linking our nginx.conf config..."
+    echo "Linking our nginx.conf config ..."
     ln -s /etc/wlanpi-webui/nginx/nginx.conf $NGINX_CONF
     CONF_CHANGED=0
 fi
@@ -60,7 +60,7 @@ fi
 # if wlanpi_librespeed.conf is not a symlink, create symlink.
 WLANPI_LIBRESPEED=/etc/nginx/sites-enabled/wlanpi_librespeed.conf
 if ! isValidSymlink $WLANPI_LIBRESPEED; then
-    echo "Linking wlanpi_librespeed.conf..."
+    echo "Linking wlanpi_librespeed.conf ..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_librespeed.conf $WLANPI_LIBRESPEED
     CONF_CHANGED=0
 fi
@@ -68,8 +68,15 @@ fi
 # if wlanpi_webui.conf is not a symlink, create symlink.
 WLANPI_WEBUI=/etc/nginx/sites-enabled/wlanpi_webui.conf
 if ! isValidSymlink $WLANPI_WEBUI; then
-    echo "Linking wlanpi_webui.conf..."
+    echo "Linking wlanpi_webui.conf ..."
     ln -s /etc/wlanpi-webui/nginx/sites-enabled/wlanpi_webui.conf $WLANPI_WEBUI
+    CONF_CHANGED=0
+fi
+
+if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ]; then
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+        -nodes -keyout /etc/nginx/ssl/self-signed-wlanpi.key -out /etc/nginx/ssl/self-signed-wlanpi.cert \
+        -subj "/CN=wlanpi.local/O=wlanpi/OU=wlanpi"
     CONF_CHANGED=0
 fi
 
@@ -77,20 +84,20 @@ fi
 if [ $CONF_CHANGED -eq 0 ]; then
     # check nginx actually exists first
     if which nginx; then
-        nginx -t
-        systemctl restart nginx.service
+        echo "Restarting nginx ..."
+        deb-systemd-invoke restart nginx.service
     fi
 fi
 
 # generate garbage.dat file
-GARBAGE=/var/www/librespeed/librespeed/garbage.dat
-GARBAGE_PARENT_DIR=/var/www/librespeed/librespeed
+GARBAGE=/var/www/librespeed/data/garbage.dat
+GARBAGE_PARENT_DIR=/var/www/librespeed/data
 if [ ! -d $GARBAGE_PARENT_DIR ]; then
     mkdir $GARBAGE_PARENT_DIR
 fi
 
 if [ ! -f $GARBAGE ]; then
-    echo "Creating 10 MB garbage.dat for librespeed..."
+    echo "Creating 10 MB garbage.dat for librespeed ..."
     dd if=/dev/urandom of=$GARBAGE bs=10485760 count=1
 fi
 
@@ -98,5 +105,11 @@ fi
 if [ -d /var/www/librespeed ]; then
     chown -R www-data:www-data /var/www/librespeed
 fi
+
+echo "Restarting cockpit ..."
+deb-systemd-invoke restart cockpit.service
+
+echo "Restarting wlanpi-core ..."
+deb-systemd-invoke restart wlanpi-core.service
 
 exit 0

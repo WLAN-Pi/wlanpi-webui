@@ -15,10 +15,10 @@ s.setParameter("test_order","IP_D_U"); // order tests are performed
 s.setParameter("time_dl_max",15); //num seconds for the download test
 s.setParameter("time_ul_max",15); //num seconds for the upload test
 s.setParameter("count_ping",35); //how many pings to perform. this measures XHR NOT ICMP!
-s.setParameter("url_dl","librespeed/garbage.dat");
-s.setParameter("url_ul","librespeed/empty.dat");
-s.setParameter("url_ping","librespeed/empty.dat");
-s.setParameter("url_getIp","librespeed/getip");
+s.setParameter("url_dl","data/garbage.dat");
+s.setParameter("url_ul","data/empty.dat");
+s.setParameter("url_ping","data/empty.dat");
+// s.setParameter("url_getIp","getip");
 s.setParameter("getIp_ispInfo",false);
 s.setParameter("enable_quirks",true);
 s.setParameter("overheadCompensationFactor",1); // 1 = raw performance                                       
@@ -95,11 +95,6 @@ function updateUI(forced){
 	if(!forced&&s.getState()!=3) return;
 	if(uiData==null) return;
 	var status=uiData.testState;
-	if (uiData.clientIp.length != 0) {
-		I("ip").textContent="Client IP: " + uiData.clientIp;
-	} else {
-		I("ip").textContent=""
-	}
 	I("dlText").textContent=(status==1&&uiData.dlStatus==0)?"...":format(uiData.dlStatus);
 	drawMeter(I("dlMeter"),mbpsToAmount(Number(uiData.dlStatus*(status==1?oscillate():1))),meterBk,dlColor,Number(uiData.dlProgress),progColor);
 	I("ulText").textContent=(status==3&&uiData.ulStatus==0)?"...":format(uiData.ulStatus);
@@ -239,6 +234,7 @@ function initUI(){
 <title>WLAN Pi: LibreSpeed</title>
 </head>
 <body>
+<br />
 <div>
 	<div id="startStopBtn" onclick="startStop()"></div>
         <div class="testGroup">

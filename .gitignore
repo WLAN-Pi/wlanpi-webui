@@ -8,6 +8,7 @@ __pycache__/
 
 # flask
 app.log
+app.log*
 
 # dpkg ignores
 
@@ -22,6 +23,7 @@ debian/.debhelper/
 debian/files
 debian/wlanpi-webui.postrm.debhelper
 debian/wlanpi-webui.postinst.debhelper
+debian/wlanpi-webui.prerm.debhelper
 debian/wlanpi-webui.substvars
 debian/wlanpi-webui/
 

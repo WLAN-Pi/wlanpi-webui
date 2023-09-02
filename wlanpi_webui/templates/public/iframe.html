@@ -2,7 +2,9 @@
 {% block content %}
 <div class="uk-flex uk-flex-1 uk-dark uk-background-muted">
     <div class="uk-flex uk-flex-1 uk-cover-container">
-        <iframe class="uk-cover" style="pointer-events: all;" src="{{ iframe }}" height="100%" width="100%"></iframe>
+        {% autoescape false %}
+        {{ iframe }}
+        {% endautoescape %}
     </div>
 </div>
 {% endblock %}

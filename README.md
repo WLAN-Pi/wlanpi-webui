@@ -3,9 +3,6 @@
 
 wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/WLAN-Pi).
 
-## Authors
-
-- [@joshschmelzle](https://www.github.com/joshschmelzle)
 ## OSS
 
  - [flask](https://github.com/pallets/flask)
@@ -30,9 +27,11 @@ CSS:
 
 ## Ports
 
-- `:80` - flask (main WSGI app)
-- `:8080` - speedtest (html5 speedtest based on LibreSpeed)
+- `:80` - redirect to 443 
+- `:443` - flask (main WSGI app)
+- `:4433` - speedtest (html5 speedtest based on LibreSpeed)
 - `:9090` - cockpit (installed separately and handled by the WLAN Pi image build process)
+- `:3000` - grafana (installed separately and handled by the WLAN Pi image build process)
 - `:2501` - kismet (installed separately and handled by the WLAN Pi image build process)
 
 ## Run Package On WLAN Pi
@@ -98,7 +97,7 @@ Install dependencies
 Starting the development server
 
 ```bash
-  gunicorn wlanpi_webui.wsgi:app
+  gunicorn wlanpi_webui.wsgi:app --bind 0.0.0.0
 ```
 
 ## Build Locally (Development)

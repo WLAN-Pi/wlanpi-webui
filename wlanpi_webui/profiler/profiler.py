@@ -5,8 +5,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from flask import (abort, current_app, render_template, request, safe_join,
-                   send_file)
+from flask import abort, current_app, render_template, request, send_file
+from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp
 
@@ -235,10 +235,6 @@ def purge():
         listing = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
     return render_template(
         "public/profiler.html",
-        hostname=current_app.config["HOSTNAME"],
-        title=current_app.config["TITLE"],
-        wlanpi_version=current_app.config["WLANPI_VERSION"],
-        webui_version=current_app.config["WEBUI_VERSION"],
         content=listing,
     )
 
@@ -254,10 +250,6 @@ def profiler():
         _content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
     return render_template(
         "public/profiler.html",
-        hostname=current_app.config["HOSTNAME"],
-        title=current_app.config["TITLE"],
-        wlanpi_version=current_app.config["WLANPI_VERSION"],
-        webui_version=current_app.config["WEBUI_VERSION"],
         content=_content,
     )
 

@@ -1,3 +1,11 @@
+wlanpi-webui (1.1.6-1) stable; urgency=medium
+
+  * Start / stop Kismet from UI via wlanpi-core
+  * Proxy changes for Grafana and Cockpit
+  * Footer removed and content moved to dedicated about page
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 01 Sep 2023 12:48:32 -0500
+
 wlanpi-webui (1.1.5-2) stable; urgency=medium
 
   * add nav link to kismet page
