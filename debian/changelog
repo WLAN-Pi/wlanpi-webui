@@ -1,8 +1,12 @@
 wlanpi-webui (1.1.6-3) stable; urgency=medium
 
-  * Start / stop Kismet from UI via wlanpi-core
+  * Start / stop services like Kismet, Grafana, and Cockpit from UI via wlanpi-core
   * Proxy changes for Grafana and Cockpit
-  * Footer removed and content moved to dedicated about page
+  * Remove footer and move content to dedicated About page
+  * Streaming system stats under navbar
+  * Move from http to https
+  
+  Thanks Orbitix for contributing to this release.
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 01 Sep 2023 12:48:32 -0500
 
