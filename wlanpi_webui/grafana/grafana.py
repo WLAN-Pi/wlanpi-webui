@@ -8,11 +8,11 @@ from wlanpi_webui.utils import service_down, systemd_service_status
 def grafana():
     base = request.host.split(":")[0]
     current_app.logger.info(
-        f'systemd_service_status: {systemd_service_status("grafana")}'
+        f'systemd_service_status: {systemd_service_status("grafana-server")}'
     )
-    status = systemd_service_status("grafana")
+    status = systemd_service_status("grafana-server")
     iframe = f'<iframe class="uk-cover" style="pointer-events: all;" src="https://{base}/app/grafana" height="100%" width="100%"></iframe>'
-    unavailable = service_down("grafana")
+    unavailable = service_down("grafana-server")
     if status:
         return render_template("/public/iframe.html", iframe=iframe)
     else:
