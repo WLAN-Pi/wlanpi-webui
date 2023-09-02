@@ -9,12 +9,11 @@ the main flask app
 """
 
 import logging
-import subprocess
 
-import requests
-from flask import Flask, abort, redirect, request, send_from_directory
+from flask import Flask, abort, request, send_from_directory
 
 from wlanpi_webui.config import Config
+from wlanpi_webui.utils import systemd_service_message, systemd_service_status
 
 
 def create_app(config_class=Config):
@@ -82,36 +81,6 @@ def create_app(config_class=Config):
     app.register_blueprint(about_bp)
     app.logger.debug("about blueprint registered")
 
-    def kismet_status():
-        """
-        Checks the status of the Kismet service.
-        Returns true if Kismet is running, false otherwise.
-        """
-        try:
-            # this cmd fails if service not installed
-            cmd = "/bin/systemctl is-active --quiet kismet"
-            subprocess.run(cmd, shell=True).check_returncode()
-        except:
-            # cmd failed, so Kismet service not installed
-            return False
-
-        return True
-
-    def kismet_message():
-        """
-        Checks if Kismet is running.
-        Returns 'Kismet is running' if it is, and 'Kismet is not running' if not.
-        """
-        status = kismet_status()
-        if status:
-            return "Kismet is running"
-        else:
-            return "Kismet is not running"
-
-    @app.route("/service-unavailable")
-    def service_down():
-        return "<html><p>Service unavailable. Please start it on the device.</p></html>"
-
     @app.context_processor
     def inject_vars():
         base = request.host.split(":")[0]
@@ -120,46 +89,10 @@ def create_app(config_class=Config):
             "wlanpi_version": Config.WLANPI_VERSION,
             "webui_version": Config.WEBUI_VERSION,
             "title": Config.TITLE,
-            "cockpit_iframe": f"https://{base}/app/cockpit",
-            "kismet_iframe": (
-                f"https://{base}/app/kismet"
-                if kismet_status()
-                else f"https://{base}/service-unavailable"
-            ),
-            "grafana_iframe": f"https://{base}:3000/app/grafana",
-            "kismet_message": f"{kismet_message()}",
-            "kismet_status": kismet_status(),
+            "profiler_message": systemd_service_message("wlanpi-profiler"),
+            "kismet_message": systemd_service_message("kismet"),
+            "kismet_status": systemd_service_status("kismet"),
         }
-
-    @app.route("/<task>kismet")
-    def start_stop_kismet(task):
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/x-www-form-urlencoded",
-        }
-        params = {
-            "name": "kismet",
-        }
-        if task == "start":
-            try:
-                requests.post(
-                    "http://127.0.0.1:31415/api/v1/system/service/start",
-                    params=params,
-                    headers=headers,
-                )
-                return redirect(request.referrer)
-            except:
-                return redirect(request.referrer)
-        elif task == "stop":
-            try:
-                requests.post(
-                    "http://127.0.0.1:31415/api/v1/system/service/stop",
-                    params=params,
-                    headers=headers,
-                )
-                return redirect(request.referrer)
-            except:
-                return redirect(request.referrer)
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

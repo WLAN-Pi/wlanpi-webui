@@ -92,6 +92,7 @@
                   <a href="{{ url_for('profiler.profiler') }}" style="color: white;">PROFILER</a>
                   <div class="uk-navbar-dropdown">
                     <ul class="uk-nav uk-navbar-dropdown-nav">
+                      <li class="uk-nav-header">{{ profiler_message }}</li>
                       <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
                       <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA</a></li>
                     </ul>
@@ -103,8 +104,8 @@
                   <div class="uk-navbar-dropdown">
                       <ul class="uk-nav uk-navbar-dropdown-nav">
                           <li class="uk-nav-header">{{ kismet_message }}</li>
-                          <li><a href="{{ url_for('start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'Stop' if kismet_status else 'Start' }}</a></li>
-                          <li><a class="uk-link" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};" href="{{ url_for('kismet.kismet') }}">Open Kismet</a></li>
+                          <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'STOP KISMET' if kismet_status else 'START KISMET' }}</a></li>
+                          <li><a class="uk-link" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};" href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
                       </ul>
                   </div>
                 </li>
