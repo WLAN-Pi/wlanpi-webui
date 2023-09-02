@@ -74,6 +74,7 @@ if ! isValidSymlink $WLANPI_WEBUI; then
 fi
 
 if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ]; then
+    mkdir -p /etc/nginx/ssl
     openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
         -nodes -keyout /etc/nginx/ssl/self-signed-wlanpi.key -out /etc/nginx/ssl/self-signed-wlanpi.cert \
         -subj "/CN=wlanpi.local/O=wlanpi/OU=wlanpi"
@@ -93,7 +94,7 @@ fi
 GARBAGE=/var/www/librespeed/data/garbage.dat
 GARBAGE_PARENT_DIR=/var/www/librespeed/data
 if [ ! -d $GARBAGE_PARENT_DIR ]; then
-    mkdir $GARBAGE_PARENT_DIR
+    mkdir -p $GARBAGE_PARENT_DIR
 fi
 
 if [ ! -f $GARBAGE ]; then
