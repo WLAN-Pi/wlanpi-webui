@@ -1,8 +1,14 @@
-from flask import current_app, render_template, request
+from flask import current_app, redirect, render_template, request
 
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (service_down, start_stop_service,
                                 systemd_service_status)
+
+
+@bp.route("/grafana_url")
+def grafana_url():
+    base = request.host.split(":")[0]
+    return redirect(f"http://{base}/app/grafana", code=302)
 
 
 @bp.route("/grafana")

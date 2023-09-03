@@ -73,6 +73,7 @@
                       <ul class="uk-nav uk-navbar-dropdown-nav">
                           <li class="uk-nav-header">{{ grafana_message }}</li>
                           <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
+                          <li><a class="uk-link" style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};" href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
                       </ul>
                   </div>
                 </li>
