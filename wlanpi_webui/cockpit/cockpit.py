@@ -10,6 +10,7 @@ def cockpit():
     iframe = f'<iframe class="uk-cover" style="pointer-events: all;" src="https://{base}/app/cockpit" height="100%" width="100%"></iframe>'
     return render_template("/public/iframe.html", iframe=iframe)
 
+
 @bp.route("/<task>cockpit")
 def start_stop_cockpit(task):
     return start_stop_service(task, "cockpit")

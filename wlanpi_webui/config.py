@@ -10,6 +10,7 @@ globals that will be passed around the app
 
 import os
 import socket
+import subprocess
 
 import psutil
 
@@ -61,9 +62,20 @@ def get_wlanpi_version() -> str:
     return wlanpi_version
 
 
+def get_wlanpi_core_version() -> str:
+    """Retrieve wlanpi-core version from"""
+    wlanpi_core_version = ""
+    cmd = "apt-cache policy wlanpi-core"
+    apt_cache = subprocess.check_output(cmd, shell=True).decode()
+    for match in apt_cache.lower().split("\n"):
+        if "installed" in match:
+            wlanpi_core_version = match
+            break
+    wlanpi_core_version = wlanpi_core_version.split(":")[1].strip()
+    return wlanpi_core_version
+
+
 class Config(object):
-    HOSTNAME = get_hostname()
-    TITLE = f"WLAN Pi: {HOSTNAME}"
     WLANPI_VERSION = get_wlanpi_version()
     WEBUI_VERSION = f"{__version__}"
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")

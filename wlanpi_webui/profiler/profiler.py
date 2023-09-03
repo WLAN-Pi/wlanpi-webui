@@ -266,6 +266,7 @@ def get_profiler_results(filename):
     except IsADirectoryError:
         abort(405)
 
+
 @bp.route("/<task>profiler")
 def start_stop_profiler(task):
     return start_stop_service(task, "wlanpi-profiler")

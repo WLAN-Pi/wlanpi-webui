@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.6-5) stable; urgency=medium
+wlanpi-webui (1.1.6-6) stable; urgency=medium
 
   * Start / stop services like Kismet, Grafana, and Profiler from UI via wlanpi-core
   * Remove footer and move content to dedicated About page

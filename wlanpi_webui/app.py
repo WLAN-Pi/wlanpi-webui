@@ -12,7 +12,7 @@ import logging
 
 from flask import Flask, abort, request, send_from_directory
 
-from wlanpi_webui.config import Config
+from wlanpi_webui.config import Config, get_hostname
 from wlanpi_webui.utils import systemd_service_message, systemd_service_status
 
 
@@ -85,10 +85,7 @@ def create_app(config_class=Config):
     def inject_vars():
         base = request.host.split(":")[0]
         return {
-            "hostname": Config.HOSTNAME,
-            "wlanpi_version": Config.WLANPI_VERSION,
-            "webui_version": Config.WEBUI_VERSION,
-            "title": Config.TITLE,
+            "title": f"WLAN Pi: {get_hostname()}",
             "profiler_message": systemd_service_message("wlanpi-profiler"),
             "profiler_status": systemd_service_status("wlanpi-profiler"),
             "kismet_message": systemd_service_message("kismet"),
