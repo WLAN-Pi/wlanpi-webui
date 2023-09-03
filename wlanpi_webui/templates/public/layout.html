@@ -93,6 +93,7 @@
                   <div class="uk-navbar-dropdown">
                     <ul class="uk-nav uk-navbar-dropdown-nav">
                       <li class="uk-nav-header">{{ profiler_message }}</li>
+                      <li><a href="{{ url_for('profiler.start_stop_profiler', task='stop' if profiler_status else 'start') }}">{{ 'STOP PROFILER' if profiler_status else 'START PROFILER' }}</a></li>
                       <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
                       <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA</a></li>
                     </ul>
@@ -113,7 +114,7 @@
                   <div class="uk-navbar-dropdown">
                       <ul class="uk-nav uk-navbar-dropdown-nav">
                           <li class="uk-nav-header">{{ grafana_message }}</li>
-                          <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA-SERVER' if grafana_status else 'START GRAFANA-SERVER' }}</a></li>
+                          <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
                       </ul>
                   </div>
                 </li>

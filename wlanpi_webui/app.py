@@ -90,6 +90,7 @@ def create_app(config_class=Config):
             "webui_version": Config.WEBUI_VERSION,
             "title": Config.TITLE,
             "profiler_message": systemd_service_message("wlanpi-profiler"),
+            "profiler_status": systemd_service_status("wlanpi-profiler"),
             "kismet_message": systemd_service_message("kismet"),
             "kismet_status": systemd_service_status("kismet"),
             "grafana_message": systemd_service_message("grafana-server"),

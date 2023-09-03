@@ -9,6 +9,7 @@ from flask import abort, current_app, render_template, request, send_file
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp
+from wlanpi_webui.utils import start_stop_service
 
 
 class ProfileResultType(Enum):
@@ -264,3 +265,7 @@ def get_profiler_results(filename):
         abort(404)
     except IsADirectoryError:
         abort(405)
+
+@bp.route("/<task>profiler")
+def start_stop_profiler(task):
+    return start_stop_service(task, "wlanpi-profiler")

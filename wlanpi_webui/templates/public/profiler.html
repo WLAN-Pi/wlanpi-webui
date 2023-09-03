@@ -11,8 +11,10 @@
                 <p>Starting the profiler system process:</p>
                 <ul class="uk-list uk-list-hyphen">
                   <li>Install a supported WLAN NIC into the WLAN Pi.</li>
-                  <li>Start the profiler process using the Front Panel Menu System (FPMS).</li>
-                  <li><kbd>Menu &gt; Apps &gt; Profiler &gt; Start</kbd></li>
+                  <li>There are a few different ways to start profiler: WebUI, FPMS, or CLI.</li>
+                  <li>Webui: Start the profiler process by tapping <kbd>START PROFILER</kbd> on the profiler dropdown nav.</li>
+                  <li>FPMS: Start the profiler process by navigating the Front Panel Menu System: <kbd>Menu &gt; Apps &gt; Profiler &gt; Start</kbd></li>
+                  <li>CLI: Run profiler manually as a power user: <kbd>$ profiler -h</kbd>to print usage.</li>
                 </ul>
                 <p>Profiling a client:</p>
                 <ul class="uk-list uk-list-hyphen">
@@ -21,11 +23,6 @@
                 <li>The client will expectedly fail authentication but we should receive the association request.</li>
                 </ul>
                 <p>After associating a client to the profiler SSID, refresh this page to view the result.</p>
-                <p>Power users:</p>
-                <ul class="uk-list uk-list-hyphen">
-                  <li>You can also run profiler from the terminal on this device.</li>
-                  <li>Run <kbd>$ profiler -h</kbd>to print usage.</li>
-                </ul>
               </div>
             </li>
           </ul>
