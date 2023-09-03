@@ -32,46 +32,6 @@
     </style>
     <!--/HANDLE MOBILE-->
 
-
-    <script>
-      function loadXMLDoc()
-      {
-          var ip_text = document.getElementById("ip_addr");
-          var cpu_text = document.getElementById("cpu");
-          var cputemp_text = document.getElementById("cputemp");
-          var ram_text = document.getElementById("ram");
-          var storage_text = document.getElementById("storage");
-          var uptime_text = document.getElementById("uptime");
-          
-          if (window.XMLHttpRequest)
-          {// code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
-              xmlhttp=new XMLHttpRequest();
-          }
-          else
-          {// code for IE6, IE5
-              xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-          }
-          xmlhttp.onreadystatechange=function()
-          {
-              if (xmlhttp.readyState==4 && xmlhttp.status==200)
-              {
-                  data = JSON.parse(xmlhttp.responseText)
-                  ip_text.innerHTML = data["IP"]
-                  cpu_text.innerHTML = data["CPU"]
-                  cputemp_text.innerHTML = data["CPU_TEMP"]
-                  ram_text.innerHTML = data["RAM"]
-                  storage_text.innerHTML = data["DISK"]
-                  uptime_text.innerHTML = data["UPTIME"]
-  
-              }
-          }
-          xmlhttp.open("GET", "{{ url_for('stream.stream') }}", false);
-          xmlhttp.send();
-  
-      }
-      setInterval(loadXMLDoc, 2000);
-    </script>
-
     <div id="thebiglebowski" class="uk-flex uk-flex-column">
       <!--HEADER-->
       <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
@@ -191,6 +151,40 @@
     </div>
     <!--/OFFCANVAS-->
     <!--JS FILES-->
+
+    <script>
+    function updateStats() {
+        var ip_text = document.getElementById("ip_addr");
+        var cpu_text = document.getElementById("cpu");
+        var cputemp_text = document.getElementById("cputemp");
+        var ram_text = document.getElementById("ram");
+        var storage_text = document.getElementById("storage");
+        var uptime_text = document.getElementById("uptime");
+
+        if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
+            xmlhttp = new XMLHttpRequest();
+        } else { // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                data = JSON.parse(xmlhttp.responseText)
+                ip_text.innerHTML = data["IP"]
+                cpu_text.innerHTML = data["CPU"]
+                cputemp_text.innerHTML = data["CPU_TEMP"]
+                ram_text.innerHTML = data["RAM"]
+                storage_text.innerHTML = data["DISK"]
+                uptime_text.innerHTML = data["UPTIME"]
+
+            }
+        }
+        xmlhttp.open("GET", "{{ url_for('stream.stream') }}", false);
+        xmlhttp.send();
+
+    }
+    updateStats()
+    setInterval(updateStats, 2000);
+    </script>
     <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
     <!--/JS FILES-->
