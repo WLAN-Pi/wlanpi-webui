@@ -84,7 +84,7 @@ if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ]; then
     /bin/cp /etc/nginx/ssl/self-signed-wlanpi.key /etc/cockpit/ws-certs.d/0-self-signed-wlanpi.key
     /bin/cp /etc/nginx/ssl/self-signed-wlanpi.cert /etc/cockpit/ws-certs.d/0-self-signed-wlanpi.cert
     /bin/cp /etc/nginx/ssl/self-signed-wlanpi.key /etc/nginx/ssl/self-signed-grafana.key
-    /bin/cp /etc/nginx/ssl/self-signed-wlanpi.cert /etc/nginx/ssl/self-signed-wlanpi.cert
+    /bin/cp /etc/nginx/ssl/self-signed-wlanpi.cert /etc/nginx/ssl/self-signed-grafana.cert
     chmod 654 /etc/nginx/ssl/self-signed-grafana.cert
     chmod 650 /etc/nginx/ssl/self-signed-grafana.key
     getent group grafana || groupadd grafana
