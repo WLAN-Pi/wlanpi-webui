@@ -92,8 +92,6 @@ def create_app(config_class=Config):
             "profiler_message": systemd_service_message("wlanpi-profiler"),
             "kismet_message": systemd_service_message("kismet"),
             "kismet_status": systemd_service_status("kismet"),
-            "cockpit_message": systemd_service_message("cockpit"),
-            "cockpit_status": systemd_service_status("cockpit"),
             "grafana_message": systemd_service_message("grafana-server"),
             "grafana_status": systemd_service_status("grafana-server"),
         }

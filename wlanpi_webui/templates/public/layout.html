@@ -117,14 +117,7 @@
                       </ul>
                   </div>
                 </li>
-                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">COCKPIT</a>
-                  <div class="uk-navbar-dropdown">
-                    <ul class="uk-nav uk-navbar-dropdown-nav">
-                        <li class="uk-nav-header">{{ cockpit_message }}</li>
-                        <li><a href="{{ url_for('cockpit.start_stop_cockpit', task='stop' if cockpit_status else 'start') }}">{{ 'STOP COCKPIT' if cockpit_status else 'START COCKPIT' }}</a></li>
-                    </ul>
-                </div>
-                </li>
+                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">COCKPIT</a></li>
                 <li><a href="{{ url_for('about.about') }}" style="color: white;">ABOUT</a></li>
               </ul>
             </div>
