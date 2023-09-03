@@ -9,4 +9,4 @@ Keepers
 Patches and Suggestions
 ```````````````````````
 
-- First Last `@handle <https://github.com/handle>`_.
+- Orbitix `@Orbitix <https://github.com/Orbitix>` _.
