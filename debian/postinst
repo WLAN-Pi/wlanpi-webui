@@ -73,7 +73,7 @@ if ! isValidSymlink $WLANPI_WEBUI; then
     CONF_CHANGED=0
 fi
 
-if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ]; then
+if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ] || [ ! -f /etc/nginx/ssl/self-signed-grafana.cert ] || [ ! -f /etc/cockpit/ws-certs.d/0-self-signed-wlanpi.cert ]; then
     mkdir -p /etc/nginx/ssl
     mkdir -p /etc/cockpit/ws-certs.d
     openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
@@ -99,7 +99,6 @@ if [ $CONF_CHANGED -eq 0 ]; then
     if which nginx; then
         echo "Restarting nginx ..."
         deb-systemd-invoke restart nginx.service
-        deb-systemd-invoke restart wlanpi-webui.service
     fi
 fi
 
