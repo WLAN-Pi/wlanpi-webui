@@ -62,22 +62,58 @@ def get_wlanpi_version() -> str:
     return wlanpi_version
 
 
-def get_wlanpi_core_version() -> str:
-    """Retrieve wlanpi-core version from"""
-    wlanpi_core_version = ""
-    cmd = "apt-cache policy wlanpi-core"
+def get_apt_package_version(package) -> str:
+    """Retrieve apt package version from apt-cache policy
+
+    Installed example:
+        $ apt-cache policy wlanpi-webui
+        wlanpi-webui:
+        Installed: 1.1.6-5
+        Candidate: 1.1.6-5
+        Version table:
+        *** 1.1.6-5 500
+                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
+                100 /var/lib/dpkg/status
+            1.1.6-4 500
+                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
+
+    Not installed example:
+        $ apt-cache policy wlanpi-webui
+        wlanpi-webui:
+        Installed: (none)
+        Candidate: 1.1.6-5
+        Version table:
+            1.1.6-5 500
+                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
+            1.1.6-4 500
+            500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
+    """
+    package_version = ""
+    cmd = f"apt-cache policy {package}"
     apt_cache = subprocess.check_output(cmd, shell=True).decode()
+    hit = False
     for match in apt_cache.lower().split("\n"):
         if "installed" in match:
-            wlanpi_core_version = match
-            break
-    wlanpi_core_version = wlanpi_core_version.split(":")[1].strip()
-    return wlanpi_core_version
+            if "none" not in match:
+                package_version = match
+                hit = True
+                break
+    if hit:
+        package_version = package_version.split(":")[1].strip()
+    return package_version
+
+
+def get_our_package_version() -> str:
+    apt_version = get_apt_package_version("wlanpi-webui")
+    print(f"{apt_version}")
+    if apt_version:
+        return apt_version
+    return f"{__version__}"
 
 
 class Config(object):
     WLANPI_VERSION = get_wlanpi_version()
-    WEBUI_VERSION = f"{__version__}"
+    WEBUI_VERSION = get_our_package_version()
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")
     FILES_ROOT_DIR = "/var/www/html/"
     PROFILER_DIR = "/var/www/html/profiler/"
