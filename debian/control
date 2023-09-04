@@ -19,5 +19,5 @@ Package: wlanpi-webui
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3 (>=3.7), ${misc:Pre-Depends}
 Depends: wlanpi-core
-Recommends: wlanpi-common, wlanpi-profiler, wlanpi-fpms, grafana-server, cockpit
+Recommends: wlanpi-common, wlanpi-profiler, wlanpi-fpms, wlanpi-grafana, cockpit
 Description: WLAN Pi - a web interface
