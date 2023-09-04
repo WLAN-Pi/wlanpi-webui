@@ -4,8 +4,8 @@ import urllib
 from flask import current_app, redirect, render_template, request
 
 from wlanpi_webui.grafana import bp
-from wlanpi_webui.utils import (service_down, start_stop_service,
-                                systemd_service_status)
+from wlanpi_webui.utils import (get_apt_package_version, service_down,
+                                start_stop_service, systemd_service_status)
 
 
 def try_url(url):
@@ -33,6 +33,12 @@ def grafana():
     iframe = f'<iframe class="uk-cover" style="pointer-events: all;" src="{url}" height="100%" width="100%"></iframe>'
     unavailable = service_down("grafana-server")
     return_code = try_url(url)
+    version = get_apt_package_version("grafana")
+    if version == "":
+        return render_template(
+            "/public/service.html",
+            service="Grafana does not appear to be installed.",
+        )
     if return_code == 502:
         return render_template(
             "/public/service.html",

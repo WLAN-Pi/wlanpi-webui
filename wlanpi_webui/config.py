@@ -10,11 +10,11 @@ globals that will be passed around the app
 
 import os
 import socket
-import subprocess
 
 import psutil
 
 from wlanpi_webui.__version__ import __version__
+from wlanpi_webui.utils import get_apt_package_version
 
 
 def get_mac(interface: str) -> str:
@@ -60,47 +60,6 @@ def get_wlanpi_version() -> str:
     except OSError:
         pass
     return wlanpi_version
-
-
-def get_apt_package_version(package) -> str:
-    """Retrieve apt package version from apt-cache policy
-
-    Installed example:
-        $ apt-cache policy wlanpi-webui
-        wlanpi-webui:
-        Installed: 1.1.6-5
-        Candidate: 1.1.6-5
-        Version table:
-        *** 1.1.6-5 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-                100 /var/lib/dpkg/status
-            1.1.6-4 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-
-    Not installed example:
-        $ apt-cache policy wlanpi-webui
-        wlanpi-webui:
-        Installed: (none)
-        Candidate: 1.1.6-5
-        Version table:
-            1.1.6-5 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-            1.1.6-4 500
-            500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-    """
-    package_version = ""
-    cmd = f"apt-cache policy {package}"
-    apt_cache = subprocess.check_output(cmd, shell=True).decode()
-    hit = False
-    for match in apt_cache.lower().split("\n"):
-        if "installed" in match:
-            if "none" not in match:
-                package_version = match
-                hit = True
-                break
-    if hit:
-        package_version = package_version.split(":")[1].strip()
-    return package_version
 
 
 def get_our_package_version() -> str:
