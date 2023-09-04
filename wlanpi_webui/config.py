@@ -105,7 +105,6 @@ def get_apt_package_version(package) -> str:
 
 def get_our_package_version() -> str:
     apt_version = get_apt_package_version("wlanpi-webui")
-    print(f"{apt_version}")
     if apt_version:
         return apt_version
     return f"{__version__}"
