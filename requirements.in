@@ -2,3 +2,4 @@ flask
 gunicorn
 psutil
 requests
+flask-htmx
