@@ -90,10 +90,14 @@ def create_app(config_class=Config):
             "profiler_status": systemd_service_status("wlanpi-profiler"),
             "kismet_message": systemd_service_message("kismet"),
             "kismet_status": systemd_service_status("kismet"),
-            "grafana_message": systemd_service_message("grafana-server"),
+            "grafana_message": systemd_service_message("grafana-server").replace(
+                "-server", ""
+            ),
             "grafana_status": systemd_service_status("grafana-server"),
             "grafana_scanner_message": systemd_service_status("wlanpi-grafana-scanner"),
             "grafana_scanner_status": systemd_service_status("wlanpi-grafana-scanner"),
+            "start_icon": '<span uk-icon="play-circle"></span>',
+            "stop_icon": '<span uk-icon="close"></span>',
         }
 
     @app.route("/static/img/<path:filename>")
