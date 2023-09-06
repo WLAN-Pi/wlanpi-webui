@@ -81,10 +81,10 @@
                         <a href="#">Attach Data Stream <span uk-navbar-parent-icon></span></a>
                         <ul class="uk-nav-sub">
                           <li>Current:</li>
-                          <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
+                          <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
                           <li class="uk-nav-divider"></li>
                           <li>Available:</li>
-                          <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
+                          <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
                         </ul>
                       </li>
                     </ul>
@@ -179,10 +179,10 @@
             <a href="#">ATTACH DATA STREAM <span uk-navbar-parent-icon></span></a>
             <ul class="uk-nav-sub">
               <li>Current:</li>
-              <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
+              <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
               <li class="uk-nav-divider"></li>
               <li>Available:</li>
-              <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
+              <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER WLAN0 - <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ 'DETACH' if grafana_scanner_status else 'ATTACH' }}</a></span></li>
             </ul>
           </li>
           <li class="uk-nav-divider"></li>        

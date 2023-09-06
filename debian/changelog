@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.6-13) unstable; urgency=medium
+wlanpi-webui (1.1.6-14) unstable; urgency=medium
 
   * Navbar UI updates
   * Attach / detach wlan0 data stream via start / stop of wlanpi-grafana-scanner.service 
