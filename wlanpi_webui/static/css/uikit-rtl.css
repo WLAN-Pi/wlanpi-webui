@@ -1,4 +1,4 @@
-/*! UIkit 3.16.22 | https://www.getuikit.com | (c) 2014 - 2023 YOOtheme | MIT License */
+/*! UIkit 3.16.26 | https://www.getuikit.com | (c) 2014 - 2023 YOOtheme | MIT License */
 /* ========================================================================
    Component: Base
  ========================================================================== */
@@ -3896,10 +3896,14 @@ select.uk-form-width-xsmall {
 /* Container
  ========================================================================== */
 /*
- * Clip child elements
+ * 1. Clip child elements
+ * 2. Prevent accidental scrolling through elements in slide getting focused
  */
 .uk-slider-container {
+  /* 1 */
   overflow: hidden;
+  /* 2 */
+  overflow: clip;
 }
 /*
  * Widen container to prevent box-shadows from clipping, `large-box-shadow`
@@ -3944,13 +3948,14 @@ select.uk-form-width-xsmall {
 /*
  * 1. Let items take content dimensions (0 0 auto)
  *    `max-width` needed to keep image responsiveness and prevent content overflow
- * 3. Create position context
+ * 2. Create position context
  */
 .uk-slider-items > * {
   /* 1 */
   flex: none;
+  box-sizing: border-box;
   max-width: 100%;
-  /* 3 */
+  /* 2 */
   position: relative;
 }
 /* ========================================================================
@@ -5519,6 +5524,14 @@ ul.uk-nav-sub {
 /*
  * Adopts `uk-dropnav-dropbar`
  */
+/*
+ * Create navbar placeholder space if dropbar is behind navbar
+ */
+.uk-navbar-dropbar-behind::before {
+  content: "";
+  display: block;
+  height: 80px;
+}
 /* Tablet landscape and bigger */
 @media (min-width: 960px) {
   .uk-navbar-right,

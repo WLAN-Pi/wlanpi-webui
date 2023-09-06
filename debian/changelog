@@ -1,3 +1,11 @@
+wlanpi-webui (1.1.6-13) unstable; urgency=medium
+
+  * Navbar UI updates
+  * Attach / detach wlan0 data stream via start / stop of wlanpi-grafana-scanner.service 
+  * Upgrade uikit to 3.16.26
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 05 Sep 2023 20:24:56 -0400
+
 wlanpi-webui (1.1.6-12) stable; urgency=medium
 
   * Move grafana.ini config file to wlanpi-grafana package

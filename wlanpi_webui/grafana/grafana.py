@@ -53,3 +53,8 @@ def grafana():
 @bp.route("/<task>grafana")
 def start_stop_grafana(task):
     return start_stop_service(task, "grafana-server")
+
+
+@bp.route("/<task>grafanascanner")
+def start_stop_grafana_scanner(task):
+    return start_stop_service(task, "wlanpi-grafana-scanner")

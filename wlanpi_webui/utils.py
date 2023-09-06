@@ -18,8 +18,11 @@ def systemd_service_status(service):
         cmd = f"/bin/systemctl is-active --quiet {service}"
         current_app.logger.debug("subprocess is running %s" % cmd)
         subprocess.run(cmd, shell=True).check_returncode()
-    except:
+    except subprocess.CalledProcessError as exc:
         # cmd failed, so systemd service not installed
+        current_app.logger.debug(
+            "service %s, error code %s, output %s", service, exc.returncode
+        )
         return False
 
     return True
@@ -84,6 +87,13 @@ def start_stop_service(task, service):
         except Exception as error:
             current_app.logger.error(error)
             return redirect(request.referrer)
+
+
+def package_installed(package):
+    version = get_apt_package_version(package)
+    if version == "":
+        return False
+    return True
 
 
 def get_apt_package_version(package) -> str:
