@@ -9,15 +9,19 @@
     <meta name="description" content="Tools for Wireless LAN Professionals">
     <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
     <meta name="theme-color" content="#fff">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-touch.png') }}">
     <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='img/site.webmanifest') }}">
-  </head>
-  <body>
-    <!--HANDLE MOBILE-->
+    <!--UIkit CSS-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
+    <!--UIkit JS-->
+    <script src="{{ url_for('static', filename='js/uikit.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
+    <!--htmx JS-->
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+    <!--HANDLE MOBILE STYLE-->
     <style>
       #thebiglebowski {
         min-height: 100vh; 
@@ -29,7 +33,9 @@
           }
       }
     </style>
-    <!--/HANDLE MOBILE-->
+    <!--/HANDLE MOBILE STYLE-->
+  </head>
+  <body>
     <div id="thebiglebowski" class="uk-flex uk-flex-column">
       <!--HEADER-->
       <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
@@ -71,7 +77,7 @@
                   </div>
                 </li>
                 <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
-                  <div class="uk-navbar-dropdown">
+                  <div class="uk-navbar-dropdown uk-width-1-4@s">
                     <ul class="uk-nav uk-navbar-dropdown-nav" uk-nav>
                       <li class="uk-nav-header">{{ grafana_message }}</li>
                       <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
@@ -111,7 +117,7 @@
           </nav>
       </div>
       <!--/HEADER-->
-      <!-- STATS BAR -->
+      <!--STATS BAR-->
       <div style="background-color: #fc7313; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;">
         {% autoescape false %}
         <div style="display: inline-flex; padding: 2px 0px 2px 0px; ">
@@ -144,7 +150,7 @@
         {% endautoescape %}
 
       </div>
-      <!-- /STATS BAR -->
+      <!--/STATS BAR -->
       <!--CONTENT-->
       <!--<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">-->
       {% block content %}
@@ -193,7 +199,7 @@
       </div>
     </div>
     <!--/OFFCANVAS-->
-    <!--JS FILES-->
+    <!--JS-->
     <script>
     function updateStats() {
         var ip_text = document.getElementById("ip_addr");
@@ -226,9 +232,6 @@
     updateStats()
     setInterval(updateStats, 2000);
     </script>
-    <script src="{{ url_for('static', filename='js/htmx.min.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
-    <!--/JS FILES-->
+    <!--/JS-->
   </body>
 </html>
