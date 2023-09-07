@@ -82,7 +82,7 @@ def network():
             ipconfig = result[1]
 
     return render_template(
-        "public/network.html",
+        "public/partial_network.html",
         reachability=reachability,
         publicip=publicip,
         ipconfig=ipconfig,

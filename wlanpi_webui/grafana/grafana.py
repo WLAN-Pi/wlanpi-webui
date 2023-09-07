@@ -27,12 +27,12 @@ def grafana_url():
 @bp.route("/grafana")
 def grafana():
     base = request.host.split(":")[0]
+
+    resp_data = {"iframe_url": f"https://{base}/app/grafana"}
     status = systemd_service_status("grafana-server")
     current_app.logger.debug("systemctl is-active for grafana-server is %s" % status)
-    url = f"https://{base}/app/grafana"
-    iframe = f'<iframe class="uk-cover" style="pointer-events: all;" src="{url}" height="100%" width="100%"></iframe>'
     unavailable = service_down("grafana-server")
-    return_code = try_url(url)
+    return_code = try_url(resp_data["iframe_url"])
     version = get_apt_package_version("grafana")
     if version == "":
         return render_template(
@@ -45,9 +45,9 @@ def grafana():
             service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
         )
     if status:
-        return render_template("/public/iframe.html", iframe=iframe)
+        return render_template("/public/partial_iframe.html", **resp_data)
     else:
-        return render_template("/public/service.html", service=unavailable)
+        return render_template("/public/partial_service.html", service=unavailable)
 
 
 @bp.route("/<task>grafana")

@@ -7,8 +7,8 @@ from wlanpi_webui.utils import start_stop_service
 @bp.route("/cockpit")
 def cockpit():
     base = request.host.split(":")[0]
-    iframe = f'<iframe class="uk-cover" style="pointer-events: all;" src="https://{base}/app/cockpit" height="100%" width="100%"></iframe>'
-    return render_template("/public/iframe.html", iframe=iframe)
+    resp_data = {"iframe_url": f"https://{base}/app/cockpit"}
+    return render_template("/public/partial_iframe.html", **resp_data)
 
 
 @bp.route("/<task>cockpit")

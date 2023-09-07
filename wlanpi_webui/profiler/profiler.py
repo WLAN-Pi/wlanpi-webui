@@ -235,12 +235,12 @@ def purge():
     if not files:
         listing = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
     return render_template(
-        "public/profiler.html",
+        "public/partial_profiler.html",
         content=listing,
     )
 
 
-@bp.route("/profiler")
+@bp.route("/profiler/profiles")
 def profiler():
     """Route setup for /profiler"""
     custom_output = get_profiler_file_listing_html()
@@ -250,7 +250,7 @@ def profiler():
         _content = "".join(custom_output)
         _content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
     return render_template(
-        "public/profiler.html",
+        "public/partial_profiler.html",
         content=_content,
     )
 

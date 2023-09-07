@@ -8,7 +8,7 @@ from wlanpi_webui.utils import systemd_service_status
 @bp.route("/about")
 def about():
     return render_template(
-        "public/about.html",
+        "public/partial_about.html",
         hostname=get_hostname(),
         wlanpi_core_version=get_apt_package_version("wlanpi-core"),
         wlanpi_core_status=(

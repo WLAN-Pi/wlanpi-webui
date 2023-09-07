@@ -1,5 +1,5 @@
-{% extends "public/layout.html" %} {% block content %}
-<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">
+{% block content %}
+<div class="uk-flex uk-flex-1 uk-dark uk-background-muted uk-flex-center">
     <div class="uk-section uk-padding-remove-top uk-padding-remove-bottom">
         <div class="uk-flex" uk-grid>
             <div>
@@ -38,9 +38,11 @@
                 </div>
             </div>
         </div>
+        
+        <div uk-sticky="position: bottom" class="uk-dark uk-background-muted uk-padding-small">
+            <p class="uk-text-center">Built with UIkit <a href="http://getuikit.com" title="Visit UIkit" target="_blank" data-uk-tooltip><span data-uk-icon="uikit"></span></a> and <a href="https://flask.palletsprojects.com/" target="_blank" title="Flask; web development, one drop at a time" data-uk-tooltop>Flask</a></p>
+        </div>
     </div>
 </div>
-<div uk-sticky="position: bottom" class="uk-dark uk-background-muted">
-    <p class="uk-text-center">Built with UIkit <a href="http://getuikit.com" title="Visit UIkit" target="_blank" data-uk-tooltip><span data-uk-icon="uikit"></span></a> and <a href="https://flask.palletsprojects.com/" target="_blank" title="Flask; web development, one drop at a time" data-uk-tooltop>Flask</a></p>
-</div>
+
 {% endblock %}

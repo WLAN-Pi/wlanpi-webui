@@ -18,9 +18,8 @@ from wlanpi_webui.utils import systemd_service_message, systemd_service_status
 
 def create_app(config_class=Config):
     app = Flask(__name__)
-    app.config.from_object(config_class)
-    app.logger.debug("app.py create_app reached")
 
+    app.config.from_object(config_class)
     app.logger.debug("registering errors blueprint")
     from wlanpi_webui.errors import bp as errors_bp
 
@@ -44,12 +43,6 @@ def create_app(config_class=Config):
 
     app.register_blueprint(network_bp)
     app.logger.debug("network blueprint registered")
-
-    app.logger.debug("registering homepage blueprint")
-    from wlanpi_webui.homepage import bp as homepage_bp
-
-    app.register_blueprint(homepage_bp)
-    app.logger.debug("homepage blueprint registered")
 
     app.logger.debug("registering stream blueprint")
     from wlanpi_webui.stream import bp as stream_bp

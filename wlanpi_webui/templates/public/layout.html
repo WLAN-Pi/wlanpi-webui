@@ -1,237 +1,430 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ title }}</title>
-    <meta name="author" content="josh@joshschmelzle.com">
-    <meta name="description" content="Tools for Wireless LAN Professionals">
-    <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
-    <meta name="theme-color" content="#fff">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-touch.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192"  href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
-    <link rel="manifest" href="{{ url_for('static', filename='img/site.webmanifest') }}">
-    <!--UIkit CSS-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
-    <!--UIkit JS-->
-    <script src="{{ url_for('static', filename='js/uikit.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
-    <!--htmx JS-->
-    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
-    <!--HANDLE MOBILE STYLE-->
-    <style>
-      #thebiglebowski {
-        min-height: 100vh; 
-        min-width: 20em;
-      }
-      @media (max-width: 640px) {
-        #thebiglebowski {
-          min-height: 139vh;
-          }
-      }
-    </style>
-    <!--/HANDLE MOBILE STYLE-->
-  </head>
-  <body>
-    <div id="thebiglebowski" class="uk-flex uk-flex-column">
-      <!--HEADER-->
-      <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
-          <nav class="uk-navbar-container" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
-            <div class="uk-navbar-left">
-              <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top" href="{{ url_for('homepage.homepage') }}"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" style="width:96px;"></a>
-              <ul class="uk-navbar-nav uk-visible@m">
-                <li>
-                  <a href="{{ url_for('librespeed.librespeed') }}" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
-                  <div class="uk-navbar-dropdown">
-                    <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
-                      <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
-                      <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
-                    </ul>
-                  </div>
-                </li>
-                <li>
-                  <a href="{{ url_for('profiler.profiler') }}" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
-                  <div class="uk-navbar-dropdown">
-                    <ul class="uk-nav uk-navbar-dropdown-nav">
-                      <li class="uk-nav-header">{{ profiler_message }}</li>
-                      <li><a href="{{ url_for('profiler.start_stop_profiler', task='stop' if profiler_status else 'start') }}">{{ 'STOP PROFILER' if profiler_status else 'START PROFILER' }}</a></li>
-                      <li class="uk-nav-divider"></li>
-                      <li><a href="{{ url_for('profiler.profiler') }}">PROFILES</a></li>
-                      <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA</a></li>
-                    </ul>
-                  </div>
-                </li>  
-                <li><a href="{{ url_for('network.network') }}" style="color: white;">NETWORK</a></li>
-                <li>
-                  <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
-                  <div class="uk-navbar-dropdown">
-                      <ul class="uk-nav uk-navbar-dropdown-nav">
-                          <li class="uk-nav-header">{{ kismet_message }}</li>
-                          <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'STOP KISMET' if kismet_status else 'START KISMET' }}</a></li>
-                          <li class="uk-nav-divider" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};"></li>
-                          <li><a class="uk-link" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};" href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
-                      </ul>
-                  </div>
-                </li>
-                <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
-                  <div class="uk-navbar-dropdown uk-width-1-4@s">
-                    <ul class="uk-nav uk-navbar-dropdown-nav" uk-nav>
-                      <li class="uk-nav-header">{{ grafana_message }}</li>
-                      <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
-                      <li class="uk-nav-divider" style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};"></li>
-                      <li><a class="uk-link" style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};" href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
-                      <li class="uk-parent" style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
-                        <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
-                        <ul class="uk-nav-sub">
-                          <li>ENABLED:</li>
-                          <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER WLAN0 <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-                          <li class="uk-nav-divider"></li>
-                          <li>AVAILABLE:</li>
-                          <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER WLAN0 <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-                        </ul>
-                      </li>
-                    </ul>
-                  </div>
-                </li>
-                <li><a href="{{ url_for('cockpit.cockpit') }}" style="color: white;">COCKPIT</a></li>
-              </ul>
-            </div>
-            <div class="uk-navbar-right"> 
-                <ul class="uk-navbar-nav uk-visible@m">
-                  <li>
-                    <a href="#" uk-icon="icon: settings"></a>
-                    <div class="uk-navbar-dropdown">
-                      <ul class="uk-nav uk-navbar-dropdown-nav">
-                          <li class="uk-nav-header"><a href="{{ url_for('about.about') }}">ABOUT</a></li>
-                      </ul>
-                    </div>
-                  </li>
-                </ul>  
-              <div class="uk-navbar-item">     
-                <a class="uk-navbar-toggle uk-hidden@m" data-uk-toggle uk-navbar-toggle-icon href="#offcanvas-nav" style="padding-right: 32px;"></a>  
-              </div>
-            </div>
-          </nav>
-      </div>
-      <!--/HEADER-->
-      <!--STATS BAR-->
-      <div style="background-color: #fc7313; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;">
-        {% autoescape false %}
-        <div style="display: inline-flex; padding: 2px 0px 2px 0px; ">
-          <div style="color: #2e2e2e; white-space: pre-wrap; padding: 4px;"><img src="{{ url_for('static', filename='icon/globe.svg') }}"></div>
-          <div id="ip_addr" style="color: #2e2e2e; padding: 4px;">---</div>
-        </div>
 
-        <div style="display: inline-flex; padding: 2px 0px 2px 0px; align-items: center;">
-          <div  style="color: #2e2e2e;"><img src="{{ url_for('static', filename='icon/cpu.svg') }}"></div>
-          <div style="padding-left: 8px;">
-            <div id="cpu" style="color: #2e2e2e;">---</div>
-            <div id="cputemp" style="color: #2e2e2e;">---</div>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <meta name="author" content="josh@joshschmelzle.com">
+  <meta name="description" content="Tools for Wireless LAN Professionals">
+  <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-touch.png') }}">
+  <link rel="icon" type="image/png" sizes="192x192"
+    href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='img/site.webmanifest') }}">
+  <!--UIkit CSS-->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
+  <!--UIkit JS-->
+  <script src="{{ url_for('static', filename='js/uikit.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
+  <!--htmx JS-->
+  <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+  <!--HANDLE MOBILE STYLE-->
+  <style>
+    #thebiglebowski {
+      min-height: 100vh;
+      min-width: 20em;
+    }
+
+    @media (max-width: 640px) {
+      #thebiglebowski {
+        min-height: 139vh;
+      }
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      z-index: 1000;
+      height: 4px;
+      width: 100%;
+      border-radius: 2px;
+      background-clip: padding-box;
+      overflow: hidden;
+    }
+    .progress .indeterminate:before {
+      content: "";
+      position: absolute;
+      background-color: inherit;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      will-change: left, right;
+      -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395)
+        infinite;
+      animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    }
+    .progress .indeterminate:after {
+      content: "";
+      position: absolute;
+      background-color: inherit;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      will-change: left, right;
+      -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
+        infinite;
+      animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
+        infinite;
+      -webkit-animation-delay: 1.15s;
+      animation-delay: 1.15s;
+    }
+    .progress {
+      display: none;
+    }
+    .htmx-request .progress {
+      display: inline;
+    }
+    .htmx-request.progress {
+      display: inline;
+    }
+    @-webkit-keyframes indeterminate {
+      0% {
+        left: -35%;
+        right: 100%;
+      }
+      60% {
+        left: 100%;
+        right: -90%;
+      }
+      100% {
+        left: 100%;
+        right: -90%;
+      }
+    }
+    @keyframes indeterminate {
+      0% {
+        left: -35%;
+        right: 100%;
+      }
+      60% {
+        left: 100%;
+        right: -90%;
+      }
+      100% {
+        left: 100%;
+        right: -90%;
+      }
+    }
+    @-webkit-keyframes indeterminate-short {
+      0% {
+        left: -200%;
+        right: 100%;
+      }
+      60% {
+        left: 107%;
+        right: -8%;
+      }
+      100% {
+        left: 107%;
+        right: -8%;
+      }
+    }
+    @keyframes indeterminate-short {
+      0% {
+        left: -200%;
+        right: 100%;
+      }
+      60% {
+        left: 107%;
+        right: -8%;
+      }
+      100% {
+        left: 107%;
+        right: -8%;
+      }
+    }
+  </style>
+  <!--/HANDLE MOBILE STYLE-->
+</head>
+
+<body>
+  <div class="progress" style="height: 3px; background-color: white;">
+    <div class="indeterminate" style="background-color: #fc7313;"></div>
+  </div>
+  <div id="thebiglebowski" class="uk-flex uk-flex-column">
+    <!--HEADER-->
+    <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
+      <nav class="uk-navbar-container" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
+        <div class="uk-navbar-left">
+          <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
+            href="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
+              style="width:96px;"></a>
+          <ul class="uk-navbar-nav uk-visible@m">
+            <li>
+              <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
+                  <li><a hx-get="/librespeed"
+                    hx-target="#content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    hx-indicator=".progress">LIBRESPEED</a></li>
+                  <li><a hx-get="/librespeed2"
+                    hx-target="#content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                    hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              <a href="#" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav">
+                  <li class="uk-nav-header">{{ profiler_message }}</li>
+                  <li><a
+                      href="{{ url_for('profiler.start_stop_profiler', task='stop' if profiler_status else 'start') }}">{{
+                      'STOP PROFILER' if profiler_status else 'START PROFILER' }}</a></li>
+                  <li class="uk-nav-divider"></li>
+                  <li><a hx-get="/profiler/profiles"
+                         hx-target="#content"
+                         hx-swap="innerHTML"
+                         hx-push-url="true"
+                         hx-indicator=".progress">PROFILES</a></li>
+                  <li><a hx-get="/profiler/purge"
+                         hx-target="#content"
+                         hx-swap="innerHTML"
+                         hx-push-url="true"
+                         hx-indicator=".progress">PURGE DATA</a></li>
+                </ul>
+              </div>
+            </li>
+            <li><a hx-get="/network"
+                   hx-target="#content"
+                   hx-trigger="click"
+                   hx-indicator=".progress"
+                   hx-push-url="true"
+                   hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+            <li>
+              <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav">
+                  <li class="uk-nav-header">{{ kismet_message }}</li>
+                  <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{
+                      'STOP KISMET' if kismet_status else 'START KISMET' }}</a></li>
+                  <li class="uk-nav-divider"
+                    style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};">
+                  </li>
+                  <li><a class="uk-link"
+                      style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};"
+                      href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
+                </ul>
+              </div>
+            </li>
+            <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA <span
+                  uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown uk-width-1-4@s">
+                <ul class="uk-nav uk-navbar-dropdown-nav" uk-nav>
+                  <li class="uk-nav-header">{{ grafana_message }}</li>
+                  <li><a
+                      href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{
+                      'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
+                  <li class="uk-nav-divider"
+                    style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
+                  </li>
+                  <li><a class="uk-link"
+                      style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};"
+                      href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
+                  <li class="uk-parent"
+                    style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
+                    <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
+                    <ul class="uk-nav-sub">
+                      <li>ENABLED:</li>
+                      <li><span
+                          style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER
+                          WLAN0 <a
+                            href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
+                            stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
+                      <li class="uk-nav-divider"></li>
+                      <li>AVAILABLE:</li>
+                      <li><span
+                          style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER
+                          WLAN0 <a
+                            href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
+                            stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            <li><a hx-get="/cockpit"
+                   hx-target="#content"
+                   hx-swap="innerHTML"
+                   hx-indicator=".progress"
+                   hx-push-url="true"
+                   style="color: white;">COCKPIT</a></li>
+          </ul>
+        </div>
+        <div class="uk-navbar-right">
+          <ul class="uk-navbar-nav uk-visible@m">
+            <li>
+              <a href="#" uk-icon="icon: settings"></a>
+              <div class="uk-navbar-dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav">
+                  <li class="uk-nav-header"><a hx-get="/about"
+                                               hx-target="#content"
+                                               hx-swap="innerHTML"
+                                               hx-push-url="true"
+                                               hx-indicator=".progress">ABOUT</a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+          <div class="uk-navbar-item">
+            <a class="uk-navbar-toggle uk-hidden@m" data-uk-toggle uk-navbar-toggle-icon href="#offcanvas-nav"
+              style="padding-right: 32px;"></a>
           </div>
         </div>
-
-        <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-          <div style="color: #2e2e2e; white-space: pre-wrap; "><img src="{{ url_for('static', filename='icon/ram.svg') }}"></div>
-          <div id="ram"  style="color: #2e2e2e; padding-left: 8px;">---</div>
-        </div>
-
-        <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-          <div style="color: #2e2e2e; white-space: pre-wrap;"><img src="{{ url_for('static', filename='icon/storage.svg') }}"></div>
-          <div id="storage"  style="color: #2e2e2e; padding-left: 8px;">---</div>
-        </div>
-
-        <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-          <div  style="color: #2e2e2e; white-space: pre-wrap;">Uptime: </div>
-          <div id="uptime"  style="color: #2e2e2e;">---</div>
-        </div>
-        {% endautoescape %}
-
-      </div>
-      <!--/STATS BAR -->
-      <!--CONTENT-->
-      <!--<div class="uk-flex uk-flex-1 uk-flex-center uk-dark uk-background-muted">-->
-      {% block content %}
-      {% endblock %}
-      <!--</div>-->
-      <!--/CONTENT-->
+      </nav>
     </div>
-    <!--OFFCANVAS-->
-    <div id="offcanvas-nav" data-uk-offcanvas="flip: true; overlay: true">
-      <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
-        <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
-        <ul class="uk-nav uk-nav-default" uk-nav>
-          <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
-          <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
-          <li class="uk-nav-divider"></li>
-          <li>PROFILER</li>
-          <li><a href="{{ url_for('profiler.profiler') }}">VIEW PROFILES</a></li>
-          <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA SCRIPT</a></li>
-          <li class="uk-nav-divider"></li>
-          <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
-          <li class="uk-nav-divider"></li>
-          <li>KISMET</li>
-          <li>Service status: {{ kismet_message }}</li>
-          <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'STOP KISMET' if kismet_status else 'START KISMET' }}</a></li>
-          <li><a class="uk-link" style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};" href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>    
-          <li class="uk-nav-divider"></li>   
-          <li>GRAFANA</li>
-          <li>Service status: {{ grafana_message }}</li>
-          <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
-          <li><a class="uk-link" style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};" href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
-          <li style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
-            <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
-            <ul class="uk-nav-sub">
-              <li>ENABLED:</li>
-              <li><span style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER WLAN0 <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-              <li class="uk-nav-divider"></li>
-              <li>AVAILABLE:</li>
-              <li><span style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER WLAN0 <a href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{ stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-            </ul>
-          </li>
-          <li class="uk-nav-divider"></li>        
-          <li><a href="{{ url_for('cockpit.cockpit') }}">COCKPIT</a></li> 
-          <li class="uk-nav-divider"></li>
-          <li><a href="{{ url_for('about.about') }}">ABOUT</a></li>
-        </ul>
+    <!--/HEADER-->
+    <!--STATS BAR-->
+    <div
+      style="background-color: #fc7313; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;">
+      {% autoescape false %}
+      <div style="display: inline-flex; padding: 2px 0px 2px 0px; ">
+        <div style="color: #2e2e2e; white-space: pre-wrap; padding: 4px;"><img
+            src="{{ url_for('static', filename='icon/globe.svg') }}"></div>
+        <div id="ip_addr" style="color: #2e2e2e; padding: 4px;">---</div>
       </div>
+
+      <div style="display: inline-flex; padding: 2px 0px 2px 0px; align-items: center;">
+        <div style="color: #2e2e2e;"><img src="{{ url_for('static', filename='icon/cpu.svg') }}"></div>
+        <div style="padding-left: 8px;">
+          <div id="cpu" style="color: #2e2e2e;">---</div>
+          <div id="cputemp" style="color: #2e2e2e;">---</div>
+        </div>
+      </div>
+
+      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
+        <div style="color: #2e2e2e; white-space: pre-wrap; "><img
+            src="{{ url_for('static', filename='icon/ram.svg') }}"></div>
+        <div id="ram" style="color: #2e2e2e; padding-left: 8px;">---</div>
+      </div>
+
+      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
+        <div style="color: #2e2e2e; white-space: pre-wrap;"><img
+            src="{{ url_for('static', filename='icon/storage.svg') }}"></div>
+        <div id="storage" style="color: #2e2e2e; padding-left: 8px;">---</div>
+      </div>
+
+      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
+        <div style="color: #2e2e2e; white-space: pre-wrap;">Uptime: </div>
+        <div id="uptime" style="color: #2e2e2e;">---</div>
+      </div>
+      {% endautoescape %}
     </div>
-    <!--/OFFCANVAS-->
-    <!--JS-->
-    <script>
+    <!--/STATS BAR -->
+    <!--CONTENT-->
+    <div id="content" class="uk-flex-1 uk-flex uk-dark uk-background-muted">
+    {% block content %}
+    {% endblock %}
+    </div>
+    <!--/CONTENT-->
+  </div>
+  <!--OFFCANVAS-->
+  <div id="offcanvas-nav" data-uk-offcanvas="flip: true; overlay: true">
+    <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
+      <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
+      <ul class="uk-nav uk-nav-default" uk-nav>
+        <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
+        <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
+        <li class="uk-nav-divider"></li>
+        <li>PROFILER</li>
+        <li><a href="{{ url_for('profiler.profiler') }}">VIEW PROFILES</a></li>
+        <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA SCRIPT</a></li>
+        <li class="uk-nav-divider"></li>
+        <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+        <li class="uk-nav-divider"></li>
+        <li>KISMET</li>
+        <li>Service status: {{ kismet_message }}</li>
+        <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'STOP
+            KISMET' if kismet_status else 'START KISMET' }}</a></li>
+        <li><a class="uk-link"
+            style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};"
+            href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
+        <li class="uk-nav-divider"></li>
+        <li>GRAFANA</li>
+        <li>Service status: {{ grafana_message }}</li>
+        <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP
+            GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
+        <li><a class="uk-link"
+            style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};"
+            href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
+        <li
+          style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
+          <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
+          <ul class="uk-nav-sub">
+            <li>ENABLED:</li>
+            <li><span
+                style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER
+                WLAN0 <a
+                  href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
+                  stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
+            <li class="uk-nav-divider"></li>
+            <li>AVAILABLE:</li>
+            <li><span
+                style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER
+                WLAN0 <a
+                  href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
+                  stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
+          </ul>
+        </li>
+        <li class="uk-nav-divider"></li>
+        <li><a href="{{ url_for('cockpit.cockpit') }}">COCKPIT</a></li>
+        <li class="uk-nav-divider"></li>
+        <li><a href="{{ url_for('about.about') }}">ABOUT</a></li>
+      </ul>
+    </div>
+  </div>
+  <!--/OFFCANVAS-->
+  <!--JS-->
+  <script>
     function updateStats() {
-        var ip_text = document.getElementById("ip_addr");
-        var cpu_text = document.getElementById("cpu");
-        var cputemp_text = document.getElementById("cputemp");
-        var ram_text = document.getElementById("ram");
-        var storage_text = document.getElementById("storage");
-        var uptime_text = document.getElementById("uptime");
+      var ip_text = document.getElementById("ip_addr");
+      var cpu_text = document.getElementById("cpu");
+      var cputemp_text = document.getElementById("cputemp");
+      var ram_text = document.getElementById("ram");
+      var storage_text = document.getElementById("storage");
+      var uptime_text = document.getElementById("uptime");
 
-        if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
-            xmlhttp = new XMLHttpRequest();
-        } else { // code for IE6, IE5
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+      if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
+        var xhr = new XMLHttpRequest();
+      } else { // code for IE6, IE5
+        xhr = new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      if (xhr.readyState === 4) {   //if complete
+        if (xhr.status === 200) {  //check if "OK" (200)
+          //success
+        } else {
+          error_handle_function(); //otherwise, some other code was returned
         }
-        xmlhttp.onreadystatechange = function() {
-            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                data = JSON.parse(xmlhttp.responseText)
-                ip_text.innerHTML = data["IP"]
-                cpu_text.innerHTML = data["CPU"]
-                cputemp_text.innerHTML = data["CPU_TEMP"]
-                ram_text.innerHTML = data["RAM"]
-                storage_text.innerHTML = data["DISK"]
-                uptime_text.innerHTML = data["UPTIME"]
-
-            }
+      }
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+          if (xhr.status == 200) {
+            data = JSON.parse(xhr.responseText)
+            ip_text.innerHTML = data["IP"]
+            cpu_text.innerHTML = data["CPU"]
+            cputemp_text.innerHTML = data["CPU_TEMP"]
+            ram_text.innerHTML = data["RAM"]
+            storage_text.innerHTML = data["DISK"]
+            uptime_text.innerHTML = data["UPTIME"]
+          }
         }
-        xmlhttp.open("GET", "{{ url_for('stream.stream') }}", false);
-        xmlhttp.send();
+      }
+      xhr.open("GET", "{{ url_for('stream.stream') }}", true);
+      xhr.send(null);
     }
     updateStats()
     setInterval(updateStats, 2000);
-    </script>
-    <!--/JS-->
-  </body>
+  </script>
+  <!--/JS-->
+</body>
+
 </html>
