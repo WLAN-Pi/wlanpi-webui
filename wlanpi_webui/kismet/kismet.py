@@ -1,7 +1,8 @@
 from flask import redirect, request
 
 from wlanpi_webui.kismet import bp
-from wlanpi_webui.utils import start_stop_service
+from wlanpi_webui.utils import (start_stop_service, systemd_service_message,
+                                systemd_service_status)
 
 
 @bp.route("/kismet")
@@ -12,4 +13,49 @@ def kismet():
 
 @bp.route("/<task>kismet")
 def start_stop_kismet(task):
-    return start_stop_service(task, "kismet")
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        start_stop_service(task, "kismet")
+    return "", 204
+
+
+@bp.route("/kismet/menu")
+def kismet_menu():
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        kismet_message = systemd_service_message("kismet")
+        kismet_status = systemd_service_status("kismet")
+        if kismet_status:
+            # active
+            kismet_task_url = "/stopkismet"
+            kismet_task_anchor_text = "STOP"
+        else:
+            # not active
+            kismet_task_url = "/startkismet"
+            kismet_task_anchor_text = "START"
+        args = {
+            "kismet_message": kismet_message,
+            "kismet_task_url": kismet_task_url,
+            "kismet_task_anchor_text": kismet_task_anchor_text,
+        }
+        if kismet_status:
+            # active
+            html = """
+            <li class="uk-nav-header">{kismet_message}</li>
+            <li><a hx-get="{kismet_task_url}"
+                   hx-indicator=".progress">{kismet_task_anchor_text}</a></li>
+            <li class="uk-nav-divider"></li>
+            <li><a class="uk-link" href="/kismet" target="_blank">LAUNCH KISMET</a></li>
+            """.format(
+                **args
+            )
+        else:
+            # not active
+            html = """
+            <li class="uk-nav-header">{kismet_message}</li>
+            <li><a hx-get="{kismet_task_url}"
+                   hx-indicator=".progress">{kismet_task_anchor_text}</li>
+            """.format(
+                **args
+            )
+        return html

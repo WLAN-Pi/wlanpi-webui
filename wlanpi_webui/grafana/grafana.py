@@ -34,20 +34,39 @@ def grafana():
     unavailable = service_down("grafana-server")
     return_code = try_url(resp_data["iframe_url"])
     version = get_apt_package_version("grafana")
-    if version == "":
-        return render_template(
-            "/public/service.html",
-            service="Grafana does not appear to be installed.",
-        )
-    if return_code == 502:
-        return render_template(
-            "/public/service.html",
-            service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
-        )
-    if status:
-        return render_template("/public/partial_iframe.html", **resp_data)
+
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        if version == "":
+            return render_template(
+                "/public/service_partial.html",
+                service="Grafana does not appear to be installed.",
+            )
+        if return_code == 502:
+            return render_template(
+                "/public/service_partial.html",
+                service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
+            )
+        if status:
+            return render_template("/public/iframe_partial.html", **resp_data)
+        else:
+            return render_template("/public/service_partial.html", service=unavailable)
     else:
-        return render_template("/public/partial_service.html", service=unavailable)
+        # not a htmx request
+        if version == "":
+            return render_template(
+                "/public/service.html",
+                service="Grafana does not appear to be installed.",
+            )
+        if return_code == 502:
+            return render_template(
+                "/public/service.html",
+                service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
+            )
+        if status:
+            return render_template("/public/iframe.html", **resp_data)
+        else:
+            return render_template("/public/service.html", service=unavailable)
 
 
 @bp.route("/<task>grafana")

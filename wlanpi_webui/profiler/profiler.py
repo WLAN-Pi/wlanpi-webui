@@ -230,34 +230,38 @@ def get_profiler_files_to_purge() -> list:
 def purge():
     """Purges profiler files"""
     files = get_profiler_files_to_purge()
-    content = "\r\n".join([f"rm {file}" for file in files])
-    listing = f"<div><p>The <tt>wlanpi-webui</tt> process does not have permission to remove files.</p><p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{content}</pre></p></div>"
+    inner = "\r\n".join([f"rm {file}" for file in files])
+    content = f"<div><p>The <tt>webui</tt> process does not have permission to remove files.</p><p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{inner}</pre></p></div>"
     if not files:
-        listing = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
-    return render_template(
-        "public/partial_profiler.html",
-        content=listing,
-    )
+        content = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
+    resp_data = {"content": content}
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        return render_template("/public/profiler_partial.html", **resp_data)
+    else:
+        return render_template("/public/profiler.html", **resp_data)
 
 
 @bp.route("/profiler/profiles")
 def profiler():
-    """Route setup for /profiler"""
+    """Profiles"""
     custom_output = get_profiler_file_listing_html()
     if not custom_output:
-        _content = '<div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See the getting started instructions above to get started.</p></div>'
+        content = '<div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See the getting started instructions above to get started.</p></div>'
     else:
-        _content = "".join(custom_output)
-        _content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
-    return render_template(
-        "public/partial_profiler.html",
-        content=_content,
-    )
+        content = "".join(custom_output)
+        content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
+    resp_data = {"content": content}
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        return render_template("/public/profiler_partial.html", **resp_data)
+    else:
+        return render_template("/public/profiler.html", **resp_data)
 
 
 @bp.route("/profiler/<path:filename>")
 def get_profiler_results(filename):
-    """Handle when user downloading profiler results"""
+    """Handle when user downloads profiler results"""
     safe_path = safe_join(current_app.config["PROFILER_DIR"], filename)
     try:
         return send_file(safe_path, as_attachment=True)

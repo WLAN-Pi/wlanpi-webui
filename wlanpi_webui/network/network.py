@@ -3,7 +3,7 @@ import queue
 import subprocess
 import threading
 
-from flask import render_template
+from flask import render_template, request
 
 from wlanpi_webui.network import bp
 
@@ -81,11 +81,16 @@ def network():
         if "ipconfig" in str(result):
             ipconfig = result[1]
 
-    return render_template(
-        "public/partial_network.html",
-        reachability=reachability,
-        publicip=publicip,
-        ipconfig=ipconfig,
-        lldp=lldp,
-        cdp=cdp,
-    )
+    resp_data = {
+        "reachability": reachability,
+        "publicip": publicip,
+        "ipconfig": ipconfig,
+        "lldp": lldp,
+        "cdp": cdp,
+    }
+
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        return render_template("/public/network_partial.html", **resp_data)
+    else:
+        return render_template("/public/network.html", **resp_data)

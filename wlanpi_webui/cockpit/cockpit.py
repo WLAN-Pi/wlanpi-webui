@@ -8,7 +8,11 @@ from wlanpi_webui.utils import start_stop_service
 def cockpit():
     base = request.host.split(":")[0]
     resp_data = {"iframe_url": f"https://{base}/app/cockpit"}
-    return render_template("/public/partial_iframe.html", **resp_data)
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        return render_template("/public/iframe_partial.html", **resp_data)
+    else:
+        return render_template("/public/iframe.html", **resp_data)
 
 
 @bp.route("/<task>cockpit")

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -159,12 +158,12 @@
               <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
-                  <li><a hx-get="/librespeed"
+                  <li><a hx-get="/speedtest/librespeed"
                     hx-target="#content"
                     hx-swap="innerHTML"
                     hx-push-url="true"
                     hx-indicator=".progress">LIBRESPEED</a></li>
-                  <li><a hx-get="/librespeed2"
+                  <li><a hx-get="/speedtest/librespeed/details"
                     hx-target="#content"
                     hx-swap="innerHTML"
                     hx-push-url="true"
@@ -202,18 +201,13 @@
                    hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
             <li>
               <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav">
-                  <li class="uk-nav-header">{{ kismet_message }}</li>
-                  <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{
-                      'STOP KISMET' if kismet_status else 'START KISMET' }}</a></li>
-                  <li class="uk-nav-divider"
-                    style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};">
-                  </li>
-                  <li><a class="uk-link"
-                      style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};"
-                      href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
-                </ul>
+              <div class="uk-navbar-dropdown uk-width-1-4@s">
+                <ul class="uk-nav uk-navbar-dropdown-nav "
+                    hx-get="/kismet/menu"
+                    hx-trigger="load, click delay:0.2s, every 10s"
+                    hx-target="this"
+                    hx-swap="innerHTML">
+                  </ul>
               </div>
             </li>
             <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA <span
