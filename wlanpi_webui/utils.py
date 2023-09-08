@@ -4,11 +4,11 @@ import requests
 from flask import current_app, redirect, request
 
 
-def service_down(service: str):
+def get_service_down_message(service: str):
     return f"{service.capitalize()} service is unavailable or down."
 
 
-def systemd_service_status(service):
+def systemd_service_status_running(service):
     """
     Checks the status of the systemd service.
     Returns true if systemd service is running, false otherwise.
@@ -17,6 +17,7 @@ def systemd_service_status(service):
         # this cmd fails if service not installed
         cmd = f"/bin/systemctl is-active --quiet {service}"
         current_app.logger.debug("subprocess is running %s" % cmd)
+        # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
         subprocess.run(cmd, shell=True).check_returncode()
     except subprocess.CalledProcessError as exc:
         # cmd failed, so systemd service not installed
@@ -52,7 +53,7 @@ def systemd_service_message(service):
     Checks if systemd service is running.
     Returns '<service> is running' if it is, and '<service> is not running' if not.
     """
-    status = systemd_service_status(service)
+    status = systemd_service_status_running(service)
     if status:
         return f"{service} is running"
     else:

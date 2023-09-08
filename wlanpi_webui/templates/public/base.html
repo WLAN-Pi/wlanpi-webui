@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -22,7 +23,6 @@
   <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
   <!--htmx JS-->
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/_hyperscript.min.js') }}"></script>
   <!--HANDLE MOBILE STYLE-->
   <style>
     #thebiglebowski {
@@ -46,6 +46,7 @@
       background-clip: padding-box;
       overflow: hidden;
     }
+
     .progress .indeterminate:before {
       content: "";
       position: absolute;
@@ -54,10 +55,10 @@
       left: 0;
       bottom: 0;
       will-change: left, right;
-      -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395)
-        infinite;
+      -webkit-animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
       animation: indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
     }
+
     .progress .indeterminate:after {
       content: "";
       position: absolute;
@@ -66,73 +67,86 @@
       left: 0;
       bottom: 0;
       will-change: left, right;
-      -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-        infinite;
-      animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1)
-        infinite;
+      -webkit-animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+      animation: indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
       -webkit-animation-delay: 1.15s;
       animation-delay: 1.15s;
     }
+
     .progress {
       display: none;
     }
+
     .htmx-request .progress {
       display: inline;
     }
+
     .htmx-request.progress {
       display: inline;
     }
+
     @-webkit-keyframes indeterminate {
       0% {
         left: -35%;
         right: 100%;
       }
+
       60% {
         left: 100%;
         right: -90%;
       }
+
       100% {
         left: 100%;
         right: -90%;
       }
     }
+
     @keyframes indeterminate {
       0% {
         left: -35%;
         right: 100%;
       }
+
       60% {
         left: 100%;
         right: -90%;
       }
+
       100% {
         left: 100%;
         right: -90%;
       }
     }
+
     @-webkit-keyframes indeterminate-short {
       0% {
         left: -200%;
         right: 100%;
       }
+
       60% {
         left: 107%;
         right: -8%;
       }
+
       100% {
         left: 107%;
         right: -8%;
       }
     }
+
     @keyframes indeterminate-short {
       0% {
         left: -200%;
         right: 100%;
       }
+
       60% {
         left: 107%;
         right: -8%;
       }
+
       100% {
         left: 107%;
         right: -8%;
@@ -159,63 +173,52 @@
               <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
-                  <li><a hx-get="/speedtest/librespeed"
-                    hx-target="#content"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                    hx-indicator=".progress">LIBRESPEED</a></li>
-                  <li><a hx-get="/speedtest/librespeed/details"
-                    hx-target="#content"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                    hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
+                  <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                      hx-indicator=".progress">LIBRESPEED</a></li>
+                  <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"
+                      hx-push-url="true" hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
                 </ul>
               </div>
             </li>
             <li>
               <a href="#" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s">
-                <ul class="uk-nav uk-navbar-dropdown-nav"
-                    hx-get="/profiler/menu"
-                    hx-trigger="load, click delay:0.2s" 
-                    hx-target="this"
-                    hx-swap="innerHTML">
-                  </ul>
-              </div>
-            </li>
-            <li><a hx-get="/network"
-                   hx-target="#content"
-                   hx-trigger="click"
-                   hx-indicator=".progress"
-                   hx-push-url="true"
-                   hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
-            <li>
-              <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s">
-                <ul class="uk-nav uk-navbar-dropdown-nav"
-                    hx-get="/kismet/menu"
-                    hx-trigger="load, click delay:0.2s"
-                    hx-target="this"
-                    hx-swap="innerHTML">
-                  </ul>
-              </div>
-            </li>
-            <li><a href="#" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s">
-                <ul class="uk-nav uk-navbar-dropdown-nav" 
-                    hx-get="/grafana/menu"
-                    hx-trigger="load, click delay:0.2s"
-                    hx-target="this"
-                    hx-swap="innerHTML">
+              <div class="uk-navbar-dropdown uk-width-1-4@s"
+                   hx-get="/profiler/main_menu"
+                   hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('profiler_dropdown').classList.contains('uk-open')]"
+                   hx-target="#profiler_ul"
+                   hx-swap="innerHTML"
+                   id="profiler_dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav" id="profiler_ul">
                 </ul>
               </div>
             </li>
-            <li><a hx-get="/cockpit"
-                   hx-target="#content"
+            <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+                hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+            <li>
+              <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown uk-width-1-4@s"
+                      hx-get="/kismet/main_menu"
+                      hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('kismet_dropdown').classList.contains('uk-open')]"
+                      hx-target="#kismet_ul"
+                      hx-swap="innerHTML"
+                      id="kismet_dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav" id="kismet_ul">
+                </ul>
+              </div>
+            </li>
+            <li><a href="#" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
+              <div class="uk-navbar-dropdown uk-width-1-4@s"
+                   hx-get="/grafana/main_menu"
+                   hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('grafana_dropdown').classList.contains('uk-open')]"
+                   hx-target="#grafana_ul"
                    hx-swap="innerHTML"
-                   hx-indicator=".progress"
-                   hx-push-url="true"
-                   style="color: white;">COCKPIT</a></li>
+                   id="grafana_dropdown">
+                <ul class="uk-nav uk-navbar-dropdown-nav" id="grafana_ul">
+                </ul>
+              </div>
+            </li>
+            <li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+                hx-push-url="true" style="color: white;">COCKPIT</a></li>
           </ul>
         </div>
         <div class="uk-navbar-right">
@@ -224,11 +227,8 @@
               <a href="#" uk-icon="icon: settings"></a>
               <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
-                  <li class="uk-nav-header"><a hx-get="/about"
-                                               hx-target="#content"
-                                               hx-swap="innerHTML"
-                                               hx-push-url="true"
-                                               hx-indicator=".progress">ABOUT</a></li>
+                  <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
+                      hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
                 </ul>
               </div>
             </li>
@@ -280,8 +280,8 @@
     <!--/STATS BAR -->
     <!--CONTENT-->
     <div id="content" class="uk-flex-1 uk-flex uk-dark uk-background-muted">
-    {% block content %}
-    {% endblock %}
+      {% block content %}
+      {% endblock %}
     </div>
     <!--/CONTENT-->
   </div>
@@ -290,53 +290,37 @@
     <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
       <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
       <ul class="uk-nav uk-nav-default" uk-nav>
-        <li><a href="{{ url_for('librespeed.librespeed') }}">LIBRESPEED</a></li>
-        <li><a href="{{ url_for('librespeed.librespeed2') }}">LIBRESPEED (DETAILS)</a></li>
+        <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+          hx-indicator=".progress">LIBRESPEED</a></li>
+        <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"
+            hx-push-url="true" hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
         <li class="uk-nav-divider"></li>
-        <li>PROFILER</li>
-        <li><a href="{{ url_for('profiler.profiler') }}">VIEW PROFILES</a></li>
-        <li><a href="{{ url_for('profiler.purge') }}">PURGE DATA SCRIPT</a></li>
+        <ul class="uk-nav uk-navbar-dropdown-nav" 
+        hx-get="/profiler/side_menu"
+        hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
+        hx-swap="innerHTML">
+        </ul>
         <li class="uk-nav-divider"></li>
-        <li><a href="{{ url_for('network.network') }}">NETWORK</a></li>
+        <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+          hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
         <li class="uk-nav-divider"></li>
-        <li>KISMET</li>
-        <li>Service status: {{ kismet_message }}</li>
-        <li><a href="{{ url_for('kismet.start_stop_kismet', task='stop' if kismet_status else 'start') }}">{{ 'STOP
-            KISMET' if kismet_status else 'START KISMET' }}</a></li>
-        <li><a class="uk-link"
-            style="visibility: {{ 'visible' if kismet_status else 'hidden' }}; display: {{ 'block' if kismet_status else 'none' }};"
-            href="{{ url_for('kismet.kismet') }}" target="_blank">LAUNCH KISMET</a></li>
+        <ul class="uk-nav uk-navbar-dropdown-nav" 
+            hx-get="/kismet/side_menu"
+            hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
+            hx-swap="innerHTML">
+        </ul>
         <li class="uk-nav-divider"></li>
-        <li>GRAFANA</li>
-        <li>Service status: {{ grafana_message }}</li>
-        <li><a href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{ 'STOP
-            GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
-        <li><a class="uk-link"
-            style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};"
-            href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
-        <li
-          style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
-          <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
-          <ul class="uk-nav-sub">
-            <li>ENABLED:</li>
-            <li><span
-                style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER
-                WLAN0 <a
-                  href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
-                  stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-            <li class="uk-nav-divider"></li>
-            <li>AVAILABLE:</li>
-            <li><span
-                style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER
-                WLAN0 <a
-                  href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
-                  stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-          </ul>
-        </li>
+        <ul class="uk-nav uk-navbar-dropdown-nav" 
+            hx-get="/grafana/side_menu"
+            hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
+            hx-swap="innerHTML">
+        </ul>
         <li class="uk-nav-divider"></li>
-        <li><a href="{{ url_for('cockpit.cockpit') }}">COCKPIT</a></li>
+        <li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+          hx-push-url="true">COCKPIT</a></li>
         <li class="uk-nav-divider"></li>
-        <li><a href="{{ url_for('about.about') }}">ABOUT</a></li>
+        <li><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
       </ul>
     </div>
   </div>
@@ -356,13 +340,6 @@
       } else { // code for IE6, IE5
         xhr = new ActiveXObject("Microsoft.XMLHTTP");
       }
-      if (xhr.readyState === 4) {   //if complete
-        if (xhr.status === 200) {  //check if "OK" (200)
-          //success
-        } else {
-          error_handle_function(); //otherwise, some other code was returned
-        }
-      }
       xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
           if (xhr.status == 200) {
@@ -376,13 +353,15 @@
           }
         }
       }
-      // xhr.open("GET", "{{ url_for('stream.stream') }}", true);
-      // xhr.send(null);
+      xhr.open("GET", "{{ url_for('stream.stream') }}", true);
+      xhr.send(null);
     }
     updateStats()
     setInterval(updateStats, 2000);
     // htmx.logAll();
   </script>
+  <script src="{{ url_for('static', filename='js/_hyperscript.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/qrcode.min.js') }}" defer></script>
   <!--/JS-->
 </body>
 

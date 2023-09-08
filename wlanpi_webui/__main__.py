@@ -24,4 +24,12 @@ if __name__ == "__main__":
     handler = RotatingFileHandler(log_filename, maxBytes=10000, backupCount=2)
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
-    app.run(host="0.0.0.0", port="5000", debug=True)
+    app.run(
+        host="0.0.0.0",
+        port="5000",
+        debug=True,
+        ssl_context=(
+            "/etc/nginx/ssl/self-signed-wlanpi.cert",
+            "/etc/nginx/ssl/self-signed-wlanpi.key",
+        ),
+    )

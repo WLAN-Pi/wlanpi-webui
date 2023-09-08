@@ -14,7 +14,7 @@ Group=wlanpi
 # for support multiple versions of Python because unit files will not follow symlinks
 WorkingDirectory=/opt/wlanpi-webui/workingdirectory
 
-ExecStart=/opt/wlanpi-webui/bin/gunicorn --workers 1 --bind unix:wlanpi_webui.sock wsgi:app
+ExecStart=/opt/wlanpi-webui/bin/gunicorn --certfile /etc/nginx/ssl/self-signed-wlanpi.cert --keyfile /etc/nginx/ssl/self-signed-wlanpi.key --workers 1 --bind unix:wlanpi_webui.sock wsgi:app
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5

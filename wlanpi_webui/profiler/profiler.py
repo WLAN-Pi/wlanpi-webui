@@ -11,7 +11,7 @@ from werkzeug.utils import safe_join
 from wlanpi_webui.profiler import bp
 from wlanpi_webui.utils import (run_command, start_stop_service,
                                 systemd_service_message,
-                                systemd_service_status)
+                                systemd_service_status_running)
 
 getting_started = """
 <ul uk-accordion="">
@@ -80,7 +80,60 @@ class ProfilerFileAttributes:
     profiletype: ProfileResultType
 
 
-def get_profiler_file_listing_html() -> list:
+def get_profiler_file_listing_html(target) -> list:
+    """Function to generate custom html file listing for a specific result"""
+    files = get_files()
+    html = ""
+    try:
+        if len(files) == 0:
+            return None
+        for profile in files:
+            client = profile.filepath.replace(current_app.config["FILES_ROOT_DIR"], "")
+            friendly = client.replace("profiler/clients/", "")
+            friendly.rsplit(".", 1)[0]
+            profile.modifytime
+            if len(friendly.split("/")) == 2:
+                defolder, friendly = friendly.split("/")
+                friendly.rsplit(".", 1)[0]
+                if profile.profiletype == ProfileResultType.TEXT:
+                    profile_stub = f"{friendly.split('/')[-1].replace('.txt', '').replace('.', '')}"
+                    div_id = f"profile_{profile_stub}"
+
+                    if target == profile_stub:
+                        html = """
+                        <div id="{profile_div_id}" class="uk-modal uk-modal-container" style="display:block;">
+                            <div class="uk-modal-dialog uk-modal-body">
+                                <h2 class="uk-modal-title">{modal_title}</h2>
+                                <pre>{profile_content}</pre>
+                                <div class='uk-modal-footer uk-text-right'>
+                                    <form _="on submit take .uk-open from #{profile_div_id}">
+                                        <button 
+                                            id="cancelButton"
+                                            type="button" 
+                                            class="uk-button uk-button-default" 
+                                            _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profile_div_id}">Close</button>
+                                        <a href='{content_url}'><button class='uk-button uk-button-primary' type='button'>Save</button></a>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>    
+                        """.format(
+                            profile_div_id=div_id,
+                            modal_title=friendly,
+                            profile_content=profile.content,
+                            content_url=f"{request.url_root}{client}",
+                        )
+                        break
+    except Exception as error:
+        raise Exception(
+            "ERROR: problem building profile html results for {profile}\n{error}".format(
+                profile=profile, error=error
+            )
+        )
+    return html
+
+
+def get_profiler_files_listing_html() -> list:
     """Function to generate custom html file listing for profiler results"""
     files = get_files()
     reports = []
@@ -99,24 +152,26 @@ def get_profiler_file_listing_html() -> list:
                 _key = friendly.rsplit(".", 1)[0]
                 text = ""
                 if profile.profiletype == ProfileResultType.TEXT:
-                    div_id = friendly.split("/")[-1].replace(".txt", "")
-                    clean_div_id = div_id.replace(".txt", "").replace(".", "")
-
-                    text = "<a href='#_{4}' uk-toggle><button class='uk-button uk-button-default uk-button-small' uk-tooltip='{6}'>profile</button></a><div id='_{4}' class='uk-modal-container' uk-modal><div class='uk-modal-dialog uk-modal-body'><h2 class='uk-modal-title'>{3}</h2><button class='uk-modal-close-default' type='button' uk-close></button><pre>{5}</pre><div class='uk-modal-footer uk-text-right'><button class='uk-button uk-button-default uk-modal-close' type='button'>Cancel</button> <a href='{1}{2}'><button class='uk-button uk-button-primary' type='button'>Save</button></a></div></div></div>".format(
-                        modifytime,
-                        request.url_root,
-                        client,
-                        div_id,
-                        clean_div_id,
-                        profile.content,
-                        f'View text report for {client.split("/")[-1]}',
+                    profile_stub = f"{friendly.split('/')[-1].replace('.txt', '').replace('.', '')}"
+                    div_id = f"profile_{profile_stub}"
+                    tooltip = f'View text report for {client.split("/")[-1]}'
+                    text = """<button 
+                                class="uk-button uk-button-default uk-button-small" 
+                                hx-get="/profiler/profile?profile={stub}" 
+                                hx-trigger="click" 
+                                hx-target="#profiler-modals"
+                                uk-tooltip="{tip}"
+                                hx-indicator=".progress"
+                                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>
+                    """.format(
+                        stub=profile_stub, id=div_id, tip=tooltip
                     )
 
                 pcap = ""
                 if profile.profiletype == ProfileResultType.PCAP:
                     pcap = """<a href='{1}{2}'>
-                             <button class='uk-button uk-button-default uk-button-small' uk-tooltip='{4}'>pcap</button>
-                             </a>""".format(
+                                <button class='uk-button uk-button-default uk-button-small' uk-tooltip='{4}'>pcap</button>
+                                </a>""".format(
                         modifytime,
                         request.url_root,
                         client,
@@ -143,27 +198,26 @@ def get_profiler_file_listing_html() -> list:
                 reports.append(profile)
 
         results.append(getting_started)
-        results.append('<div><h3 class="uk-h3">Profiles</h3></div>')
         results.append(
-            "<p>Output below is sorted by last modification timestamps. Most recent profiles will show at the top.</p>"
+            """
+                       <div><h3 class="uk-h3">Profiles</h3></div>
+                       <p>Output below is sorted by last modification timestamps. Most recent profiles will show at the top.</p>
+                       <div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
+                       <thead></thead><tbody>
+                       """
         )
-        results.append(
-            '<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">'
-        )
-        results.append("<thead>")
-        for _key, _attrs in seen_hash.items():
-            results.append(
-                """<tr><th class="uk-width-small uk-text-nowrap">Last Modification</th>
-                <th class="uk-width-small uk-text-no-wrap">Client MAC</th>
-                <th class="uk-width-small">Band</th>
-                <th class="uk-width-small">Text Report</th>
-                <th>Download</th></tr>
-                """
-            )
-            break
-        results.append("</thead>")
-        results.append("<tbody>")
+        heading_appended = False
         for key, attrs in seen_hash.items():
+            if not heading_appended:
+                results.append(
+                    """<tr><th class="uk-width-small uk-text-nowrap">Last Modification</th>
+                    <th class="uk-width-small uk-text-no-wrap">Client MAC</th>
+                    <th class="uk-width-small">Band</th>
+                    <th class="uk-width-small">Text Report</th>
+                    <th>Download</th></tr>
+                    """
+                )
+                heading_appended = True
             client_mac_value = key.split("_")[0]
             if "diff" in attrs.content.text:
                 client_mac_value += " (diff)"
@@ -173,12 +227,12 @@ def get_profiler_file_listing_html() -> list:
         results.append("</tbody></table></div>")
 
         if reports:
-            results.append('<div class="uk-flex uk-flex-column"><h4>Reports</h4></div>')
             results.append(
-                '<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">'
-            )
-            results.append(
-                '<thead><tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small">Report</th><th>Download</th></tr></thead><tbody>'
+                """
+                           <div class="uk-flex uk-flex-column"><h4>Reports</h4></div>
+                           <div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
+                           <thead><tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small">Report</th><th>Download</th></tr></thead><tbody>
+                           """
             )
             for attrs in reports:
                 report = attrs.filepath.replace(
@@ -196,7 +250,7 @@ def get_profiler_file_listing_html() -> list:
             results.append("</tbody></table></div>")
     except Exception as error:
         return [
-            "ERROR: problem building profiler link results {0}\n{1}".format(
+            "ERROR: problem in get_profiler_files_listing_html() building link results {0}\n{1}".format(
                 error, files
             )
         ]
@@ -283,10 +337,21 @@ def purge():
         return render_template("/public/profiler.html", **resp_data)
 
 
+@bp.route("/profiler/profile")
+def profile():
+    """Profile"""
+    # if key doesn't exist, returns None
+    profile = request.args.get("profile")
+    html = get_profiler_file_listing_html(profile)
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        return html
+
+
 @bp.route("/profiler/profiles")
 def profiler():
     """Profiles"""
-    custom_output = get_profiler_file_listing_html()
+    custom_output = get_profiler_files_listing_html()
     if not custom_output:
         content = """
         {0}
@@ -296,7 +361,12 @@ def profiler():
         )
     else:
         content = "".join(custom_output)
-        content += '<br/><div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a></div>'
+        content += """
+  <div class="uk-flex uk-flex-center">
+    <a hx-get="/profiler" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+      hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
+  </div>
+  """
     resp_data = {"content": content}
     htmx_request = request.headers.get("HX-Request") is not None
     if htmx_request:
@@ -325,15 +395,63 @@ def start_stop_profiler(task):
     return "", 204
 
 
-@bp.route("/profiler/menu")
-def profiler_menu():
+@bp.route("/profiler/side_menu")
+def profiler_side_menu():
     htmx_request = request.headers.get("HX-Request") is not None
     if htmx_request:
         profiler_message = systemd_service_message("wlanpi-profiler")
-        profiler_status = systemd_service_status("wlanpi-profiler")
+        profiler_status = systemd_service_status_running("wlanpi-profiler")
+        if profiler_status:
+            # active
+            profiler_task_url = "/stopprofiler"
+            profiler_task_anchor_text = "STOP"
+        else:
+            # not active
+            profiler_task_url = "/startprofiler"
+            profiler_task_anchor_text = "START"
+        args = {
+            "profiler_message": profiler_message.replace("wlanpi-", ""),
+            "profiler_task_url": profiler_task_url,
+            "profiler_task_anchor_text": profiler_task_anchor_text,
+        }
+        html = """
+        <li class="uk-nav-header">{profiler_message}</li>
+        <li><a hx-get="{profiler_task_url}"
+               hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+        <li><a hx-get="/profiler/profiles"
+            hx-target="#content"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            hx-indicator=".progress">PROFILES</a></li>
+        <li><a hx-get="/profiler/purge"
+            hx-target="#content"
+            hx-swap="innerHTML"
+            hx-push-url="true"
+            hx-indicator=".progress">PURGE DATA</a></li>
+        """.format(
+            **args
+        )
+        return html
+
+
+@bp.route("/profiler/main_menu")
+def profiler_main_menu():
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        profiler_message = systemd_service_message("wlanpi-profiler")
+        profiler_status = systemd_service_status_running("wlanpi-profiler")
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid:
-            profiler_ssid = f"<li>SSID: {profiler_ssid}</li>"
+            qrcode_spec = "WIFI:S:{};T:WPA;P:{};;".format(profiler_ssid, "0123456789")
+            profiler_ssid = """
+            <li>SSID: {profiler_ssid}</li>
+            <div id="qrcode" style="width:200px; height:200px;"></div>
+            <script type="text/javascript">
+                new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
+            </script>
+            """.format(
+                profiler_ssid=profiler_ssid, qrcode_spec=qrcode_spec
+            )
         else:
             profiler_ssid = ""
         if profiler_status:

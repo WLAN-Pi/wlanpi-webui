@@ -90,6 +90,8 @@ if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ] || [ ! -f /etc/nginx/ssl/self
     getent group grafana || groupadd grafana
     chgrp grafana /etc/nginx/ssl/self-signed-grafana.key
     chgrp grafana /etc/nginx/ssl/self-signed-grafana.cert
+    chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.key
+    chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.cert
     CONF_CHANGED=0
 fi
 
