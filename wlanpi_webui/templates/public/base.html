@@ -22,6 +22,7 @@
   <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
   <!--htmx JS-->
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/_hyperscript.min.js') }}"></script>
   <!--HANDLE MOBILE STYLE-->
   <style>
     #thebiglebowski {
@@ -173,24 +174,13 @@
             </li>
             <li>
               <a href="#" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav">
-                  <li class="uk-nav-header">{{ profiler_message }}</li>
-                  <li><a
-                      href="{{ url_for('profiler.start_stop_profiler', task='stop' if profiler_status else 'start') }}">{{
-                      'STOP PROFILER' if profiler_status else 'START PROFILER' }}</a></li>
-                  <li class="uk-nav-divider"></li>
-                  <li><a hx-get="/profiler/profiles"
-                         hx-target="#content"
-                         hx-swap="innerHTML"
-                         hx-push-url="true"
-                         hx-indicator=".progress">PROFILES</a></li>
-                  <li><a hx-get="/profiler/purge"
-                         hx-target="#content"
-                         hx-swap="innerHTML"
-                         hx-push-url="true"
-                         hx-indicator=".progress">PURGE DATA</a></li>
-                </ul>
+              <div class="uk-navbar-dropdown uk-width-1-4@s">
+                <ul class="uk-nav uk-navbar-dropdown-nav"
+                    hx-get="/profiler/menu"
+                    hx-trigger="load, click delay:0.2s" 
+                    hx-target="this"
+                    hx-swap="innerHTML">
+                  </ul>
               </div>
             </li>
             <li><a hx-get="/network"
@@ -202,47 +192,21 @@
             <li>
               <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown uk-width-1-4@s">
-                <ul class="uk-nav uk-navbar-dropdown-nav "
+                <ul class="uk-nav uk-navbar-dropdown-nav"
                     hx-get="/kismet/menu"
-                    hx-trigger="load, click delay:0.2s, every 10s"
+                    hx-trigger="load, click delay:0.2s"
                     hx-target="this"
                     hx-swap="innerHTML">
                   </ul>
               </div>
             </li>
-            <li><a href="{{ url_for('grafana.grafana') }}" style="color: white;">GRAFANA <span
-                  uk-navbar-parent-icon></span></a>
+            <li><a href="#" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown uk-width-1-4@s">
-                <ul class="uk-nav uk-navbar-dropdown-nav" uk-nav>
-                  <li class="uk-nav-header">{{ grafana_message }}</li>
-                  <li><a
-                      href="{{ url_for('grafana.start_stop_grafana', task='stop' if grafana_status else 'start') }}">{{
-                      'STOP GRAFANA' if grafana_status else 'START GRAFANA' }}</a></li>
-                  <li class="uk-nav-divider"
-                    style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
-                  </li>
-                  <li><a class="uk-link"
-                      style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};"
-                      href="{{ url_for('grafana.grafana_url') }}" target="_blank">LAUNCH GRAFANA</a></li>
-                  <li class="uk-parent"
-                    style="visibility: {{ 'visible' if grafana_status else 'hidden' }}; display: {{ 'block' if grafana_status else 'none' }};">
-                    <a href="#">DATA STREAMS <span uk-navbar-parent-icon></span></a>
-                    <ul class="uk-nav-sub">
-                      <li>ENABLED:</li>
-                      <li><span
-                          style="visibility: {{ 'visible' if grafana_scanner_status else 'hidden' }}; display: {{ 'block' if grafana_scanner_status else 'none' }};">SCANNER
-                          WLAN0 <a
-                            href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
-                            stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-                      <li class="uk-nav-divider"></li>
-                      <li>AVAILABLE:</li>
-                      <li><span
-                          style="visibility: {{ 'hidden' if grafana_scanner_status else 'visible' }}; display: {{ 'none' if grafana_scanner_status else 'block' }};">SCANNER
-                          WLAN0 <a
-                            href="{{ url_for('grafana.start_stop_grafana_scanner', task='stop' if grafana_scanner_status else 'start') }}">{{
-                            stop_icon|safe if grafana_scanner_status else start_icon|safe }}</a></span></li>
-                    </ul>
-                  </li>
+                <ul class="uk-nav uk-navbar-dropdown-nav" 
+                    hx-get="/grafana/menu"
+                    hx-trigger="load, click delay:0.2s"
+                    hx-target="this"
+                    hx-swap="innerHTML">
                 </ul>
               </div>
             </li>
@@ -412,11 +376,12 @@
           }
         }
       }
-      xhr.open("GET", "{{ url_for('stream.stream') }}", true);
-      xhr.send(null);
+      // xhr.open("GET", "{{ url_for('stream.stream') }}", true);
+      // xhr.send(null);
     }
     updateStats()
     setInterval(updateStats, 2000);
+    // htmx.logAll();
   </script>
   <!--/JS-->
 </body>

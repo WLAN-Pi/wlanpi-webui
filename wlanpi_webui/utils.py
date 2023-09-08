@@ -28,6 +28,25 @@ def systemd_service_status(service):
     return True
 
 
+def run_command(cmd: list, suppress_output=False) -> str:
+    """Run a single CLI command with subprocess and return stdout or stderr response"""
+    cp = subprocess.run(
+        cmd,
+        encoding="utf-8",
+        shell=False,
+        check=False,
+        capture_output=True,
+    )
+
+    if not suppress_output:
+        if cp.stdout:
+            return cp.stdout
+        if cp.stderr:
+            return cp.stderr
+
+    return "completed process return code is non-zero with no stdout or stderr"
+
+
 def systemd_service_message(service):
     """
     Checks if systemd service is running.

@@ -5,7 +5,8 @@ from flask import current_app, redirect, render_template, request
 
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (get_apt_package_version, service_down,
-                                start_stop_service, systemd_service_status)
+                                start_stop_service, systemd_service_message,
+                                systemd_service_status)
 
 
 def try_url(url):
@@ -69,11 +70,96 @@ def grafana():
             return render_template("/public/service.html", service=unavailable)
 
 
+@bp.route("/grafana/menu")
+def grafana_menu():
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        grafana_message = systemd_service_message("grafana-server").replace(
+            "-server", ""
+        )
+        grafana_status = systemd_service_status("grafana-server")
+        grafana_scanner_status = systemd_service_status("wlanpi-grafana-scanner")
+        if grafana_status:
+            # active
+            grafana_task_url = "/stopgrafana"
+            grafana_task_anchor_text = "STOP"
+        else:
+            # not active
+            grafana_task_url = "/startgrafana"
+            grafana_task_anchor_text = "START"
+
+        enabled_data_streams = ""
+        disabled_data_streams = ""
+        if grafana_scanner_status:
+            # active
+            enabled_data_streams += """
+            <li><span>SCANNER WLAN0 <a hx-get="/stopgrafanascanner"
+                                       hx-indicator=".progress"><span uk-icon="close"></span></a></span></li>
+            """
+        else:
+            disabled_data_streams += """
+            <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
+                                       hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
+            """
+        args = {
+            "grafana_message": grafana_message,
+            "grafana_task_url": grafana_task_url,
+            "grafana_task_anchor_text": grafana_task_anchor_text,
+            "grafana_scanner_status": grafana_scanner_status,
+            "enabled_data_streams": enabled_data_streams,
+            "disabled_data_streams": disabled_data_streams,
+        }
+        if grafana_status:
+            # active
+            html = """
+            <li class="uk-nav-header">{grafana_message}</li>
+            <li><a hx-get="{grafana_task_url}"
+                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+            <li class="uk-nav-divider"></li>
+            <li><a class="uk-link"
+                   hx-get="/grafana"
+                   hx-target="#content"
+                   hx-trigger="click"
+                   hx-indicator=".progress"
+                   hx-push-url="true"
+                   hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
+            <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
+            <li class="uk-parent">
+                <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
+                <ul class="uk-nav-sub">
+                    <li>ENABLED:</li>
+                    {enabled_data_streams}
+                    <li class="uk-nav-divider"></li>
+                    <li>AVAILABLE:</li>
+                    {disabled_data_streams}
+                </ul>
+            </li>
+            """.format(
+                **args
+            )
+        else:
+            # not active
+            html = """
+            <li class="uk-nav-header">{grafana_message}</li>
+            <li><a hx-get="{grafana_task_url}"
+                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+            """.format(
+                **args
+            )
+        return html
+
+
 @bp.route("/<task>grafana")
 def start_stop_grafana(task):
-    return start_stop_service(task, "grafana-server")
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        start_stop_service(task, "grafana-server")
+    return "", 204
 
 
 @bp.route("/<task>grafanascanner")
 def start_stop_grafana_scanner(task):
-    return start_stop_service(task, "wlanpi-grafana-scanner")
+    htmx_request = request.headers.get("HX-Request") is not None
+    if htmx_request:
+        start_stop_service(task, "wlanpi-grafana-scanner")
+    return "", 204

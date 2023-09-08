@@ -83,7 +83,7 @@
         <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
           <div class="uk-grid-small uk-flex-middle" uk-grid>
             <div class="uk-width-auto">
-              <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">LLDP Neighbor</h3>
+              <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">LLDP Neighbour</h3>
             </div>
             <div class="uk-width-expand">
               <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"
@@ -100,7 +100,7 @@
         <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
           <div class="uk-grid-small uk-flex-middle" uk-grid>
             <div class="uk-width-auto">
-              <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">CDP Neighbor</h3>
+              <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">CDP Neighbour</h3>
             </div>
             <div class="uk-width-expand">
               <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"
@@ -114,6 +114,15 @@
     </div>
   </div>
   <br />
-  <div class="uk-flex uk-flex-center"><a href="" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page"
-      class="uk-icon-button"></a></div>
+  <div class="uk-flex uk-flex-center">
+    <a hx-get="/network"
+      hx-target="#content"
+      hx-trigger="click"
+      hx-indicator=".progress"
+      hx-push-url="true"
+      hx-swap="innerHTML"
+      uk-icon="icon: refresh; ratio: 2"
+      uk-tooltip="Refresh page"
+      class="uk-icon-button"></a>
+  </div>
 </div>
