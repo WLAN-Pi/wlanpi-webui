@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.6-17) unstable; urgency=medium
+wlanpi-webui (1.1.6-18) unstable; urgency=medium
 
   * Don't show data streams if there are none
 
