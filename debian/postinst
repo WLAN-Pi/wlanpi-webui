@@ -90,10 +90,11 @@ if [ ! -f /etc/nginx/ssl/self-signed-wlanpi.cert ] || [ ! -f /etc/nginx/ssl/self
     getent group grafana || groupadd grafana
     chgrp grafana /etc/nginx/ssl/self-signed-grafana.key
     chgrp grafana /etc/nginx/ssl/self-signed-grafana.cert
-    chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.key
-    chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.cert
     CONF_CHANGED=0
 fi
+
+chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.key
+chgrp wlanpi /etc/nginx/ssl/self-signed-wlanpi.cert
 
 # if we changed a nginx config file, test config, and restart nginx.
 if [ $CONF_CHANGED -eq 0 ]; then
@@ -120,6 +121,8 @@ fi
 if [ -d /var/www/librespeed ]; then
     chown -R www-data:www-data /var/www/librespeed
 fi
+
+systemctl daemon-reload
 
 echo "Restarting wlanpi-core ..."
 deb-systemd-invoke restart wlanpi-core.service

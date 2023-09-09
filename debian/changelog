@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.6-15) unstable; urgency=medium
+wlanpi-webui (1.1.6-16) unstable; urgency=medium
 
   * Add htmx 1.9.5 for AJAX stuff
 
