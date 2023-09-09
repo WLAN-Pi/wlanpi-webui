@@ -6,7 +6,7 @@ from flask import current_app, redirect, render_template, request
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (get_apt_package_version,
                                 get_service_down_message, is_htmx,
-                                start_stop_service,
+                                start_stop_service, system_service_exists,
                                 system_service_running_state,
                                 systemd_service_message)
 
@@ -92,7 +92,11 @@ def grafana_side_menu():
             "-server", ""
         )
         grafana_status = system_service_running_state("grafana-server")
-        grafana_scanner_status = system_service_running_state("wlanpi-grafana-scanner")
+        grafana_scanner_status = ""
+        if system_service_exists("wlanpi-grafana-scanner"):
+            grafana_scanner_status = system_service_running_state(
+                "wlanpi-grafana-scanner"
+            )
         if grafana_status:
             # active
             grafana_task_url = "/stopgrafana"
@@ -115,13 +119,31 @@ def grafana_side_menu():
             <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
                                        hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
             """
+        data_streams_html = ""
+        if enabled_data_streams == "" and disabled_data_streams == "":
+            pass
+        else:
+            data_streams_html = """
+                <li class="uk-parent">
+                    <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
+                    <ul class="uk-nav-sub">
+                        <li>ENABLED:</li>
+                        {enabled_data_streams}
+                        <li class="uk-nav-divider"></li>
+                        <li>AVAILABLE:</li>
+                        {disabled_data_streams}
+                    </ul>
+                </li>
+                """.format(
+                enabled_data_streams=enabled_data_streams,
+                disabled_data_streams=disabled_data_streams,
+            )
         args = {
             "grafana_message": grafana_message,
             "grafana_task_url": grafana_task_url,
             "grafana_task_anchor_text": grafana_task_anchor_text,
             "grafana_scanner_status": grafana_scanner_status,
-            "enabled_data_streams": enabled_data_streams,
-            "disabled_data_streams": disabled_data_streams,
+            "data_streams_html": data_streams_html,
         }
         if grafana_status:
             # active
@@ -137,16 +159,7 @@ def grafana_side_menu():
                    hx-push-url="true"
                    hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
             <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
-            <li class="uk-parent">
-                <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
-                <ul class="uk-nav-sub">
-                    <li>ENABLED:</li>
-                    {enabled_data_streams}
-                    <li class="uk-nav-divider"></li>
-                    <li>AVAILABLE:</li>
-                    {disabled_data_streams}
-                </ul>
-            </li>
+            {data_streams_html}
             """.format(
                 **args
             )
@@ -169,7 +182,11 @@ def grafana_main_menu():
             "-server", ""
         )
         grafana_status = system_service_running_state("grafana-server")
-        grafana_scanner_status = system_service_running_state("wlanpi-grafana-scanner")
+        grafana_scanner_status = ""
+        if system_service_exists("wlanpi-grafana-scanner"):
+            grafana_scanner_status = system_service_running_state(
+                "wlanpi-grafana-scanner"
+            )
         if grafana_status:
             # active
             grafana_task_url = "/stopgrafana"
@@ -192,13 +209,31 @@ def grafana_main_menu():
             <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
                                        hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
             """
+        data_streams_html = ""
+        if enabled_data_streams == "" and disabled_data_streams == "":
+            pass
+        else:
+            data_streams_html = """
+                <li class="uk-parent">
+                    <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
+                    <ul class="uk-nav-sub">
+                        <li>ENABLED:</li>
+                        {enabled_data_streams}
+                        <li class="uk-nav-divider"></li>
+                        <li>AVAILABLE:</li>
+                        {disabled_data_streams}
+                    </ul>
+                </li>
+                """.format(
+                enabled_data_streams=enabled_data_streams,
+                disabled_data_streams=disabled_data_streams,
+            )
         args = {
             "grafana_message": grafana_message,
             "grafana_task_url": grafana_task_url,
             "grafana_task_anchor_text": grafana_task_anchor_text,
             "grafana_scanner_status": grafana_scanner_status,
-            "enabled_data_streams": enabled_data_streams,
-            "disabled_data_streams": disabled_data_streams,
+            "data_streams_html": data_streams_html,
         }
         if grafana_status:
             # active
@@ -215,16 +250,7 @@ def grafana_main_menu():
                    hx-push-url="true"
                    hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
             <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
-            <li class="uk-parent">
-                <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
-                <ul class="uk-nav-sub">
-                    <li>ENABLED:</li>
-                    {enabled_data_streams}
-                    <li class="uk-nav-divider"></li>
-                    <li>AVAILABLE:</li>
-                    {disabled_data_streams}
-                </ul>
-            </li>
+            {data_streams_html}
             """.format(
                 **args
             )
