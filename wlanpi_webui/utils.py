@@ -4,11 +4,15 @@ import requests
 from flask import current_app, redirect, request
 
 
+def is_htmx(request):
+    return request.headers.get("hx-request") == "true"
+
+
 def get_service_down_message(service: str):
     return f"{service.capitalize()} service is unavailable or down."
 
 
-def systemd_service_status_running(service):
+def system_service_running_state(service):
     """
     Checks the status of the systemd service.
     Returns true if systemd service is running, false otherwise.
@@ -53,7 +57,7 @@ def systemd_service_message(service):
     Checks if systemd service is running.
     Returns '<service> is running' if it is, and '<service> is not running' if not.
     """
-    status = systemd_service_status_running(service)
+    status = system_service_running_state(service)
     if status:
         return f"{service} is running"
     else:

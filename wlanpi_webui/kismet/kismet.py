@@ -1,8 +1,9 @@
 from flask import redirect, request
 
 from wlanpi_webui.kismet import bp
-from wlanpi_webui.utils import (start_stop_service, systemd_service_message,
-                                systemd_service_status_running)
+from wlanpi_webui.utils import (is_htmx, start_stop_service,
+                                system_service_running_state,
+                                systemd_service_message)
 
 
 @bp.route("/kismet")
@@ -13,18 +14,16 @@ def kismet():
 
 @bp.route("/<task>kismet")
 def start_stop_kismet(task):
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         start_stop_service(task, "kismet")
     return "", 204
 
 
 @bp.route("/kismet/side_menu")
 def kismet_side_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         kismet_message = systemd_service_message("kismet")
-        kismet_status = systemd_service_status_running("kismet")
+        kismet_status = system_service_running_state("kismet")
         if kismet_status:
             # active
             kismet_task_url = "/stopkismet"
@@ -62,10 +61,9 @@ def kismet_side_menu():
 
 @bp.route("/kismet/main_menu")
 def kismet_main_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         kismet_message = systemd_service_message("kismet")
-        kismet_status = systemd_service_status_running("kismet")
+        kismet_status = system_service_running_state("kismet")
         if kismet_status:
             # active
             kismet_task_url = "/stopkismet"

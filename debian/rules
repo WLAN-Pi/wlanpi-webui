@@ -9,7 +9,7 @@ SNAKE=/usr/bin/python3
 PACKAGE=$(shell dh_listpackages)
 VERSION=$(shell parsechangelog | grep ^Version: | sed -re 's/[^0-9]+([^-]+).*/\1/')
 SDIST_DIR=debian/$(PACKAGE)-$(VERSION)
-EXTRA_REQUIREMENTS=--upgrade-pip-to 23.2 --preinstall "setuptools==68.0.0" --preinstall "wheel==0.40.0"
+EXTRA_REQUIREMENTS=--upgrade-pip-to 23.2.1 --preinstall "setuptools==68.0.0" --preinstall "wheel==0.40.0"
 DH_VENV_ARGS=--builtin-venv --python ${SNAKE} $(EXTRA_REQUIREMENTS) \
 			--extra-pip-arg=--progress-bar=on
 
@@ -20,6 +20,9 @@ PKG_WWW_DIR=$(PKG_PREFIX)/var/www/librespeed
 
 %:
 	dh $@ --with python3,python-virtualenv --buildsystem=pybuild
+
+override_dh_installsystemd:
+	dh_installsystemd --name=wlanpi-webui --no-start 
 
 override_dh_virtualenv:
 	mkdir -p $(PKG_WWW_DIR)

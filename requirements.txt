@@ -15,10 +15,6 @@ charset-normalizer==3.2.0
 click==8.1.7
     # via flask
 flask==2.3.3
-    # via
-    #   -r requirements.in
-    #   flask-htmx
-flask-htmx==0.3.1
     # via -r requirements.in
 gunicorn==21.2.0
     # via -r requirements.in

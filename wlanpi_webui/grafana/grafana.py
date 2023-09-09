@@ -5,9 +5,10 @@ from flask import current_app, redirect, render_template, request
 
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (get_apt_package_version,
-                                get_service_down_message, start_stop_service,
-                                systemd_service_message,
-                                systemd_service_status_running)
+                                get_service_down_message, is_htmx,
+                                start_stop_service,
+                                system_service_running_state,
+                                systemd_service_message)
 
 
 def try_url(url):
@@ -31,7 +32,7 @@ def grafana():
     base = request.host.split(":")[0]
 
     resp_data = {"iframe_url": f"https://{base}/app/grafana"}
-    is_running = systemd_service_status_running("grafana-server")
+    is_running = system_service_running_state("grafana-server")
 
     current_app.logger.debug(
         "systemctl is-active for grafana-server is %s" % is_running
@@ -40,63 +41,58 @@ def grafana():
     return_code = try_url(resp_data["iframe_url"])
     version = get_apt_package_version("grafana")
 
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         # is a htmx request
         if version == "":
             return render_template(
-                "/public/service_partial.html",
+                "/partials/service.html",
                 service="Grafana is not installed.",
             )
         if not is_running:
             return render_template(
-                "/public/service_partial.html", service=service_down_message
+                "/partials/service.html", service=service_down_message
             )
         if is_running and return_code == 502:
             return render_template(
-                "/public/service_partial.html",
-                service="Grafana URL responded with HTTP code 502. Try again in a few moments.",
+                "/partials/service.html",
+                service="Grafana is running and responded with 502 Bad Gateway. Try again in a few moments.",
             )
         if return_code == 502:
             return render_template(
-                "/public/service_partial.html",
-                service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
+                "/partials/service.html",
+                service="Grafana is not running and responded with 502 Bad Gateway. Start the service, wait a few moments and try again.",
             )
-        return render_template("/public/iframe_partial.html", **resp_data)
+        return render_template("/partials/iframe.html", **resp_data)
     else:
         # not a htmx request
-
         if version == "":
             return render_template(
-                "/public/service.html",
+                "/extends/service.html",
                 service="Grafana is not installed.",
             )
         if not is_running:
             return render_template("/public/service.html", service=service_down_message)
         if is_running and return_code == 502:
             return render_template(
-                "/public/service.html",
+                "/extends/service.html",
                 service="Grafana URL responded with HTTP code 502. Try again in a few moments.",
             )
         if return_code == 502:
             return render_template(
-                "/public/service.html",
+                "/extends/service.html",
                 service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
             )
-        return render_template("/public/iframe.html", **resp_data)
+        return render_template("/extends/iframe.html", **resp_data)
 
 
 @bp.route("/grafana/side_menu")
 def grafana_side_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         grafana_message = systemd_service_message("grafana-server").replace(
             "-server", ""
         )
-        grafana_status = systemd_service_status_running("grafana-server")
-        grafana_scanner_status = systemd_service_status_running(
-            "wlanpi-grafana-scanner"
-        )
+        grafana_status = system_service_running_state("grafana-server")
+        grafana_scanner_status = system_service_running_state("wlanpi-grafana-scanner")
         if grafana_status:
             # active
             grafana_task_url = "/stopgrafana"
@@ -168,15 +164,12 @@ def grafana_side_menu():
 
 @bp.route("/grafana/main_menu")
 def grafana_main_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         grafana_message = systemd_service_message("grafana-server").replace(
             "-server", ""
         )
-        grafana_status = systemd_service_status_running("grafana-server")
-        grafana_scanner_status = systemd_service_status_running(
-            "wlanpi-grafana-scanner"
-        )
+        grafana_status = system_service_running_state("grafana-server")
+        grafana_scanner_status = system_service_running_state("wlanpi-grafana-scanner")
         if grafana_status:
             # active
             grafana_task_url = "/stopgrafana"
@@ -249,15 +242,13 @@ def grafana_main_menu():
 
 @bp.route("/<task>grafana")
 def start_stop_grafana(task):
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         start_stop_service(task, "grafana-server")
     return "", 204
 
 
 @bp.route("/<task>grafanascanner")
 def start_stop_grafana_scanner(task):
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         start_stop_service(task, "wlanpi-grafana-scanner")
     return "", 204

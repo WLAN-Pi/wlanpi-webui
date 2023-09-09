@@ -2,23 +2,21 @@ from flask import render_template, request
 
 from wlanpi_webui.about import bp
 from wlanpi_webui.config import Config, get_apt_package_version, get_hostname
-from wlanpi_webui.utils import systemd_service_status_running
+from wlanpi_webui.utils import is_htmx, system_service_running_state
 
 
 @bp.route("/about")
 def about():
-    htmx_request = request.headers.get("HX-Request") is not None
-
     resp_data = {
         "hostname": get_hostname(),
         "wlanpi_core_version": get_apt_package_version("wlanpi-core"),
         "wlanpi_core_status": (
-            "active" if systemd_service_status_running("wlanpi-core") else "inactive"
+            "active" if system_service_running_state("wlanpi-core") else "inactive"
         ),
         "wlanpi_version": Config.WLANPI_VERSION,
         "webui_version": Config.WEBUI_VERSION,
     }
-    if htmx_request:
-        return render_template("/public/about_partial.html", **resp_data)
+    if is_htmx(request):
+        return render_template("/partials/about.html", **resp_data)
     else:
-        return render_template("/public/about.html", **resp_data)
+        return render_template("/extends/about.html", **resp_data)

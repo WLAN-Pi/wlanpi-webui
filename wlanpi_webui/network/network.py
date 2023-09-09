@@ -6,6 +6,7 @@ import threading
 from flask import render_template, request
 
 from wlanpi_webui.network import bp
+from wlanpi_webui.utils import is_htmx
 
 
 @bp.route("/network")
@@ -89,8 +90,7 @@ def network():
         "cdp": cdp,
     }
 
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
-        return render_template("/public/network_partial.html", **resp_data)
+    if is_htmx(request):
+        return render_template("/partials/network.html", **resp_data)
     else:
-        return render_template("/public/network.html", **resp_data)
+        return render_template("/extends/network.html", **resp_data)

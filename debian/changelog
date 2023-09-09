@@ -1,7 +1,6 @@
 wlanpi-webui (1.1.6-15) unstable; urgency=medium
 
-  * Add flask-htmx 0.3.1
-  * Add htmx 1.9.5
+  * Add htmx 1.9.5 for AJAX stuff
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 06 Sep 2023 08:39:13 -0400
 

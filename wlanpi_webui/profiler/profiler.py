@@ -9,9 +9,9 @@ from flask import abort, current_app, render_template, request, send_file
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp
-from wlanpi_webui.utils import (run_command, start_stop_service,
-                                systemd_service_message,
-                                systemd_service_status_running)
+from wlanpi_webui.utils import (is_htmx, run_command, start_stop_service,
+                                system_service_running_state,
+                                systemd_service_message)
 
 getting_started = """
 <ul uk-accordion="">
@@ -112,7 +112,7 @@ def get_profiler_file_listing_html(target) -> list:
                                             type="button" 
                                             class="uk-button uk-button-default" 
                                             _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profile_div_id}">Close</button>
-                                        <a href='{content_url}'><button class='uk-button uk-button-primary' type='button'>Save</button></a>
+                                        <a href='{content_url}'><button class='uk-button uk-button-secondary' type='button'>Save</button></a>
                                     </form>
                                 </div>
                             </div>
@@ -330,11 +330,10 @@ def purge():
     if not files:
         content = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
     resp_data = {"content": content}
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
-        return render_template("/public/profiler_partial.html", **resp_data)
+    if is_htmx(request):
+        return render_template("/partials/profiler.html", **resp_data)
     else:
-        return render_template("/public/profiler.html", **resp_data)
+        return render_template("/extends/profiler.html", **resp_data)
 
 
 @bp.route("/profiler/profile")
@@ -343,8 +342,7 @@ def profile():
     # if key doesn't exist, returns None
     profile = request.args.get("profile")
     html = get_profiler_file_listing_html(profile)
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         return html
 
 
@@ -363,16 +361,15 @@ def profiler():
         content = "".join(custom_output)
         content += """
   <div class="uk-flex uk-flex-center">
-    <a hx-get="/profiler" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+    <a hx-get="/profiler/profiles" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
       hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
   </div>
   """
     resp_data = {"content": content}
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
-        return render_template("/public/profiler_partial.html", **resp_data)
+    if is_htmx(request):
+        return render_template("/partials/profiler.html", **resp_data)
     else:
-        return render_template("/public/profiler.html", **resp_data)
+        return render_template("/extends/profiler.html", **resp_data)
 
 
 @bp.route("/profiler/<path:filename>")
@@ -389,18 +386,16 @@ def get_profiler_results(filename):
 
 @bp.route("/<task>profiler")
 def start_stop_profiler(task):
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         start_stop_service(task, "wlanpi-profiler")
     return "", 204
 
 
 @bp.route("/profiler/side_menu")
 def profiler_side_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         profiler_message = systemd_service_message("wlanpi-profiler")
-        profiler_status = systemd_service_status_running("wlanpi-profiler")
+        profiler_status = system_service_running_state("wlanpi-profiler")
         if profiler_status:
             # active
             profiler_task_url = "/stopprofiler"
@@ -436,10 +431,9 @@ def profiler_side_menu():
 
 @bp.route("/profiler/main_menu")
 def profiler_main_menu():
-    htmx_request = request.headers.get("HX-Request") is not None
-    if htmx_request:
+    if is_htmx(request):
         profiler_message = systemd_service_message("wlanpi-profiler")
-        profiler_status = systemd_service_status_running("wlanpi-profiler")
+        profiler_status = system_service_running_state("wlanpi-profiler")
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid:
             qrcode_spec = "WIFI:S:{};T:WPA;P:{};;".format(profiler_ssid, "0123456789")
