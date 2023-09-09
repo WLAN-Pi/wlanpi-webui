@@ -124,7 +124,11 @@ fi
 echo "Restarting wlanpi-core ..."
 deb-systemd-invoke restart wlanpi-core.service
 
-echo "Restarting wlanpi-webui ..."
+echo "Restarting wlanpi-webui socket ..."
+deb-systemd-invoke stop wlanpi-webui.socket
+deb-systemd-invoke start wlanpi-webui.socket
+
+echo "Restarting wlanpi-webui service ..."
 deb-systemd-invoke restart wlanpi-webui.service
 
 exit 0
