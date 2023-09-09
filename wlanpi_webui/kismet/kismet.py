@@ -1,4 +1,5 @@
 from flask import redirect, request
+from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.kismet import bp
 from wlanpi_webui.utils import (is_htmx, start_stop_service,
@@ -20,6 +21,7 @@ def start_stop_kismet(task):
 
 
 @bp.route("/kismet/side_menu")
+@minify_decorators.minify(html=True)
 def kismet_side_menu():
     if is_htmx(request):
         kismet_message = systemd_service_message("kismet")

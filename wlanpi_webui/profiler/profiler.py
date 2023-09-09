@@ -6,6 +6,7 @@ from enum import Enum
 from pathlib import Path
 
 from flask import abort, current_app, render_template, request, send_file
+from flask_minify import decorators as minify_decorators
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp
@@ -392,6 +393,7 @@ def start_stop_profiler(task):
 
 
 @bp.route("/profiler/side_menu")
+@minify_decorators.minify(html=True)
 def profiler_side_menu():
     if is_htmx(request):
         profiler_message = systemd_service_message("wlanpi-profiler")
@@ -430,6 +432,7 @@ def profiler_side_menu():
 
 
 @bp.route("/profiler/main_menu")
+@minify_decorators.minify(html=True)
 def profiler_main_menu():
     if is_htmx(request):
         profiler_message = systemd_service_message("wlanpi-profiler")
