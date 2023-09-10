@@ -15,12 +15,24 @@ def get_service_down_message(service: str):
 def system_service_exists(service):
     """Check if a systemd service exists.
     Returns true if systemd service exists, false otherwise.
+
+    $ /bin/systemctl list-unit-files wlanpi-grafana-scanner.service
+    UNIT FILE                      STATE    VENDOR PRESET
+    wlanpi-grafana-scanner.service disabled enabled
+
+    1 unit files listed.
+    $ echo $?
+    0
+    $ /bin/systemctl list-unit-files wlanpi-grafana-wipry.service
+    UNIT FILE STATE VENDOR PRESET
+
+    0 unit files listed.
+    $ echo $?
+    1
     """
     cmd = f"/bin/systemctl list-unit-files {service}.*"
     current_app.logger.debug("subprocess is running %s" % cmd)
-    # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
     result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
-    # cmd failed, so systemd service not installed
     if result.returncode == 0:
         return True
     return False
