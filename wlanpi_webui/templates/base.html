@@ -172,8 +172,9 @@
           <ul class="uk-navbar-nav uk-visible@m">
             <li>
               <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-2">
+              <div class="uk-navbar-dropdown"
+                   uk-dropdown="offset: 0">
+                <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
                   <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
                       hx-indicator=".progress">LIBRESPEED</a></li>
                   <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"
@@ -183,12 +184,13 @@
             </li>
             <li>
               <a href="#" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s"
+              <div class="uk-navbar-dropdown"
                    hx-get="/profiler/main_menu"
                    hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('profiler_dropdown').classList.contains('uk-open')]"
                    hx-target="#profiler_ul"
                    hx-swap="innerHTML"
-                   id="profiler_dropdown">
+                   id="profiler_dropdown"
+                   uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="profiler_ul">
                 </ul>
               </div>
@@ -197,23 +199,25 @@
                 hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
             <li>
               <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s"
+              <div class="uk-navbar-dropdown"
                       hx-get="/kismet/main_menu"
                       hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('kismet_dropdown').classList.contains('uk-open')]"
                       hx-target="#kismet_ul"
                       hx-swap="innerHTML"
-                      id="kismet_dropdown">
+                      id="kismet_dropdown"
+                      uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="kismet_ul">
                 </ul>
               </div>
             </li>
             <li><a href="#" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown uk-width-1-4@s"
+              <div class="uk-navbar-dropdown"
                    hx-get="/grafana/main_menu"
                    hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('grafana_dropdown').classList.contains('uk-open')]"
                    hx-target="#grafana_ul"
                    hx-swap="innerHTML"
-                   id="grafana_dropdown">
+                   id="grafana_dropdown"
+                   uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="grafana_ul">
                 </ul>
               </div>
@@ -226,7 +230,8 @@
           <ul class="uk-navbar-nav uk-visible@m">
             <li>
               <a href="#" uk-icon="icon: settings"></a>
-              <div class="uk-navbar-dropdown">
+              <div class="uk-navbar-dropdown"
+                   uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
                   <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
                       hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
