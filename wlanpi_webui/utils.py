@@ -16,19 +16,14 @@ def system_service_exists(service):
     """Check if a systemd service exists.
     Returns true if systemd service exists, false otherwise.
     """
-    try:
-        cmd = f"/bin/systemctl list-unit-files {service}.* &>/dev/null"
-        current_app.logger.debug("subprocess is running %s" % cmd)
-        # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
-        subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL).check_returncode()
-    except subprocess.CalledProcessError as exc:
-        # cmd failed, so systemd service not installed
-        current_app.logger.debug(
-            "service %s, error code %s, output %s", service, exc.returncode
-        )
-        return False
-
-    return True
+    cmd = f"/bin/systemctl list-unit-files {service}.*"
+    current_app.logger.debug("subprocess is running %s" % cmd)
+    # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
+    # cmd failed, so systemd service not installed
+    if result.returncode == 0:
+        return True
+    return False
 
 
 def system_service_running_state(service):

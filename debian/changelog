@@ -1,15 +1,10 @@
-wlanpi-webui (1.1.6-19) unstable; urgency=medium
+wlanpi-webui (1.1.6-20) unstable; urgency=medium
 
   * add versions to _hyperscript and htmx JS files
   * add flask_minify 
   * fix proxy settings
   * change dropdown offset
-
- -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 09 Sep 2023 16:52:05 -0400
-
-wlanpi-webui (1.1.6-18) unstable; urgency=medium
-
-  * Don't show data streams if there are none
+  * don't show data streams if there are none
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 09 Sep 2023 02:13:09 -0400
 
