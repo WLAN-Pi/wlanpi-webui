@@ -1,42 +1,22 @@
-wlanpi-webui (1.1.6-20) unstable; urgency=medium
+wlanpi-webui (1.1.6-21) unstable; urgency=medium
 
   * add versions to _hyperscript and htmx JS files
   * add flask_minify 
   * fix proxy settings
   * change dropdown offset
   * don't show data streams if there are none
-
- -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 09 Sep 2023 02:13:09 -0400
-
-wlanpi-webui (1.1.6-16) unstable; urgency=medium
-
+  * fix QR code flicker
   * Add htmx 1.9.5 for AJAX stuff
-
- -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 06 Sep 2023 08:39:13 -0400
-
-wlanpi-webui (1.1.6-14) unstable; urgency=medium
-
-  * Navbar UI updates
   * Attach / detach wlan0 data stream via start / stop of wlanpi-grafana-scanner.service 
   * Upgrade uikit to 3.16.26
-
- -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 05 Sep 2023 20:24:56 -0400
-
-wlanpi-webui (1.1.6-12) stable; urgency=medium
-
   * Move grafana.ini config file to wlanpi-grafana package
-
- -- Jiri Brejcha <jirka@jiribrejcha.net>  Mon, 04 Sep 2023 17:20:07 +0100
-
-wlanpi-webui (1.1.6-11) stable; urgency=medium
-
   * Start / stop services like Kismet, Grafana, and Profiler from UI via wlanpi-core
   * Remove footer and move content to dedicated About page
   * Add streaming system stats under primary navigation bar
   * Move from http to https
   * Proxy changes for Grafana and Cockpit
   
-  Thanks Orbitix for contributing to this release.
+  Thanks Orbitix and Jiri for contributing to this release.
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Sat, 01 Sep 2023 12:48:32 -0500
 
