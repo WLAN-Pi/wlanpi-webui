@@ -101,24 +101,22 @@ def get_profiler_file_listing_html(target) -> list:
                     div_id = f"profile_{profile_stub}"
 
                     if target == profile_stub:
-                        html = """
-                        <div id="{profile_div_id}" class="uk-modal uk-modal-container" style="display:block;">
-                            <div class="uk-modal-dialog uk-modal-body">
-                                <h2 class="uk-modal-title">{modal_title}</h2>
-                                <pre>{profile_content}</pre>
-                                <div class='uk-modal-footer uk-text-right'>
-                                    <form _="on submit take .uk-open from #{profile_div_id}">
-                                        <button 
-                                            id="cancelButton"
-                                            type="button" 
-                                            class="uk-button uk-button-default" 
-                                            _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profile_div_id}">Close</button>
-                                        <a href='{content_url}'><button class='uk-button uk-button-secondary' type='button'>Save</button></a>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>    
-                        """.format(
+                        html = """<div id="{profile_div_id}" class="uk-modal uk-modal-container" style="display:block;">
+<div class="uk-modal-dialog uk-modal-body">
+<h2 class="uk-modal-title">{modal_title}</h2>
+<pre>{profile_content}</pre>
+<div class='uk-modal-footer uk-text-right'>
+<form _="on submit take .uk-open from #{profile_div_id}">
+<button 
+id="cancelButton"
+type="button" 
+class="uk-button uk-button-default" 
+_="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profile_div_id}">Close</button>
+<a href='{content_url}'><button class='uk-button uk-button-secondary' type='button'>Save</button></a>
+</form>
+</div>
+</div>
+</div>""".format(
                             profile_div_id=div_id,
                             modal_title=friendly,
                             profile_content=profile.content,
@@ -157,22 +155,21 @@ def get_profiler_files_listing_html() -> list:
                     div_id = f"profile_{profile_stub}"
                     tooltip = f'View text report for {client.split("/")[-1]}'
                     text = """<button 
-                                class="uk-button uk-button-default uk-button-small" 
-                                hx-get="/profiler/profile?profile={stub}" 
-                                hx-trigger="click" 
-                                hx-target="#profiler-modals"
-                                uk-tooltip="{tip}"
-                                hx-indicator=".progress"
-                                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>
-                    """.format(
+class="uk-button uk-button-default uk-button-small" 
+hx-get="/profiler/profile?profile={stub}" 
+hx-trigger="click" 
+hx-target="#profiler-modals"
+uk-tooltip="{tip}"
+hx-indicator=".progress"
+_="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>""".format(
                         stub=profile_stub, id=div_id, tip=tooltip
                     )
 
                 pcap = ""
                 if profile.profiletype == ProfileResultType.PCAP:
                     pcap = """<a href='{1}{2}'>
-                                <button class='uk-button uk-button-default uk-button-small' uk-tooltip='{4}'>pcap</button>
-                                </a>""".format(
+<button class='uk-button uk-button-default uk-button-small' uk-tooltip='{4}'>pcap</button>
+</a>""".format(
                         modifytime,
                         request.url_root,
                         client,
@@ -200,23 +197,20 @@ def get_profiler_files_listing_html() -> list:
 
         results.append(getting_started)
         results.append(
-            """
-                       <div><h3 class="uk-h3">Profiles</h3></div>
-                       <p>Output below is sorted by last modification timestamps. Most recent profiles will show at the top.</p>
-                       <div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
-                       <thead></thead><tbody>
-                       """
+            """<div><h3 class="uk-h3">Profiles</h3></div>
+<p>Output below is sorted by last modification timestamps. Most recent profiles will show at the top.</p>
+<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
+<thead></thead><tbody>"""
         )
         heading_appended = False
         for key, attrs in seen_hash.items():
             if not heading_appended:
                 results.append(
                     """<tr><th class="uk-width-small uk-text-nowrap">Last Modification</th>
-                    <th class="uk-width-small uk-text-no-wrap">Client MAC</th>
-                    <th class="uk-width-small">Band</th>
-                    <th class="uk-width-small">Text Report</th>
-                    <th>Download</th></tr>
-                    """
+<th class="uk-width-small uk-text-no-wrap">Client MAC</th>
+<th class="uk-width-small">Band</th>
+<th class="uk-width-small">Text Report</th>
+<th>Download</th></tr>"""
                 )
                 heading_appended = True
             client_mac_value = key.split("_")[0]
@@ -229,11 +223,9 @@ def get_profiler_files_listing_html() -> list:
 
         if reports:
             results.append(
-                """
-                           <div class="uk-flex uk-flex-column"><h4>Reports</h4></div>
-                           <div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
-                           <thead><tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small">Report</th><th>Download</th></tr></thead><tbody>
-                           """
+                """<div class="uk-flex uk-flex-column"><h4>Reports</h4></div>
+<div class="uk-overflow-auto"><table class="uk-table uk-table-small uk-table-responsive">
+<thead><tr><th class="uk-width-small uk-text-nowrap">Last Modification</th><th class="uk-width-small">Report</th><th>Download</th></tr></thead><tbody>"""
             )
             for attrs in reports:
                 report = attrs.filepath.replace(
@@ -322,10 +314,9 @@ def purge():
     files = get_profiler_files_to_purge()
     inner = "\r\n".join([f"rm {file}" for file in files])
     content = """<div>
-    <p>The <tt>webui</tt> process does not have permission to remove files.</p>
-    <p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{0}</pre></p>
-    </div>
-    """.format(
+<p>The <tt>webui</tt> process does not have permission to remove files.</p>
+<p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{0}</pre></p>
+</div>""".format(
         inner
     )
     if not files:
@@ -361,10 +352,10 @@ def profiler():
     else:
         content = "".join(custom_output)
         content += """
-  <div class="uk-flex uk-flex-center">
-    <a hx-get="/profiler/profiles" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-      hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
-  </div>
+<div class="uk-flex uk-flex-center">
+<a hx-get="/profiler/profiles" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
+</div>
   """
     resp_data = {"content": content}
     if is_htmx(request):
@@ -411,21 +402,19 @@ def profiler_side_menu():
             "profiler_task_url": profiler_task_url,
             "profiler_task_anchor_text": profiler_task_anchor_text,
         }
-        html = """
-        <li class="uk-nav-header">{profiler_message}</li>
-        <li><a hx-get="{profiler_task_url}"
-               hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
-        <li><a hx-get="/profiler/profiles"
-            hx-target="#content"
-            hx-swap="innerHTML"
-            hx-push-url="true"
-            hx-indicator=".progress">PROFILES</a></li>
-        <li><a hx-get="/profiler/purge"
-            hx-target="#content"
-            hx-swap="innerHTML"
-            hx-push-url="true"
-            hx-indicator=".progress">PURGE DATA</a></li>
-        """.format(
+        html = """<li class="uk-nav-header">{profiler_message}</li>
+<li><a hx-get="{profiler_task_url}"
+        hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+<li><a hx-get="/profiler/profiles"
+    hx-target="#content"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-indicator=".progress">PROFILES</a></li>
+<li><a hx-get="/profiler/purge"
+    hx-target="#content"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-indicator=".progress">PURGE DATA</a></li>""".format(
             **args
         )
         return html
@@ -440,13 +429,11 @@ def profiler_main_menu():
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid:
             qrcode_spec = "WIFI:S:{};T:WPA;P:{};;".format(profiler_ssid, "0123456789")
-            profiler_ssid = """
-            <li>SSID: {profiler_ssid}</li>
-            <div id="qrcode" style="width:200px; height:200px;"></div>
-            <script type="text/javascript">
-                new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
-            </script>
-            """.format(
+            profiler_ssid = """<li>SSID: {profiler_ssid}</li>
+<div id="qrcode" style="width:200px; height:200px;"></div>
+<script type="text/javascript">
+    new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
+</script>""".format(
                 profiler_ssid=profiler_ssid, qrcode_spec=qrcode_spec
             )
         else:
@@ -465,23 +452,21 @@ def profiler_main_menu():
             "profiler_task_anchor_text": profiler_task_anchor_text,
             "profiler_ssid": profiler_ssid,
         }
-        html = """
-        <li class="uk-nav-header">{profiler_message}</li>
-        {profiler_ssid}
-        <li><a hx-get="{profiler_task_url}"
-               hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
-        <li class="uk-nav-divider"></li>
-        <li><a hx-get="/profiler/profiles"
-            hx-target="#content"
-            hx-swap="innerHTML"
-            hx-push-url="true"
-            hx-indicator=".progress">PROFILES</a></li>
-        <li><a hx-get="/profiler/purge"
-            hx-target="#content"
-            hx-swap="innerHTML"
-            hx-push-url="true"
-            hx-indicator=".progress">PURGE DATA</a></li>
-        """.format(
+        html = """<li class="uk-nav-header">{profiler_message}</li>
+{profiler_ssid}
+<li><a hx-get="{profiler_task_url}"
+        hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+<li class="uk-nav-divider"></li>
+<li><a hx-get="/profiler/profiles"
+    hx-target="#content"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-indicator=".progress">PROFILES</a></li>
+<li><a hx-get="/profiler/purge"
+    hx-target="#content"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-indicator=".progress">PURGE DATA</a></li>""".format(
             **args
         )
         return html
