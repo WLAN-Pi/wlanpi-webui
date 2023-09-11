@@ -122,34 +122,35 @@
       style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;">
       {% autoescape false %}
       <div style="display: inline-flex; padding: 2px 0px 2px 0px; ">
-        <div style="color: #2e2e2e; white-space: pre-wrap; padding: 4px;"><img
+        <div style="color: #fff; white-space: pre-wrap; padding: 4px;"><img
             src="{{ url_for('static', filename='icon/globe.svg') }}"></div>
-        <div id="ip_addr" style="color: #2e2e2e; padding: 4px;">---</div>
+        <div id="ip_addr" style="color: #fff; padding: 4px;">---</div>
       </div>
 
       <div style="display: inline-flex; padding: 2px 0px 2px 0px; align-items: center;">
-        <div style="color: #2e2e2e;"><img src="{{ url_for('static', filename='icon/cpu.svg') }}"></div>
+        <div style="color: #fff;"><img src="{{ url_for('static', filename='icon/cpu.svg') }}"></div>
         <div style="padding-left: 8px;">
-          <div id="cpu" style="color: #2e2e2e;">---</div>
-          <div id="cputemp" style="color: #2e2e2e;">---</div>
+          <span id="cpu" style="color: #fff;">---</span>
+          <span id="cputemp" style="color: #fff;">---</span>
         </div>
       </div>
 
       <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #2e2e2e; white-space: pre-wrap; "><img
+        <div style="color: #fff; white-space: pre-wrap; "><img
             src="{{ url_for('static', filename='icon/ram.svg') }}"></div>
-        <div id="ram" style="color: #2e2e2e; padding-left: 8px;">---</div>
+        <div id="ram" style="color: #fff; padding-left: 8px;">---</div>
       </div>
 
       <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #2e2e2e; white-space: pre-wrap;"><img
+        <div style="color: #fff; white-space: pre-wrap;"><img
             src="{{ url_for('static', filename='icon/storage.svg') }}"></div>
-        <div id="storage" style="color: #2e2e2e; padding-left: 8px;">---</div>
+        <div id="storage" style="color: #fff; padding-left: 8px;">---</div>
       </div>
 
       <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #2e2e2e; white-space: pre-wrap;">Uptime: </div>
-        <div id="uptime" style="color: #2e2e2e;">---</div>
+        <div style="color: #fff; white-space: pre-wrap;"><img
+          src="{{ url_for('static', filename='icon/uptime.svg') }}"></div>
+        <div id="uptime" style="color: #fff; padding-left: 8px;">---</div>
       </div>
       {% endautoescape %}
     </div>
