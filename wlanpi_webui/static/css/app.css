@@ -1,0 +1,12 @@
+
+a {
+    color: #f45625;
+}
+
+a:hover {
+    color: black;
+}
+
+.uk-button-secondary {
+  background-color: #f45625;
+}
