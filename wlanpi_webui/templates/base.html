@@ -58,7 +58,7 @@
                    hx-get="/profiler/main_menu"
                    hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('profiler_dropdown').classList.contains('uk-open')]"
                    hx-target="#profiler_ul"
-                   hx-swap="innerHTML"
+                   hx-swap="innerHTML swap:0ms settle:0ms"
                    id="profiler_dropdown"
                    uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="profiler_ul">
