@@ -167,13 +167,11 @@ _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>"""
 
                 pcap = ""
                 if profile.profiletype == ProfileResultType.PCAP:
-                    pcap = """<a href='{1}{2}'>
-<button class='uk-button uk-button-default uk-button-small' uk-tooltip='{4}'>pcap</button>
+                    pcap = """<a href='{0}{1}'>
+<button class='uk-button uk-button-default uk-button-small' uk-tooltip='{2}'>pcap</button>
 </a>""".format(
-                        modifytime,
                         request.url_root,
                         client,
-                        friendly,
                         f'Download {client.split("/")[-1]} ',
                     )
 
@@ -432,7 +430,7 @@ def profiler_main_menu():
         profiler_status = system_service_running_state("wlanpi-profiler")
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid:
-            qrcode_spec = "WIFI:S:{};T:WPA;P:{};;".format(profiler_ssid, "0123456789")
+            qrcode_spec = "WIFI:S:{0};T:WPA;P:{1};;".format(profiler_ssid, "0123456789")
             profiler_ssid = """<li>SSID: {profiler_ssid}</li>
 <div id="qrcode" style="width:200px; height:200px;"></div>
 <script type="text/javascript">
