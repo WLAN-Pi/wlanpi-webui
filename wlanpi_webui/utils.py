@@ -42,7 +42,7 @@ def system_service_exists(service):
     1
     """
     cmd = f"/bin/systemctl list-unit-files {service}.*"
-    current_app.logger.debug("subprocess is running %s" % cmd)
+    current_app.logger.debug("subprocess is running %s", cmd)
     result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
     if result.returncode == 0:
         return True
@@ -57,7 +57,7 @@ def system_service_running_state(service):
     try:
         # this cmd fails if service not installed
         cmd = f"/bin/systemctl is-active --quiet {service}"
-        current_app.logger.debug("subprocess is running %s" % cmd)
+        current_app.logger.debug("subprocess is running %s", cmd)
         # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
         subprocess.run(cmd, shell=True).check_returncode()
     except subprocess.CalledProcessError as exc:
@@ -113,7 +113,7 @@ def start_stop_service(task, service):
         "name": f"{service}",
     }
     if task == "start":
-        current_app.logger.info("starting %s" % service)
+        current_app.logger.info("starting %s", service)
         try:
             start_url = "http://127.0.0.1:31415/api/v1/system/service/start"
             response = requests.post(
@@ -123,15 +123,16 @@ def start_stop_service(task, service):
             )
             if response.status_code != 200:
                 current_app.logger.info(
-                    f'systemd_service_message: {systemd_service_message("wlanpi-core")}'
+                    "systemd_service_message: %s",
+                    systemd_service_message("wlanpi-core"),
                 )
                 current_app.logger.info("%s generated %s response", start_url, response)
             return redirect(request.referrer)
-        except Exception as error:
-            current_app.logger.error(error)
+        except requests.exceptions.RequestException:
+            current_app.logger.exception("requests error")
             return redirect(request.referrer)
     elif task == "stop":
-        current_app.logger.info("stopping %s" % service)
+        current_app.logger.info("stopping %s", service)
         try:
             stop_url = "http://127.0.0.1:31415/api/v1/system/service/stop"
             response = requests.post(
@@ -141,12 +142,13 @@ def start_stop_service(task, service):
             )
             if response.status_code != 200:
                 current_app.logger.info(
-                    f'systemd_service_message: {systemd_service_message("wlanpi-core")}'
+                    "systemd_service_message: %s",
+                    systemd_service_message("wlanpi-core"),
                 )
                 current_app.logger.info("%s generated %s response", stop_url, response)
             return redirect(request.referrer)
-        except Exception as error:
-            current_app.logger.error(error)
+        except requests.exceptions.RequestException:
+            current_app.logger.exception("requests error")
             return redirect(request.referrer)
 
 
