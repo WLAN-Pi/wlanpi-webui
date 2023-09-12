@@ -10,7 +10,7 @@ the main flask app
 
 import logging
 
-from flask import Flask, abort, request, send_from_directory
+from flask import Flask, abort, send_from_directory
 from flask_minify import Minify
 from werkzeug.middleware.proxy_fix import ProxyFix
 
