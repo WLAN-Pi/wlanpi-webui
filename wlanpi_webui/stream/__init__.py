@@ -2,4 +2,4 @@ from flask import Blueprint
 
 bp = Blueprint("stream", __name__)
 
-from wlanpi_webui.stream import stream
+from wlanpi_webui.stream import stream  # noqa: F401
