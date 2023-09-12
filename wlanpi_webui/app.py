@@ -80,7 +80,6 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_vars():
-        base = request.host.split(":")[0]
         return {
             "title": f"WLAN Pi: {get_hostname()}",
         }
