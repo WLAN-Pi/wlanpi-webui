@@ -10,6 +10,22 @@ a:hover {
     background-color: #f45625;
 }
 
+.stat-container {
+    display: inline-flex;
+    padding: 2px 0px 2px 0px;
+    color: #fff;
+}
+
+.stat-icon {
+    padding: 5px;
+    color: inherit;
+}
+
+.stat-text {
+    padding: 5px;
+    color: inherit;
+}
+
 #thebiglebowski {
     min-height: 100vh;
     min-width: 20em;

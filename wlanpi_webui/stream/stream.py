@@ -2,7 +2,11 @@
 import socket
 import subprocess
 
+from flask import request
+from flask_minify import decorators as minify_decorators
+
 from wlanpi_webui.stream import bp
+from wlanpi_webui.utils import is_htmx
 
 
 def get_stats():
@@ -72,6 +76,35 @@ def get_stats():
     return results
 
 
-@bp.route("/stream")
-def stream():
-    return get_stats()
+@bp.route("/stream/stats")
+@minify_decorators.minify(html=True)
+def stream_stats():
+    stats = get_stats()
+    if is_htmx(request):
+        html = """
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/globe.svg"></div>
+<div class="stat-text">{IP}</div>
+</div>
+<div class="stat-container" style="align-items: center;">
+<div class="stat-icon"><img src="/static/icon/cpu.svg"></div>
+<div class="stat-text">
+<span class="stat-text">{CPU} {CPU_TEMP}</span>
+</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/ram.svg"></div>
+<div class="stat-text">{RAM}</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/storage.svg"></div>
+<div class="stat-text">{DISK}</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/uptime.svg"></div>
+<div class="stat-text">{UPTIME}</div>
+</div>
+""".format(
+            **stats
+        )
+        return html

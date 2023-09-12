@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
@@ -26,7 +25,6 @@
   <!--htmx JS-->
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
 </head>
-
 <body>
   <div class="progress" style="height: 3px; background-color: white;">
     <div class="indeterminate" style="background-color: #f45625;"></div>
@@ -119,40 +117,37 @@
     <!--/HEADER-->
     <!--STATS BAR-->
     <div
-      style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;">
-      {% autoescape false %}
-      <div style="display: inline-flex; padding: 2px 0px 2px 0px; ">
-        <div style="color: #fff; white-space: pre-wrap; padding: 4px;"><img
-            src="{{ url_for('static', filename='icon/globe.svg') }}"></div>
-        <div id="ip_addr" style="color: #fff; padding: 4px;">---</div>
-      </div>
-
-      <div style="display: inline-flex; padding: 2px 0px 2px 0px; align-items: center;">
-        <div style="color: #fff;"><img src="{{ url_for('static', filename='icon/cpu.svg') }}"></div>
-        <div style="padding-left: 8px;">
-          <span id="cpu" style="color: #fff;">---</span>
-          <span id="cputemp" style="color: #fff;">---</span>
+      style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
+      hx-get="/stream/stats"
+      hx-swap="innerHTML"
+      hx-target="this"
+      hx-trigger="load, every 2s">
+        <div class="stat-container">
+          <div class="stat-icon"><img src="/static/icon/globe.svg"></div>
+          <div class="stat-text">---</div>
         </div>
-      </div>
-
-      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #fff; white-space: pre-wrap; "><img
-            src="{{ url_for('static', filename='icon/ram.svg') }}"></div>
-        <div id="ram" style="color: #fff; padding-left: 8px;">---</div>
-      </div>
-
-      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #fff; white-space: pre-wrap;"><img
-            src="{{ url_for('static', filename='icon/storage.svg') }}"></div>
-        <div id="storage" style="color: #fff; padding-left: 8px;">---</div>
-      </div>
-
-      <div style="display: inline-flex; padding: 2px 0px 2px 0px;">
-        <div style="color: #fff; white-space: pre-wrap;"><img
-          src="{{ url_for('static', filename='icon/uptime.svg') }}"></div>
-        <div id="uptime" style="color: #fff; padding-left: 8px;">---</div>
-      </div>
-      {% endautoescape %}
+        
+        <div class="stat-container" style="align-items: center;">
+          <div class="stat-icon"><img src="/static/icon/cpu.svg"></div>
+          <div class="stat-text">
+          <span class="stat-text">---</span> <span class="stat-text">---</span>
+          </div>
+        </div>
+        
+        <div class="stat-container">
+          <div class="stat-icon"><img src="/static/icon/ram.svg"></div>
+          <div class="stat-text">---</div>
+        </div>
+        
+        <div class="stat-container">
+          <div class="stat-icon"><img src="/static/icon/storage.svg"></div>
+          <div class="stat-text">---</div>
+        </div>
+        
+        <div class="stat-container">
+          <div class="stat-icon"><img src="/static/icon/uptime.svg"></div>
+          <div class="stat-text">---</div>
+        </div>
     </div>
     <!--/STATS BAR -->
     <!--CONTENT-->
@@ -203,40 +198,6 @@
   </div>
   <!--/OFFCANVAS-->
   <!--JS-->
-  <script>
-    function updateStats() {
-      var ip_text = document.getElementById("ip_addr");
-      var cpu_text = document.getElementById("cpu");
-      var cputemp_text = document.getElementById("cputemp");
-      var ram_text = document.getElementById("ram");
-      var storage_text = document.getElementById("storage");
-      var uptime_text = document.getElementById("uptime");
-
-      if (window.XMLHttpRequest) { // code for IE7+, Firefox, Chrome, Opera, Safari, SeaMonkey
-        var xhr = new XMLHttpRequest();
-      } else { // code for IE6, IE5
-        xhr = new ActiveXObject("Microsoft.XMLHTTP");
-      }
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-          if (xhr.status == 200) {
-            data = JSON.parse(xhr.responseText)
-            ip_text.innerHTML = data["IP"]
-            cpu_text.innerHTML = data["CPU"]
-            cputemp_text.innerHTML = data["CPU_TEMP"]
-            ram_text.innerHTML = data["RAM"]
-            storage_text.innerHTML = data["DISK"]
-            uptime_text.innerHTML = data["UPTIME"]
-          }
-        }
-      }
-      xhr.open("GET", "{{ url_for('stream.stream') }}", true);
-      xhr.send(null);
-    }
-    updateStats()
-    setInterval(updateStats, 2000);
-    // htmx.logAll();
-  </script>
   <script src="{{ url_for('static', filename='js/_hyperscript.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/qrcode.min.js') }}" defer></script>
   <!--/JS-->
