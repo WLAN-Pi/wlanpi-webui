@@ -19,7 +19,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         filename=log_filename,
         level=logging.DEBUG,
-        format=f"%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
+        format="%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s",
     )
     handler = RotatingFileHandler(log_filename, maxBytes=10000, backupCount=2)
     handler.setLevel(logging.DEBUG)

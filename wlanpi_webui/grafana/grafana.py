@@ -15,7 +15,7 @@ from wlanpi_webui.utils import (get_apt_package_version,
 def try_url(url):
     try:
         context = ssl._create_unverified_context()
-        res = urllib.request.urlopen(url, context=context, timeout=1)
+        urllib.request.urlopen(url, context=context, timeout=1)
     except urllib.error.HTTPError as e:
         if e.code == 502:
             return 502
@@ -35,9 +35,7 @@ def grafana():
     resp_data = {"iframe_url": f"https://{base}/app/grafana"}
     is_running = system_service_running_state("grafana-server")
 
-    current_app.logger.debug(
-        "systemctl is-active for grafana-server is %s" % is_running
-    )
+    current_app.logger.debug("systemctl is-active for grafana-server is %s", is_running)
     service_down_message = get_service_down_message("grafana-server")
     return_code = try_url(resp_data["iframe_url"])
     version = get_apt_package_version("grafana")
