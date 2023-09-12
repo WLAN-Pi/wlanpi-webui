@@ -3,6 +3,17 @@ import subprocess
 import requests
 from flask import current_app, redirect, request
 
+wlanpi_core_warning = """
+<script>
+UIkit.notification({
+    message: '<span uk-icon="icon: warning; ratio: 2"></span> wlanpi-core not running.',
+    status: 'danger',
+    pos: 'top-right',
+    timeout: 10000
+});
+</script>
+"""
+
 
 def is_htmx(request):
     return request.headers.get("hx-request") == "true"

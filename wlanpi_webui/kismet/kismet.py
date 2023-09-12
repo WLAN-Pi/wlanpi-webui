@@ -4,7 +4,7 @@ from flask_minify import decorators as minify_decorators
 from wlanpi_webui.kismet import bp
 from wlanpi_webui.utils import (is_htmx, start_stop_service,
                                 system_service_running_state,
-                                systemd_service_message)
+                                systemd_service_message, wlanpi_core_warning)
 
 
 @bp.route("/kismet")
@@ -16,7 +16,11 @@ def kismet():
 @bp.route("/<task>kismet")
 def start_stop_kismet(task):
     if is_htmx(request):
-        start_stop_service(task, "kismet")
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "kismet")
+        else:
+            return wlanpi_core_warning
     return "", 204
 
 

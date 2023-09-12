@@ -9,7 +9,7 @@ from wlanpi_webui.utils import (get_apt_package_version,
                                 get_service_down_message, is_htmx,
                                 start_stop_service, system_service_exists,
                                 system_service_running_state,
-                                systemd_service_message)
+                                systemd_service_message, wlanpi_core_warning)
 
 
 def try_url(url):
@@ -274,12 +274,20 @@ def grafana_main_menu():
 @bp.route("/<task>grafana")
 def start_stop_grafana(task):
     if is_htmx(request):
-        start_stop_service(task, "grafana-server")
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "grafana-server")
+        else:
+            return wlanpi_core_warning
     return "", 204
 
 
 @bp.route("/<task>grafanascanner")
 def start_stop_grafana_scanner(task):
     if is_htmx(request):
-        start_stop_service(task, "wlanpi-grafana-scanner")
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-scanner")
+        else:
+            return wlanpi_core_warning
     return "", 204

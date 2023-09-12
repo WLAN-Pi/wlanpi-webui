@@ -12,7 +12,7 @@ from werkzeug.utils import safe_join
 from wlanpi_webui.profiler import bp
 from wlanpi_webui.utils import (is_htmx, run_command, start_stop_service,
                                 system_service_running_state,
-                                systemd_service_message)
+                                systemd_service_message, wlanpi_core_warning)
 
 getting_started = """
 <ul uk-accordion="">
@@ -379,7 +379,11 @@ def get_profiler_results(filename):
 @bp.route("/<task>profiler")
 def start_stop_profiler(task):
     if is_htmx(request):
-        start_stop_service(task, "wlanpi-profiler")
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-profiler")
+        else:
+            return wlanpi_core_warning
     return "", 204
 
 
