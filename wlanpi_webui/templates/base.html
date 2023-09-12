@@ -26,6 +26,14 @@
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
 </head>
 <body>
+  <script> 
+    document.body.addEventListener("htmx:sendError", function() {
+      document.getElementById("connection-alert").style.visibility = "visible";
+    });
+    document.body.addEventListener("htmx:afterOnLoad", function() {
+      document.getElementById("connection-alert").style.visibility = "hidden";
+    });
+  </script> 
   <div class="progress" style="height: 3px; background-color: white;">
     <div class="indeterminate" style="background-color: #f45625;"></div>
   </div>
@@ -95,9 +103,12 @@
           </ul>
         </div>
         <div class="uk-navbar-right">
-          <ul class="uk-navbar-nav uk-visible@m">
-            <li>
-              <a href="#" uk-icon="icon: settings"></a>
+          <ul class="uk-navbar-nav">
+            <li id="connection-alert" style="visibility: hidden;">
+              <a href="#" uk-icon="icon: warning; ratio: 1.5;" title="Connection error." data-uk-tooltip></a>
+            </li>
+            <li class="uk-visible@m">
+              <a href="#" uk-icon="icon: settings; ratio: 1.5;"></a>
               <div class="uk-navbar-dropdown"
                    uk-dropdown="offset: 0">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
@@ -117,7 +128,7 @@
     <!--/HEADER-->
     <!--STATS BAR-->
     <div
-      style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
+      style="background-color: #f45625; height: 40px; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
       hx-get="/stream/stats"
       hx-swap="innerHTML"
       hx-target="this"

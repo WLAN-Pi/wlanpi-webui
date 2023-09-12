@@ -5,11 +5,20 @@
                 <div class="uk-card uk-card-body uk-dark">
                     <h3 class="uk-card-title">System</h3>
                     <ul class="uk-list">
+                        {%- if mode -%}
+                        <li>Mode: {{ mode }}</li>
+                        {%- endif -%}
                         {%- if hostname -%}
                         <li>Hostname: {{ hostname }}</li>
                         {%- endif -%}
                         {%- if wlanpi_version -%}
-                        <li>System version: {{ wlanpi_version }}</li>
+                        <li>OS version: {{ wlanpi_version }}</li>
+                        {%- endif -%}
+                        {%- if kernel_version -%}
+                        <li>Kernel version: {{ kernel_version }}</li>
+                        {%- endif -%}
+                        {%- if hardware_model -%}
+                        <li>Hardware: {{ hardware_model }}</li>
                         {%- endif -%}
                         {%- if webui_version -%}
                         <li>WebUI version: {{ webui_version }}</li>
@@ -18,7 +27,7 @@
                         <li>wlanpi-core version: {{ wlanpi_core_version }}</li>
                         {%- endif -%}
                         {%- if wlanpi_core_status -%}
-                        <li>wlanpi-core systemctl status: {{ wlanpi_core_status }}</li>
+                        <li>wlanpi-core system service status: {{ wlanpi_core_status }}</li>
                         {%- endif -%}
                     </ul>
                 </div>
