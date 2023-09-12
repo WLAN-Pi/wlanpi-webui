@@ -27,24 +27,22 @@
 </head>
 <body>
   <script> 
-    document.body.addEventListener("htmx:responseError", function() {
-      document.getElementById("connection-alert").style.visibility = "visible";
-    });
-    document.body.addEventListener("htmx:sendError", function() {
-      document.getElementById("connection-alert").style.visibility = "visible";
-    });
-    document.body.addEventListener('htmx:beforeOnLoad', function (evt) {
-      if (evt.detail.xhr.status === 502) {
-        document.getElementById("connection-alert").style.visibility = "visible";
+  function setAlertVisibility(visibility) {
+  document.getElementById("connection-alert").style.visibility = visibility;
+  }
+  document.body.addEventListener("htmx:responseError", function() {
+      setAlertVisibility("visible")
+  });
+  document.body.addEventListener("htmx:sendError", function() {
+      setAlertVisibility("visible")
+  });
+  document.body.addEventListener("htmx:afterRequest", function(evt) {
+      if (evt.detail.xhr.status === 404 || evt.detail.xhr.status === 502) {
+          setAlertVisibility("visible")
+      } else {
+          setAlertVisibility("hidden")
       }
-    });
-    document.body.addEventListener("htmx:afterRequest", function(evt) {
-      if (evt.detail.xhr.status === 404) {
-        document.getElementById("connection-alert").style.visibility = "visible";
-      } else { 
-      document.getElementById("connection-alert").style.visibility = "hidden";
-      }
-    });
+  });
   </script> 
   <div class="progress" style="height: 3px; background-color: white;">
     <div class="indeterminate" style="background-color: #f45625;"></div>
