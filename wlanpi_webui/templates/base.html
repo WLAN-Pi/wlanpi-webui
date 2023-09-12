@@ -27,11 +27,23 @@
 </head>
 <body>
   <script> 
+    document.body.addEventListener("htmx:responseError", function() {
+      document.getElementById("connection-alert").style.visibility = "visible";
+    });
     document.body.addEventListener("htmx:sendError", function() {
       document.getElementById("connection-alert").style.visibility = "visible";
     });
-    document.body.addEventListener("htmx:afterOnLoad", function() {
+    document.body.addEventListener('htmx:beforeOnLoad', function (evt) {
+      if (evt.detail.xhr.status === 502) {
+        document.getElementById("connection-alert").style.visibility = "visible";
+      }
+    });
+    document.body.addEventListener("htmx:afterRequest", function(evt) {
+      if (evt.detail.xhr.status === 404) {
+        document.getElementById("connection-alert").style.visibility = "visible";
+      } else { 
       document.getElementById("connection-alert").style.visibility = "hidden";
+      }
     });
   </script> 
   <div class="progress" style="height: 3px; background-color: white;">
@@ -128,7 +140,7 @@
     <!--/HEADER-->
     <!--STATS BAR-->
     <div
-      style="background-color: #f45625; height: 40px; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
+      style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
       hx-get="/stream/stats"
       hx-swap="innerHTML"
       hx-target="this"
