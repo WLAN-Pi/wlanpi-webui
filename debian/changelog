@@ -1,4 +1,4 @@
-wlanpi-webui (1.1.6-28) unstable; urgency=medium
+wlanpi-webui (1.1.6-29) unstable; urgency=medium
 
   * Fix dropdown offset
   * Add htmx 1.9.5 for AJAX
@@ -15,7 +15,7 @@ wlanpi-webui (1.1.6-28) unstable; urgency=medium
 
   Thanks Orbitix and Jiri for contributing to this release.
 
- -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 14 Sep 2023 08:42:07 -0400
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 14 Sep 2023 09:08:55 -0400
 
 wlanpi-webui (1.1.5-2) stable; urgency=medium
 

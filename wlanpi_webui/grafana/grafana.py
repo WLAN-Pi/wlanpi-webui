@@ -36,7 +36,9 @@ def grafana():
     is_running = system_service_running_state("grafana-server")
 
     current_app.logger.debug("systemctl is-active for grafana-server is %s", is_running)
-    service_down_message = get_service_down_message("grafana-server")
+    service_down_message = get_service_down_message("grafana-server").replace(
+        "-server", ""
+    )
     return_code = try_url(resp_data["iframe_url"])
     version = get_apt_package_version("grafana")
 
@@ -70,7 +72,9 @@ def grafana():
                 service="Grafana is not installed.",
             )
         if not is_running:
-            return render_template("/public/service.html", service=service_down_message)
+            return render_template(
+                "/extends/service.html", service=service_down_message
+            )
         if is_running and return_code == 502:
             return render_template(
                 "/extends/service.html",
