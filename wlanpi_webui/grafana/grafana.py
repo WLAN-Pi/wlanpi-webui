@@ -152,6 +152,7 @@ def grafana_side_menu():
             <li class="uk-nav-header">{grafana_message}</li>
             <li><a hx-get="{grafana_task_url}"
                    hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+            <li class="uk-nav-divider"></li>
             <li><a class="uk-link"
                    hx-get="/grafana"
                    hx-target="#content"
@@ -160,6 +161,7 @@ def grafana_side_menu():
                    hx-push-url="true"
                    hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
             <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
+            <li class="uk-nav-divider"></li>
             {data_streams_html}
             """.format(
                 **args
@@ -205,6 +207,7 @@ def grafana_main_menu():
             pass
         else:
             data_streams_html = """
+                <li class="uk-nav-divider"></li>
                 <li class="uk-parent">
                     <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
                     <ul class="uk-nav-sub">
