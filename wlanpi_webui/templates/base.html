@@ -50,7 +50,7 @@
   <div id="thebiglebowski" class="uk-flex uk-flex-column">
     <!--HEADER-->
     <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
-      <nav class="uk-navbar-container" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
+      <nav class="uk-navbar-container" uk-navbar="dropbar: true;" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
         <div class="uk-navbar-left">
           <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
             href="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
@@ -58,8 +58,7 @@
           <ul class="uk-navbar-nav uk-visible@m">
             <li>
               <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown"
-                   uk-dropdown="offset: 0">
+              <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
                   <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
                       hx-indicator=".progress">LIBRESPEED</a></li>
@@ -76,7 +75,7 @@
                    hx-target="#profiler_ul"
                    hx-swap="innerHTML swap:0ms settle:0ms"
                    id="profiler_dropdown"
-                   uk-dropdown="offset: 0">
+                   class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="profiler_ul">
                 </ul>
               </div>
@@ -91,7 +90,7 @@
                       hx-target="#kismet_ul"
                       hx-swap="innerHTML"
                       id="kismet_dropdown"
-                      uk-dropdown="offset: 0">
+                      class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="kismet_ul">
                 </ul>
               </div>
@@ -103,7 +102,7 @@
                    hx-target="#grafana_ul"
                    hx-swap="innerHTML"
                    id="grafana_dropdown"
-                   uk-dropdown="offset: 0">
+                   class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav" id="grafana_ul">
                 </ul>
               </div>
@@ -120,7 +119,7 @@
             <li class="uk-visible@m">
               <a href="#" uk-icon="icon: settings; ratio: 1.5;"></a>
               <div class="uk-navbar-dropdown"
-                   uk-dropdown="offset: 0">
+              class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
                   <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
                       hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
@@ -134,15 +133,14 @@
           </div>
         </div>
       </nav>
-    </div>
-    <!--/HEADER-->
-    <!--STATS BAR-->
-    <div
-      style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
-      hx-get="/stream/stats"
-      hx-swap="innerHTML"
-      hx-target="this"
-      hx-trigger="load, every 2s">
+      <!--STATS BAR-->
+      <div
+        style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
+        class="uk-visible@m"
+        hx-get="/stream/stats"
+        hx-swap="innerHTML"
+        hx-target="this"
+        hx-trigger="load, every 2s">
         <div class="stat-container">
           <div class="stat-icon"><img src="/static/icon/globe.svg"></div>
           <div class="stat-text">---</div>
@@ -169,8 +167,10 @@
           <div class="stat-icon"><img src="/static/icon/uptime.svg"></div>
           <div class="stat-text">---</div>
         </div>
+      </div>
+      <!--/STATS BAR -->
     </div>
-    <!--/STATS BAR -->
+    <!--/HEADER-->
     <!--CONTENT-->
     <div id="content" class="uk-flex-1 uk-flex uk-dark uk-background-muted">
       {% block content %}
