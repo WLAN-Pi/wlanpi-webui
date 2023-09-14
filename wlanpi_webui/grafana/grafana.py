@@ -56,12 +56,12 @@ def grafana():
         if is_running and return_code == 502:
             return render_template(
                 "/partials/service.html",
-                service="Grafana is running but we got 502 Bad Gateway. Try again in a few moments.",
+                service="Grafana is running but we received a 502 Bad Gateway server error.<br />Try again in a few moments.",
             )
         if return_code == 502:
             return render_template(
                 "/partials/service.html",
-                service="Grafana is not running and we got 502 Bad Gateway. Start the service, wait a few moments and try again.",
+                service="Grafana is not running and we received a 502 Bad Gateway server error.<br />Start the service, wait a few moments and try again.",
             )
         return render_template("/partials/iframe.html", **resp_data)
     else:
@@ -78,12 +78,12 @@ def grafana():
         if is_running and return_code == 502:
             return render_template(
                 "/extends/service.html",
-                service="Grafana is running but we got 502 Bad Gateway. Try again in a few moments.",
+                service="Grafana is running but we received a 502 Bad Gateway server error.<br />Try again in a few moments.",
             )
         if return_code == 502:
             return render_template(
                 "/extends/service.html",
-                service="Grafana is not running and we got 502 Bad Gateway. Start the service, wait a few moments and try again.",
+                service="Grafana is not running and we received a 502 Bad Gateway server error.<br />Start the service, wait a few moments and try again.",
             )
         return render_template("/extends/iframe.html", **resp_data)
 
@@ -92,188 +92,101 @@ def grafana():
 @minify_decorators.minify(html=True)
 def grafana_side_menu():
     if is_htmx(request):
-        enabled_data_streams = ""
-        disabled_data_streams = ""
-        grafana_scanner_status = ""
-        grafana_scanner_service_exists = system_service_exists("wlanpi-grafana-scanner")
-        if grafana_scanner_service_exists:
-            grafana_scanner_status = system_service_running_state(
-                "wlanpi-grafana-scanner"
-            )
-        if grafana_scanner_service_exists:
-            if grafana_scanner_status:
-                # active
-                enabled_data_streams += """
-                <li><span>SCANNER WLAN0 <a hx-get="/stopgrafanascanner"
-                                        hx-indicator=".progress"><span uk-icon="close"></span></a></span></li>
-                """
-            else:
-                disabled_data_streams += """
-                <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
-                                        hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
-                """
-        data_streams_html = ""
-        if enabled_data_streams == "" and disabled_data_streams == "":
-            pass
-        else:
-            data_streams_html = """
-                <li class="uk-parent">
-                    <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
-                    <ul class="uk-nav-sub">
-                        <li>ENABLED:</li>
-                        {enabled_data_streams}
-                        <li class="uk-nav-divider"></li>
-                        <li>AVAILABLE:</li>
-                        {disabled_data_streams}
-                    </ul>
-                </li>
-                """.format(
-                enabled_data_streams=enabled_data_streams,
-                disabled_data_streams=disabled_data_streams,
-            )
-        grafana_message = systemd_service_message("grafana-server").replace(
-            "-server", ""
-        )
-        grafana_status = system_service_running_state("grafana-server")
-        if grafana_status:
-            # active
-            grafana_task_url = "/stopgrafana"
-            grafana_task_anchor_text = "STOP"
-        else:
-            # not active
-            grafana_task_url = "/startgrafana"
-            grafana_task_anchor_text = "START"
-        args = {
-            "grafana_message": grafana_message,
-            "grafana_task_url": grafana_task_url,
-            "grafana_task_anchor_text": grafana_task_anchor_text,
-            "grafana_scanner_status": grafana_scanner_status,
-            "data_streams_html": data_streams_html,
-        }
-        if grafana_status:
-            # active
-            html = """
-            <li class="uk-nav-header">{grafana_message}</li>
-            <li><a hx-get="{grafana_task_url}"
-                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
-            <li class="uk-nav-divider"></li>
-            <li><a class="uk-link"
-                   hx-get="/grafana"
-                   hx-target="#content"
-                   hx-trigger="click"
-                   hx-indicator=".progress"
-                   hx-push-url="true"
-                   hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
-            <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
-            <li class="uk-nav-divider"></li>
-            {data_streams_html}
-            """.format(
-                **args
-            )
-        else:
-            # not active
-            html = """
-            <li class="uk-nav-header">{grafana_message}</li>
-            <li><a hx-get="{grafana_task_url}"
-                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
-            """.format(
-                **args
-            )
-        return html
+        return grafana_menu("side")
 
 
 @bp.route("/grafana/main_menu")
 @minify_decorators.minify(html=True)
 def grafana_main_menu():
     if is_htmx(request):
-        enabled_data_streams = ""
-        disabled_data_streams = ""
-        grafana_scanner_status = ""
-        grafana_scanner_service_exists = system_service_exists("wlanpi-grafana-scanner")
-        if grafana_scanner_service_exists:
-            grafana_scanner_status = system_service_running_state(
-                "wlanpi-grafana-scanner"
-            )
-        if grafana_scanner_service_exists:
-            if grafana_scanner_status:
-                # active
-                enabled_data_streams += """
-                <li><span>SCANNER WLAN0 <a hx-get="/stopgrafanascanner"
-                                        hx-indicator=".progress"><span uk-icon="close"></span></a></span></li>
-                """
-            else:
-                disabled_data_streams += """
-                <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
-                                        hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
-                """
-        data_streams_html = ""
-        if enabled_data_streams == "" and disabled_data_streams == "":
-            pass
+        return grafana_menu("main")
+
+
+def grafana_menu(type):
+    enabled_data_streams = ""
+    disabled_data_streams = ""
+    grafana_scanner_status = ""
+    grafana_scanner_service_exists = system_service_exists("wlanpi-grafana-scanner")
+    if grafana_scanner_service_exists:
+        grafana_scanner_status = system_service_running_state("wlanpi-grafana-scanner")
+    if grafana_scanner_service_exists:
+        if grafana_scanner_status:
+            # active
+            enabled_data_streams += """
+            <li><span>SCANNER WLAN0 <a hx-get="/stopgrafanascanner"
+                                    hx-indicator=".progress"><span uk-icon="close"></span></a></span></li>
+            """
         else:
-            data_streams_html = """
-                <li class="uk-nav-divider"></li>
-                <li class="uk-parent">
-                    <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
-                    <ul class="uk-nav-sub">
-                        <li>ENABLED:</li>
-                        {enabled_data_streams}
-                        <li class="uk-nav-divider"></li>
-                        <li>AVAILABLE:</li>
-                        {disabled_data_streams}
-                    </ul>
-                </li>
-                """.format(
-                enabled_data_streams=enabled_data_streams,
-                disabled_data_streams=disabled_data_streams,
-            )
-        grafana_message = systemd_service_message("grafana-server").replace(
-            "-server", ""
+            disabled_data_streams += """
+            <li><span>SCANNER WLAN0 <a hx-get="/startgrafanascanner"
+                                    hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
+            """
+    data_streams_html = ""
+    if enabled_data_streams == "" and disabled_data_streams == "":
+        pass
+    else:
+        data_streams_html = """
+            <li class="uk-parent">
+                <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
+                <ul class="uk-nav-sub">
+                    <li>ENABLED:</li>
+                    {enabled_data_streams}
+                    <li class="uk-nav-divider"></li>
+                    <li>AVAILABLE:</li>
+                    {disabled_data_streams}
+                </ul>
+            </li>
+            """.format(
+            enabled_data_streams=enabled_data_streams,
+            disabled_data_streams=disabled_data_streams,
         )
-        grafana_status = system_service_running_state("grafana-server")
-        if grafana_status:
-            # active
-            grafana_task_url = "/stopgrafana"
-            grafana_task_anchor_text = "STOP"
-        else:
-            # not active
-            grafana_task_url = "/startgrafana"
-            grafana_task_anchor_text = "START"
-        args = {
-            "grafana_message": grafana_message,
-            "grafana_task_url": grafana_task_url,
-            "grafana_task_anchor_text": grafana_task_anchor_text,
-            "grafana_scanner_status": grafana_scanner_status,
-            "data_streams_html": data_streams_html,
-        }
-        if grafana_status:
-            # active
-            html = """
-            <li class="uk-nav-header">{grafana_message}</li>
-            <li><a hx-get="{grafana_task_url}"
-                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
-            <li class="uk-nav-divider"></li>
-            <li><a class="uk-link"
-                   hx-get="/grafana"
-                   hx-target="#content"
-                   hx-trigger="click"
-                   hx-indicator=".progress"
-                   hx-push-url="true"
-                   hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
-            <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
-            {data_streams_html}
-            """.format(
-                **args
-            )
-        else:
-            # not active
-            html = """
-            <li class="uk-nav-header">{grafana_message}</li>
-            <li><a hx-get="{grafana_task_url}"
-                   hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
-            """.format(
-                **args
-            )
-        return html
+    grafana_message = systemd_service_message("grafana-server").replace("-server", "")
+    grafana_status = system_service_running_state("grafana-server")
+    if grafana_status:
+        # active
+        grafana_task_url = "/stopgrafana"
+        grafana_task_anchor_text = "STOP"
+    else:
+        # not active
+        grafana_task_url = "/startgrafana"
+        grafana_task_anchor_text = "START"
+    args = {
+        "grafana_message": grafana_message,
+        "grafana_task_url": grafana_task_url,
+        "grafana_task_anchor_text": grafana_task_anchor_text,
+        "grafana_scanner_status": grafana_scanner_status,
+        "data_streams_html": data_streams_html,
+    }
+    if grafana_status:
+        # active
+        html = """
+        <li class="uk-nav-header">{grafana_message}</li>
+        <li><a hx-get="{grafana_task_url}"
+                hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+        <li class="uk-nav-divider"></li>
+        <li><a class="uk-link"
+                hx-get="/grafana"
+                hx-target="#content"
+                hx-trigger="click"
+                hx-indicator=".progress"
+                hx-push-url="true"
+                hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
+        <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
+        <li class='uk-nav-divider'></li>
+        {data_streams_html}
+        """.format(
+            **args
+        )
+    else:
+        # not active
+        html = """
+        <li class="uk-nav-header">{grafana_message}</li>
+        <li><a hx-get="{grafana_task_url}"
+                hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+        """.format(
+            **args
+        )
+    return html
 
 
 @bp.route("/<task>grafana")

@@ -29,6 +29,9 @@ def page_not_found_405(error=None):
 
 @bp.app_errorhandler(418)
 @bp.route("/418")
+@bp.route("/tea")
+@bp.route("/teapot")
+@bp.route("/pot")
 def page_not_found_418(error=None):
     return (
         render_template(
