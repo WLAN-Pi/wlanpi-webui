@@ -78,12 +78,12 @@ def grafana():
         if is_running and return_code == 502:
             return render_template(
                 "/extends/service.html",
-                service="Grafana URL responded with HTTP code 502. Try again in a few moments.",
+                service="Grafana is running but we got 502 Bad Gateway. Try again in a few moments.",
             )
         if return_code == 502:
             return render_template(
                 "/extends/service.html",
-                service="Grafana URL responded with HTTP code 502. Start the service, wait a few moments, and try again.",
+                service="Grafana is not running and we got 502 Bad Gateway. Start the service, wait a few moments and try again.",
             )
         return render_template("/extends/iframe.html", **resp_data)
 
