@@ -10,6 +10,12 @@ a:hover {
     background-color: #f45625;
 }
 
+.uk-divider-icon {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    background-image: url(/static/img/divider_icon.svg) !important;
+}
+
 .stat-container {
     display: inline-flex;
     padding: 2px 0px 2px 0px;

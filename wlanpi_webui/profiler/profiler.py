@@ -407,6 +407,7 @@ def profiler_side_menu():
         html = """<li class="uk-nav-header">{profiler_message}</li>
 <li><a hx-get="{profiler_task_url}"
         hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+<li class="uk-nav-divider"></li>
 <li><a hx-get="/profiler/profiles"
     hx-target="#content"
     hx-swap="innerHTML"
