@@ -1,7 +1,7 @@
 wlanpi-webui (1.1.6-32) unstable; urgency=medium
 
   * Swap dropdowns for dropbars
-  * Add htmx 1.9.5 for AJAX
+  * Add htmx 1.9.6 for AJAX
   * Add _hyperscript 0.9.1 for UI kit modals changes with the addition of htmx
   * Upgrade UIkit CSS to 3.16.26
   * Add flask_minify to minify HTML returned from specific endpoints
