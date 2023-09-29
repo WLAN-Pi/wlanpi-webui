@@ -1,4 +1,5 @@
 # stats for homepage
+import json
 import socket
 import subprocess
 
@@ -25,9 +26,16 @@ def get_stats():
     ipStr = f"{IP}"
 
     # determine CPU load
-    cmd = "top -bn1 | grep load | awk '{printf \"%.2f%%\", $(NF-2)}'"
+    # cmd = "top -bn1 | grep load | awk '{printf \"%.2f%%\", $(NF-2)}'"
+    cmd = "mpstat 1 1 -o JSON | grep idle"
     try:
-        CPU = subprocess.check_output(cmd, shell=True).decode()
+        CPU_JSON = subprocess.check_output(cmd, shell=True).decode()
+        CPU_IDLE = json.loads(CPU_JSON)["idle"]
+        CPU = "{0:.2f}%".format(100 - CPU_IDLE)
+        if CPU_IDLE == 100:
+            CPU = "0%"
+        if CPU_IDLE == 0:
+            CPU = "100%"
     except Exception:
         CPU = "unknown"
 
