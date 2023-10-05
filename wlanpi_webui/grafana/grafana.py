@@ -130,35 +130,33 @@ def grafana_menu(type):
     enabled_data_streams = ""
     disabled_data_streams = ""
 
-    # data stream wlanpi-grafana-internet.service
-    ds_internet_enabled, ds_internet_disabled = get_datastream_info(
-        "wlanpi-grafana-internet",
-        "INET MONITORING",
-        "/stopgrafanainternet",
-        "/startgrafanainternet",
-    )
-    enabled_data_streams += ds_internet_enabled
-    disabled_data_streams += ds_internet_disabled
+    streams = [
+        (
+            "wlanpi-grafana-internet",
+            "INET MONITORING",
+            "/stopgrafanainternet",
+            "/startgrafanainternet",
+        ),
+        (
+            "wlanpi-grafana-health",
+            "PI HEALTH",
+            "/stopgrafanahealth",
+            "/startgrafanahealth",
+        ),
+        (
+            "wlanpi-grafana-scanner",
+            "SCANNER WLAN0",
+            "/stopgrafanascanner",
+            "/startgrafanascanner",
+        ),
+    ]
 
-    # data stream wlanpi-grafana-health.service
-    ds_health_enabled, ds_health_disabled = get_datastream_info(
-        "wlanpi-grafana-health",
-        "PI HEALTH",
-        "/stopgrafanahealth",
-        "/startgrafanahealth",
-    )
-    enabled_data_streams += ds_health_enabled
-    disabled_data_streams += ds_health_disabled
-
-    # data stream wlanpi-grafana-scanner.service
-    ds_scanner_enabled, ds_scanner_disabled = get_datastream_info(
-        "wlanpi-grafana-scanner",
-        "SCANNER WLAN0",
-        "/stopgrafanascanner",
-        "/startgrafanascanner",
-    )
-    enabled_data_streams += ds_scanner_enabled
-    disabled_data_streams += ds_scanner_disabled
+    for stream in streams:
+        enabled, disabled = get_datastream_info(
+            stream[0], stream[1], stream[2], stream[3]
+        )
+        enabled_data_streams += enabled
+        disabled_data_streams += disabled
 
     data_streams_html = ""
     if enabled_data_streams == "" and disabled_data_streams == "":
