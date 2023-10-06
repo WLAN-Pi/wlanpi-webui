@@ -431,14 +431,15 @@ def profiler_main_menu():
         profiler_status = system_service_running_state("wlanpi-profiler")
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid and profiler_status:
-            qrcode_spec = "WIFI:S:{0};T:WPA;P:{1};;".format(profiler_ssid, "0123456789")
-            profiler_ssid = """<li>SSID: {profiler_ssid}</li>
-<div id="qrcode" style="width:200px; height:200px;"></div>
-<script type="text/javascript">
-    new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
-</script>""".format(
-                profiler_ssid=profiler_ssid, qrcode_spec=qrcode_spec
+            # qrcode_spec = "WIFI:S:{0};T:WPA;P:{1};;".format(profiler_ssid, "0123456789")
+            profiler_ssid = """<li>SSID: {profiler_ssid}</li>""".format(
+                profiler_ssid=profiler_ssid,
             )
+        # qrcode_spec=qrcode_spec
+        # <div id="qrcode" style="width:200px; height:200px;"></div>
+        # <script type="text/javascript">
+        #     new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
+        # </script>
         else:
             profiler_ssid = ""
         if profiler_status:
