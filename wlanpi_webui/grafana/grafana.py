@@ -133,19 +133,49 @@ def grafana_menu(type):
     streams = [
         (
             "wlanpi-grafana-internet",
-            "INET MONITORING",
+            "Internet Monitoring",
             "/stopgrafanainternet",
             "/startgrafanainternet",
         ),
         (
             "wlanpi-grafana-health",
-            "PI HEALTH",
+            "WLAN Pi Health",
             "/stopgrafanahealth",
             "/startgrafanahealth",
         ),
         (
+            "wlanpi-grafana-wipry-lp-24",
+            "Oscium WiPry Clarity 2.4 GHz",
+            "/stopgrafanawipry24",
+            "/startgrafanawipry24",
+        ),
+        (
+            "wlanpi-grafana-wipry-lp-5",
+            "Oscium WiPry Clarity 5 GHz",
+            "/stopgrafanawipry5",
+            "/startgrafanawipry5",
+        ),
+        (
+            "wlanpi-grafana-wipry-lp-6",
+            "Oscium WiPry Clarity 6 GHz",
+            "/stopgrafanawipry6",
+            "/startgrafanawipry6",
+        ),
+        (
+            "wlanpi-grafana-wispy-24",
+            "MetaGeek Wi-Spy DBx 2.4 GHz",
+            "/stopgrafanawispy24",
+            "/startgrafanawispy24",
+        ),
+        (
+            "wlanpi-grafana-wispy-5",
+            "MetaGeek Wi-Spy DBx 5 GHz",
+            "/stopgrafanawispy5",
+            "/startgrafanawispy5",
+        ),
+        (
             "wlanpi-grafana-scanner",
-            "SCANNER WLAN0",
+            "Scanner WLAN0",
             "/stopgrafanascanner",
             "/startgrafanascanner",
         ),
@@ -264,6 +294,57 @@ def start_stop_grafana_health(task):
         core_status = system_service_running_state("wlanpi-core")
         if core_status:
             start_stop_service(task, "wlanpi-grafana-health")
+        else:
+            return wlanpi_core_warning
+    return "", 204
+
+
+@bp.route("/<task>grafanawipry24")
+def start_stop_grafana_wipry24(task):
+    if is_htmx(request):
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-wipry-lp-24")
+        else:
+            return wlanpi_core_warning
+    return "", 204
+    
+@bp.route("/<task>grafanawipry5")
+def start_stop_grafana_wipry5(task):
+    if is_htmx(request):
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-wipry-lp-5")
+        else:
+            return wlanpi_core_warning
+    return "", 204
+
+@bp.route("/<task>grafanawipry6")
+def start_stop_grafana_wipry6(task):
+    if is_htmx(request):
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-wipry-lp-6")
+        else:
+            return wlanpi_core_warning
+    return "", 204
+
+@bp.route("/<task>grafanawispy24")
+def start_stop_grafana_wispy24(task):
+    if is_htmx(request):
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-wispy-24")
+        else:
+            return wlanpi_core_warning
+    return "", 204
+
+@bp.route("/<task>grafanawispy5")
+def start_stop_grafana_wispy5(task):
+    if is_htmx(request):
+        core_status = system_service_running_state("wlanpi-core")
+        if core_status:
+            start_stop_service(task, "wlanpi-grafana-wispy-5")
         else:
             return wlanpi_core_warning
     return "", 204
