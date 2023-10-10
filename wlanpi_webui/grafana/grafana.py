@@ -113,13 +113,13 @@ def get_datastream_info(
         ds_service_running = system_service_running_state(datastream)
         if ds_service_running:
             enabled_ds = """
-            <li><span>{friendly_name} <a hx-get="{stop_task}" hx-indicator=".progress"><span uk-icon="close"></span></a></span></li>
+            <li><span><a hx-get="{stop_task}" hx-indicator=".progress"><span uk-icon="close"></span></a></span> {friendly_name}</li>
             """.format(
                 friendly_name=friendly_name, stop_task=stop_task
             )
         else:
             disabled_ds += """
-            <li><span>{friendly_name} <a hx-get="{start_task}" hx-indicator=".progress"><span uk-icon="play-circle"></span></a></span></li>
+            <li><span><a hx-get="{start_task}" hx-indicator=".progress"><span uk-icon="play-circle"></span></a> {friendly_name}</span></li>
             """.format(
                 friendly_name=friendly_name, start_task=start_task
             )
