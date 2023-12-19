@@ -118,4 +118,21 @@
     <a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
       hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
   </div>
+  <br />
+  <div>
+    <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+      <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+        <div class="uk-grid-small uk-flex-middle" uk-grid>
+          <div class="uk-width-auto">
+            <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Wi-Fi Scan</h3>
+          </div>
+          <div class="uk-width-expand">
+            <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"
+                uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('reachability')"><img
+                  src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+          </div>
+        </div>
+      </div>
+      {% autoescape false %}<p id="scan" class="uk-text-break">{{ scan | safe }}</p> {% endautoescape %}
+    </div>
 </div>

@@ -6,8 +6,9 @@ import threading
 from flask import render_template, request
 
 from wlanpi_webui.network import bp
-from wlanpi_webui.utils import is_htmx
+from wlanpi_webui.utils import is_htmx, get_wifi_scan
 
+from json2html import *
 
 @bp.route("/network")
 def network():
@@ -71,6 +72,9 @@ def network():
     cdp = readlines(cdpneigh)
     lldp = readlines(lldpneigh)
 
+    netScan = get_wifi_scan('wlan0')
+    netScan_html = json2html.convert(json=netScan)
+
     script_results = dumpQueue(FPMS_QUEUE)
     for result in script_results:
         if "reachability" in str(result):
@@ -88,6 +92,7 @@ def network():
         "ipconfig": ipconfig,
         "lldp": lldp,
         "cdp": cdp,
+        "scan": netScan_html,
     }
 
     if is_htmx(request):
