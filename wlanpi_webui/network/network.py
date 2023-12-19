@@ -2,13 +2,45 @@ import os
 import queue
 import subprocess
 import threading
+import json
 
 from flask import render_template, request
 
 from wlanpi_webui.network import bp
 from wlanpi_webui.utils import is_htmx
 
+# from json2html import *
 
+@bp.route("/network/getscan")
+def getscan():
+    netScan = get_wifi_scan('wlan0')
+    
+    try:
+        netScan = json.loads(netScan)
+    except:
+        return "Error"
+    
+    grouped_scan = []
+    unique_ssids = []
+    
+    for network in netScan["nets"]:
+        if ("\0" in network["ssid"]) or (network["ssid"] in [" ", ""]):
+            network["ssid"] = "<hidden>"
+        if not network["ssid"] in unique_ssids:
+            unique_ssids.append(network["ssid"])
+    
+    idx = 0
+    for ssid in unique_ssids:
+        grouped_scan.append({"ssid": ssid, "scan": []})
+        for network in netScan["nets"]:
+            if network["ssid"] == ssid:
+                scan = {"bssid": network["bssid"], "wpa": network["wpa"], "wpa2": network["wpa2"], "signal": network["signal"], "freq": network["freq"]}
+                grouped_scan[idx]["scan"].append(scan)
+        idx += 1
+    
+    return render_template("netscan_iframe.html", netScan=netScan, groupedScan=grouped_scan)
+
+    
 @bp.route("/network")
 def network():
     """fpms screen"""
@@ -71,6 +103,9 @@ def network():
     cdp = readlines(cdpneigh)
     lldp = readlines(lldpneigh)
 
+    # netScan = get_wifi_scan('wlan0')
+    # netScan_html = json2html.convert(json=netScan)
+
     script_results = dumpQueue(FPMS_QUEUE)
     for result in script_results:
         if "reachability" in str(result):
@@ -88,6 +123,7 @@ def network():
         "ipconfig": ipconfig,
         "lldp": lldp,
         "cdp": cdp,
+        # "scan": netScan_html,
     }
 
     if is_htmx(request):

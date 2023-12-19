@@ -24,6 +24,38 @@
     }
   }
 </script>
+<!-- <script>
+  function getScanResults(type, interface) {
+    xhr = new XMLHttpRequest()
+
+    var url = `http://${location.hostname}:31415/api/v1/network/network/scan`;
+    
+    var params = "type=" + type + "&interface=" + interface;
+    
+    xhr.open("GET", url+"?"+params, true);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onload = () => {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+
+            console.log(xhr.response);
+
+            document.getElementById("scan").innerHTML = xhr.response
+
+            return xhr.response;
+        } else {
+            console.log(`Error: ${xhr.status}`);
+            return xhr.status;
+        }
+    };
+    
+    xhr.send();
+  }
+
+addEventListener("DOMContentLoaded", (event) => {
+  getScanResults("active", "wlan0")
+});
+</script> -->
 <div class="uk-flex uk-flex-1 uk-dark uk-background-muted uk-flex-column uk-padding">
   <div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid
     uk-height-match="target: > div > .uk-card">
@@ -116,6 +148,23 @@
   <br />
   <div class="uk-flex uk-flex-center">
     <a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-      hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
+      hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button" onclick="getScanResults('active', 'wlan0')"></a>
   </div>
+  <br />
+  <div>
+    <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+      <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+        <div class="uk-grid-small uk-flex-middle" uk-grid>
+          <div class="uk-width-auto">
+            <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Wi-Fi Scan</h3>
+          </div>
+          <div class="uk-width-expand">
+            <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"
+                uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('reachability')"><img
+                  src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+          </div>
+        </div>
+      </div>
+      {% autoescape false %}<p id="scan" class="uk-text-break"><iframe class="uk-cover" style="pointer-events: all;" src="/network/getscan" width="100%" height="400px"></iframe></p> {% endautoescape %}
+    </div>
 </div>
