@@ -103,13 +103,8 @@ def network():
     cdp = readlines(cdpneigh)
     lldp = readlines(lldpneigh)
 
-<<<<<<< HEAD
     # netScan = get_wifi_scan('wlan0')
     # netScan_html = json2html.convert(json=netScan)
-=======
-    netScan = get_wifi_scan('wlan0')
-    netScan_html = json2html.convert(json=netScan)
->>>>>>> 525d30d8f699959fffd933019eb1a5c56e690dbb
 
     script_results = dumpQueue(FPMS_QUEUE)
     for result in script_results:
@@ -128,11 +123,7 @@ def network():
         "ipconfig": ipconfig,
         "lldp": lldp,
         "cdp": cdp,
-<<<<<<< HEAD
         # "scan": netScan_html,
-=======
-        "scan": netScan_html,
->>>>>>> 525d30d8f699959fffd933019eb1a5c56e690dbb
     }
 
     if is_htmx(request):
