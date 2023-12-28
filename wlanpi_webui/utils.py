@@ -150,6 +150,39 @@ def start_stop_service(task, service):
         except requests.exceptions.RequestException:
             current_app.logger.exception("requests error")
             return redirect(request.referrer)
+        
+def get_wifi_scan(interface):
+    """
+    Starts or stops a service using wlanpi-core.
+    """
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+    }
+    params = {
+        "type": "active",
+        "interface": f"{interface}",
+    }
+
+    current_app.logger.info("calling network scan on inerface %s", interface)
+    try:
+        start_url = "http://127.0.0.1:31415/api/v1/network/network/scan"
+        response = requests.get(
+            start_url,
+            params=params,
+            headers=headers,
+        )
+        if response.status_code != 200:
+            current_app.logger.info(
+                "systemd_service_message: %s",
+                systemd_service_message("wlanpi-core"),
+            )
+            current_app.logger.info("%s generated %s response", start_url, response)
+        current_app.logger.info("%s generated %s response", start_url, response)
+        return json.dumps(response.json())
+    except requests.exceptions.RequestException:
+        current_app.logger.exception("requests error")
+        return redirect(request.referrer)
 
 
 def package_installed(package):

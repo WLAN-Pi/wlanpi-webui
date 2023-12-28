@@ -7,7 +7,7 @@ import json
 from flask import render_template, request
 
 from wlanpi_webui.network import bp
-from wlanpi_webui.utils import is_htmx
+from wlanpi_webui.utils import is_htmx, get_wifi_scan
 
 # from json2html import *
 
