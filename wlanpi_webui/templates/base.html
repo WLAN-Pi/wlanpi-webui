@@ -80,8 +80,19 @@
                 </ul>
               </div>
             </li>
-            <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-                hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+            <li>
+              <!-- <a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+                hx-swap="innerHTML" style="color: white;">NETWORK</a> -->
+                <a href="#" style="color: white;">NETWORK <span uk-navbar-parent-icon></span></a>
+                <div class="uk-navbar-dropdown">
+                  <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
+                    <li><a hx-get="/network" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                        hx-indicator=".progress">STATS</a></li>
+                    <li><a hx-get="/network/setup" hx-target="#content" hx-swap="innerHTML"
+                        hx-push-url="true" hx-indicator=".progress">SETUP</a></li>
+                  </ul>
+                </div>
+            </li>
             <li>
               <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown"

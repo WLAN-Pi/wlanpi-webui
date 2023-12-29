@@ -7,9 +7,55 @@ import json
 from flask import render_template, request
 
 from wlanpi_webui.network import bp
-from wlanpi_webui.utils import is_htmx, get_wifi_scan
+from wlanpi_webui.utils import is_htmx, get_wifi_scan, get_interfaces, set_network
 
 # from json2html import *
+
+@bp.route("/network/setup", methods=('GET', 'POST'))
+def netSetup():
+    messages = []
+    if request.method == "POST":
+        form_data = request.form
+        
+        try:
+            body = {
+                "interface": form_data["interface"],
+                "netConfig": {
+                    "ssid": form_data["ssid"],
+                    "psk": form_data["psk"],
+                    "key_mgmt": form_data["key_mgmt"],
+                    "ieee80211w": int(form_data["ieee80211w"])
+                },
+                "removeAllFirst": (True if form_data["removeAllFirst"] == "true" else False)
+            }
+        except:
+            return "Fail"
+            
+        result = set_network(body)
+        
+        try:
+            result = json.loads(result)
+        except:
+            pass
+        
+        messages.append(result)
+
+    result = get_interfaces()
+    
+    try:
+        result = json.loads(result)
+    except:
+        return "Error"
+    
+    interfaces = []
+    
+    for interface in result["interfaces"]:
+        interfaces.append(interface["interface"])
+    
+    if is_htmx(request):
+        return render_template("/partials/network_setup.html", interfaces=interfaces, messages=messages)
+    else:
+        return render_template("/extends/network_setup.html", interfaces=interfaces, messages=messages)
 
 @bp.route("/network/getscan")
 def getscan():
