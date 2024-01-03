@@ -124,6 +124,28 @@
         </div>
         <div class="uk-navbar-right">
           <ul class="uk-navbar-nav">
+            <li class="uk-inline" style="display: flex; align-items: center;">
+              <button class="wlanpi-mode" id="wlanpi-mode-box" type="button">
+                Mode: {{ mode }}
+              </button>
+              <!-- This dropdown is disabled until a mode switcher is created. -->
+              <!-- <div class="wlanpi-mode-dropdown" uk-dropdown="mode: click; pos:bottom-center" id="wlanpi-mode-dropdown-box">
+                <div class="mode-selector">
+                  <button class="mode mode-active">
+                    <strong>Classic</strong>
+                  </button>
+                  <button class="mode">
+                    <strong>Hotspot</strong>
+                  </button>
+                  <button class="mode">
+                    <strong>Bridge</strong>
+                  </button>
+                </div>
+                <div class="mode-description">
+                  This mode does this blah blah blah blah blah
+                </div>
+              </div> -->
+            </li>
             <li id="connection-alert" style="visibility: hidden;">
               <a href="#" uk-icon="icon: warning; ratio: 1.5;" title="Connection error." data-uk-tooltip></a>
             </li>

@@ -19,17 +19,25 @@ def netSetup():
         
         try:
             body = {
-                "interface": form_data["interface"],
+                "interface": form_data.get("interface"),
                 "netConfig": {
-                    "ssid": form_data["ssid"],
-                    "psk": form_data["psk"],
-                    "key_mgmt": form_data["key_mgmt"],
-                    "ieee80211w": int(form_data["ieee80211w"])
+                    "ssid": form_data.get("ssid"),
+                    "psk": form_data.get("psk"),
+                    "sae_password": form_data.get("sea_password"),
+                    "key_mgmt": form_data.get("key_mgmt"),
+                    "eap": form_data.get("eap"),
+                    "anonymous_identity": form_data.get("anonymous_identity"),
+                    "identity": form_data.get("identity"),
+                    "password": form_data.get("password"),
+                    "ca_cert": form_data.get("ca_cert"),
+                    "phase2": form_data.get("phase2"),
+                    "ieee80211w": int(form_data.get("ieee80211w")),
+                    "priority": int(form_data.get("priority")),
                 },
-                "removeAllFirst": (True if form_data["removeAllFirst"] == "true" else False)
+                "removeAllFirst": (True if form_data.get("removeAllFirst") == "true" else False)
             }
-        except:
-            return "Fail"
+        except Exception as e:
+            return f"Fail: {e}"
             
         result = set_network(body)
         

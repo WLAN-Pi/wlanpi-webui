@@ -9,6 +9,7 @@ the main flask app
 """
 
 import logging
+import subprocess
 
 from flask import Flask, abort, send_from_directory
 from flask_minify import Minify
@@ -82,6 +83,7 @@ def create_app(config_class=Config):
     def inject_vars():
         return {
             "title": f"WLAN Pi: {get_hostname()}",
+            "mode": subprocess.check_output("cat /etc/wlanpi-state", shell=True).decode()
         }
 
     @app.route("/static/img/<path:filename>")
