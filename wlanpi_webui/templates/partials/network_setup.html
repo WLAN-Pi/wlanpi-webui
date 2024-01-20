@@ -1,0 +1,207 @@
+<script>
+    function copyCardToClipboard(card) {
+      if (window.clipboardData && window.clipboardData.setData) {
+        // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+        return window.clipboardData.setData("Text", text);
+      }
+      else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+        var input = document.createElement("textarea");
+        // we're copying from a <p> tag in this instance
+        input.innerHTML = document.getElementById(card).innerText;
+        input.style.position = "fixed";
+        document.body.appendChild(input);
+        input.select();
+        try {
+          document.execCommand("copy");
+        }
+        catch (ex) {
+          console.warn("Copy to clipboard failed.", ex);
+          return false;
+        }
+        finally {
+          document.body.removeChild(input);
+        }
+      }
+    }
+</script>
+<script>
+    function hideLoadingSpinner (){
+        var spinner = document.getElementById("spinner");
+        spinner.style.visibility = "hidden";
+    }
+
+    function showLoadingSpinner (){
+        var spinner = document.getElementById("spinner");
+        spinner.style.visibility = "visible";
+        var statusBar = document.getElementById("setup-status-bar");
+        statusBar.style.backgroundColor = "#f45625";
+        statusBar.style.color = "#ffffff";
+        statusBar.innerText = "Setting Up Network...";
+    }
+
+    document.addEventListener("DOMContentLoaded", (event) => {
+        var messages = {{ messages | tojson }};
+    
+        if (messages.length > 0) {
+            console.log("api content recieved");
+            console.log(messages[0]);
+            var statusBar = document.getElementById("setup-status-bar");
+            statusBar.style.color = "#ffffff";
+            statusBar.style.backgroundColor = "#9fce3a";
+            var statusMessage = `<strong style="margin-right: 10px;">Connected to ${messages[0].connectedNet.ssid}!</strong> Network BSSID: ${messages[0].connectedNet.bssid}, Network Freq: ${messages[0].connectedNet.freq} hz, Network Signal Strength: ${messages[0].connectedNet.signal} dbm`
+            statusBar.innerHTML = statusMessage;
+        }
+    });
+
+
+</script>
+
+<style>
+    .submit-form-area {
+        display: flex;
+        flex-direction: row;
+        margin: auto;
+        padding-top: 20px;
+        gap: 30px;
+    }
+    .spinner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        visibility: hidden;
+    }
+
+    .setup-status-bar {
+        background-color: #eeeeee;
+        padding: 5px;
+        border-radius: 5px;
+        margin-top: 10px;
+        transition: 0.2s linear
+    }
+</style>
+
+<div class="uk-flex uk-flex-1 uk-dark uk-background-muted uk-flex-column uk-padding">
+    <div>
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+            <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                <div class="uk-grid-small uk-flex-middle" uk-grid>
+                    <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Wi-Fi Connection</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="setup-status-bar" id="setup-status-bar">Use the form to connect the device to a network.</div>
+            <form method="post" style="width: fit-content" class="uk-form-stacked" onsubmit="showLoadingSpinner()">
+                <table class="uk-table uk-table-divider uk-table-middle uk-table-small">
+                    <tr>
+                        <td>Interface:</td>
+                        <td><select class="uk-select" name="interface" required>
+                            {% for interface in interfaces %}
+                                <option>{{ interface }}</option>
+                            {% endfor %}
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>SSID:</td>
+                        <td><input type="text" class="uk-input" placeholder="SSID" name="ssid" required></td>
+                    </tr>
+                    <tr>
+                        <td>PSK:</td>
+                        <td><input type="text" class="uk-input" placeholder="PSK" name="psk"></td>
+                    </tr>
+                    <tr>
+                        <td>SAE PSK:</td>
+                        <td><input type="text" class="uk-input" placeholder="SAE-PSK" name="sae_password"></td>
+                    </tr>
+                    <tr>
+                        <td>MGMT Key:</td>
+                        <td><select class="uk-select" name="key_mgmt">
+                            <option>WPA-PSK</option>
+                            <option>WPA-PSK-SHA256</option>
+                            <option>WPA-EPA</option>
+                            <option>WPA-EAP-SHA256</option>
+                            <option>SAE</option>
+                            <option>IEEE8021X</option>
+                            <option>NONE</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>EAP:</td>
+                        <td><select class="uk-select" name="eap">
+                            <option>MD5</option>
+                            <option>MSCHAPV2</option>
+                            <option>OTP</option>
+                            <option>GTC</option>
+                            <option>TLS</option>
+                            <option>TTLS</option>
+                            <option>PEAP</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>Anonymous Identity:</td>
+                        <td><input type="text" class="uk-input" placeholder="anonymous" name="anonymous_identity"></td>
+                    </tr>
+                    <tr>
+                        <td>Identity:</td>
+                        <td><input type="text" class="uk-input" placeholder="Please enter your username" name="identity"></td>
+                    </tr>
+                    <tr>
+                        <td>Password:</td>
+                        <td><input type="text" class="uk-input" placeholder="Please enter your password" name="password"></td>
+                    </tr>
+                    <tr>
+                        <td>CA Cert file:</td>
+                        <td><input type="text" class="uk-input" placeholder="Path to cert file" name="ca_cert"></td>
+                    </tr>
+                    <tr>
+                        <td>Phase2:</td>
+                        <td><input type="text" class="uk-input" placeholder="autheap=MSCHAPV2" name="phase2"></td>
+                    </tr>
+                    <tr>
+                        <td>Protected Management Frames (ieee80211w):</td>
+                        <td><select class="uk-select" name="ieee80211w" required>
+                            <option value="0">0: Disabled</option>
+                            <option value="1">1: Optional</option>
+                            <option value="2">2: Required</option>
+                        </select></td>
+                    </tr>
+                    <tr>
+                        <td>Priority:</td>
+                        <td><input type="number" class="uk-input" value="10" name="priority" min="0" max="65000"></td>
+                    </tr>
+                    <tr>
+                        <td>Remove All First:</td>
+                        <td><input type="checkbox" class="uk-checkbox" name="removeAllFirst" value="true"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="submit-form-area">
+                                <input type="submit" class="uk-button uk-button-default" style="width: fit-content;"><div uk-spinner class="spinner" id="spinner"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <br />
+    <div class="uk-flex uk-flex-center">
+        <a hx-get="/network/setup" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true" hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button" onclick="getScanResults('active', 'wlan0')"></a>
+    </div>
+    <br />
+    <div>
+        <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+            <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+                <div class="uk-grid-small uk-flex-middle" uk-grid>
+                    <div class="uk-width-auto">
+                        <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">Wi-Fi Scan</h3>
+                    </div>
+                    <div class="uk-width-expand">
+                        <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('reachability')"><img src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+                </div>
+            </div>
+        </div>
+        {% autoescape false %}<p id="scan" class="uk-text-break"><iframe class="uk-cover" style="pointer-events: all;" src="/network/getscan" width="100%" height="400px"></iframe></p> {% endautoescape %}
+    </div>
+</div>
