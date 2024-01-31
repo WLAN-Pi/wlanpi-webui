@@ -71,6 +71,9 @@ def network():
     cdp = readlines(cdpneigh)
     lldp = readlines(lldpneigh)
 
+    # netScan = get_wifi_scan('wlan0')
+    # netScan_html = json2html.convert(json=netScan)
+
     script_results = dumpQueue(FPMS_QUEUE)
     for result in script_results:
         if "reachability" in str(result):
@@ -88,6 +91,7 @@ def network():
         "ipconfig": ipconfig,
         "lldp": lldp,
         "cdp": cdp,
+        # "scan": netScan_html,
     }
 
     if is_htmx(request):
