@@ -1,5 +1,5 @@
 import subprocess
-import json
+
 import requests
 from flask import current_app, redirect, request
 
@@ -150,97 +150,8 @@ def start_stop_service(task, service):
         except requests.exceptions.RequestException:
             current_app.logger.exception("requests error")
             return redirect(request.referrer)
-        
-def get_wifi_scan(interface):
-    """
-    Makes a request to do a wifi scan and returns the scan using wlanpi-core.
-    """
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/x-www-form-urlencoded",
-    }
-    params = {
-        "type": "active",
-        "interface": f"{interface}",
-    }
 
-    current_app.logger.info("calling network scan on inerface %s", interface)
-    try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/scan"
-        response = requests.get(
-            start_url,
-            params=params,
-            headers=headers,
-        )
-        if response.status_code != 200:
-            current_app.logger.info(
-                "systemd_service_message: %s",
-                systemd_service_message("wlanpi-core"),
-            )
-            current_app.logger.info("%s generated %s response", start_url, response)
-        current_app.logger.info("%s generated %s response", start_url, response)
-        return json.dumps(response.json())
-    except requests.exceptions.RequestException:
-        current_app.logger.exception("requests error")
-        return redirect(request.referrer)
-    
-def set_network(body):
-    """
-    Takes the body from a form and sets the network using wlanpi-core.
-    """
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/json",
-    }
 
-    current_app.logger.info("setting network with params: %s", body)
-    try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/set"
-        response = requests.post(
-            start_url,
-            headers=headers,
-            json=body
-        )
-        if response.status_code != 200:
-            current_app.logger.info(
-                "systemd_service_message: %s",
-                systemd_service_message("wlanpi-core"),
-            )
-            current_app.logger.info("%s generated %s response", start_url, response)
-        current_app.logger.info("%s generated %s response", start_url, response)
-        return response.content
-    except requests.exceptions.RequestException:
-        current_app.logger.exception("requests error")
-        return redirect(request.referrer)
-
-def get_interfaces():
-    """
-    Gets all the interfaces using wlanpi-core.
-    """
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/x-www-form-urlencoded",
-    }
-
-    current_app.logger.info("getting interfaces")
-    try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/getInterfaces"
-        response = requests.get(
-            start_url,
-            headers=headers,
-        )
-        if response.status_code != 200:
-            current_app.logger.info(
-                "systemd_service_message: %s",
-                systemd_service_message("wlanpi-core"),
-            )
-            current_app.logger.info("%s generated %s response", start_url, response)
-        current_app.logger.info("%s generated %s response", start_url, response)
-        return json.dumps(response.json())
-    except requests.exceptions.RequestException:
-        current_app.logger.exception("requests error")
-        return redirect(request.referrer)
-    
 def package_installed(package):
     version = get_apt_package_version(package)
     if version == "":
