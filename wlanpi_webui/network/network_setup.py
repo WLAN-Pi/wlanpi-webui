@@ -93,8 +93,7 @@ def getscan():
             if network["ssid"] == ssid:
                 scan = {
                     "bssid": network["bssid"],
-                    "wpa": network["wpa"],
-                    "wpa2": network["wpa2"],
+                    "keymgmt": network["keymgmt"],
                     "signal": network["signal"],
                     "freq": network["freq"],
                 }

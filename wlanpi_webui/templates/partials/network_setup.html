@@ -107,19 +107,20 @@
                         <td><input type="text" class="uk-input" placeholder="SSID" name="ssid" required></td>
                     </tr>
                     <tr>
-                        <td>PASSPHRASE:</td>
-                        <td><input type="text" class="uk-input" placeholder="PSK" name="psk"></td>
+                        <td>Passphrase:</td>
+                        <td><input type="text" class="uk-input" placeholder="PASSPHRASE" name="psk"></td>
                     </tr>
                     <tr>
-                        <td>MGMT Key:</td>
+                        <td>Key Management:</td>
                         <td><select class="uk-select" name="key_mgmt">
+                            <option>NONE</option>
                             <option>WPA-PSK</option>
                             <option>WPA-PSK-SHA256</option>
                             <option>WPA-EPA</option>
                             <option>WPA-EAP-SHA256</option>
                             <option>SAE</option>
+                            <option>OWE</option>
                             <option>IEEE8021X</option>
-                            <option>NONE</option>
                         </select></td>
                     </tr>
                     <tr>
@@ -130,24 +131,24 @@
                             <option>OTP</option>
                             <option>GTC</option>
                             <option>TLS</option>
-                            <option>TTLS</option>
                             <option>PEAP</option>
+                            <option>TTLS</option>
                         </select></td>
                     </tr>
                     <tr>
                         <td>Anonymous Identity:</td>
-                        <td><input type="text" class="uk-input" placeholder="anonymous" name="anonymous_identity"></td>
+                        <td><input type="text" class="uk-input" placeholder="Anonymous Identity for EAP" name="anonymous_identity"></td>
                     </tr>
                     <tr>
                         <td>Identity:</td>
-                        <td><input type="text" class="uk-input" placeholder="Please enter your username" name="identity"></td>
+                        <td><input type="text" class="uk-input" placeholder="Identity for EAP" name="identity"></td>
                     </tr>
                     <tr>
                         <td>Password:</td>
-                        <td><input type="text" class="uk-input" placeholder="Please enter your password" name="password"></td>
+                        <td><input type="text" class="uk-input" placeholder="Password for EAP" name="password"></td>
                     </tr>
                     <tr>
-                        <td>CA Cert file:</td>
+                        <td>CA Certificate file:</td>
                         <td><input type="text" class="uk-input" placeholder="Path to cert file" name="ca_cert"></td>
                     </tr>
                     <tr>
