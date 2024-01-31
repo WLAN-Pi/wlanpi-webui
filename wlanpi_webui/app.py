@@ -83,7 +83,9 @@ def create_app(config_class=Config):
     def inject_vars():
         return {
             "title": f"WLAN Pi: {get_hostname()}",
-            "mode": subprocess.check_output("cat /etc/wlanpi-state", shell=True).decode()
+            "mode": subprocess.check_output(
+                "cat /etc/wlanpi-state", shell=True
+            ).decode(),
         }
 
     @app.route("/static/img/<path:filename>")
