@@ -19,7 +19,6 @@ def netSetup():
                 "netConfig": {
                     "ssid": form_data.get("ssid"),
                     "psk": form_data.get("psk"),
-                    "sae_password": form_data.get("sea_password"),
                     "key_mgmt": form_data.get("key_mgmt"),
                     "eap": form_data.get("eap"),
                     "anonymous_identity": form_data.get("anonymous_identity"),
