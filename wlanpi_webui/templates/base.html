@@ -87,9 +87,9 @@
                 <div class="uk-navbar-dropdown">
                   <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
                     <li><a hx-get="/network" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                        hx-indicator=".progress">STATS</a></li>
+                        hx-indicator=".progress">INFO</a></li>
                     <li><a hx-get="/network/setup" hx-target="#content" hx-swap="innerHTML"
-                        hx-push-url="true" hx-indicator=".progress">SETUP</a></li>
+                        hx-push-url="true" hx-indicator=".progress">WLAN SETUP</a></li>
                   </ul>
                 </div>
             </li>
@@ -205,7 +205,9 @@
         </ul>
         <li class="uk-divider-icon"></li>
         <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-          hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+          hx-swap="innerHTML" style="color: white;">NETWORK INFO</a></li>
+          <li><a hx-get="/network/setup" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+            hx-swap="innerHTML" style="color: white;">NETWORK WLAN SETUP</a></li>
           <li class="uk-divider-icon"></li>
         <ul class="uk-nav uk-navbar-dropdown-nav" 
             hx-get="/kismet/side_menu"
