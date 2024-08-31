@@ -85,7 +85,7 @@ Activate virtualenv
 Install dependencies
 
 ```bash
-  pip install -r requirements
+  pip install -r requirements.txt
 ```
 
 Starting the development server
