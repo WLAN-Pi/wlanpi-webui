@@ -116,7 +116,7 @@ def get_wifi_scan(interface):
 
     current_app.logger.info("calling network scan on interface %s", interface)
     try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/scan"
+        start_url = "http://127.0.0.1:31415/api/v1/network/wlan/scan"
         response = requests.get(
             start_url,
             params=params,
@@ -146,7 +146,7 @@ def set_network(body):
 
     current_app.logger.info("setting network with params: %s", body)
     try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/set"
+        start_url = "http://127.0.0.1:31415/api/v1/network/wlan/set"
         response = requests.post(start_url, headers=headers, json=body)
         if response.status_code != 200:
             current_app.logger.info(
@@ -172,7 +172,7 @@ def get_interfaces():
 
     current_app.logger.info("getting interfaces")
     try:
-        start_url = "http://127.0.0.1:31415/api/v1/network/network/getInterfaces"
+        start_url = "http://127.0.0.1:31415/api/v1/network/wlan/getInterfaces"
         response = requests.get(
             start_url,
             headers=headers,
