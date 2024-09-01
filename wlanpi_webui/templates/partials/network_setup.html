@@ -124,36 +124,11 @@
                         </select></td>
                     </tr>
                     <tr>
-                        <td>EAP:</td>
-                        <td><select class="uk-select" name="eap">
-                            <option>MD5</option>
-                            <option>MSCHAPV2</option>
-                            <option>OTP</option>
-                            <option>GTC</option>
-                            <option>TLS</option>
-                            <option>PEAP</option>
-                            <option>TTLS</option>
+                        <td>Proto:</td>
+                        <td><select class="uk-select" name="proto">
+                            <option>RSN</option>
+                            <option>WPA</option>
                         </select></td>
-                    </tr>
-                    <tr>
-                        <td>Anonymous Identity:</td>
-                        <td><input type="text" class="uk-input" placeholder="Anonymous Identity for EAP" name="anonymous_identity"></td>
-                    </tr>
-                    <tr>
-                        <td>Identity:</td>
-                        <td><input type="text" class="uk-input" placeholder="Identity for EAP" name="identity"></td>
-                    </tr>
-                    <tr>
-                        <td>Password:</td>
-                        <td><input type="text" class="uk-input" placeholder="Password for EAP" name="password"></td>
-                    </tr>
-                    <tr>
-                        <td>CA Certificate file:</td>
-                        <td><input type="text" class="uk-input" placeholder="Path to cert file" name="ca_cert"></td>
-                    </tr>
-                    <tr>
-                        <td>Phase2:</td>
-                        <td><input type="text" class="uk-input" placeholder="autheap=MSCHAPV2" name="phase2"></td>
                     </tr>
                     <tr>
                         <td>Protected Management Frames (ieee80211w):</td>
@@ -162,10 +137,6 @@
                             <option value="1">1: Optional</option>
                             <option value="2">2: Required</option>
                         </select></td>
-                    </tr>
-                    <tr>
-                        <td>Priority:</td>
-                        <td><input type="number" class="uk-input" value="10" name="priority" min="0" max="65000"></td>
                     </tr>
                     <tr>
                         <td>Remove All First:</td>
