@@ -39,17 +39,18 @@ def netSetup():
 
         messages.append(result)
 
-    result = get_interfaces()
+    # result = get_interfaces()
 
-    try:
-        result = json.loads(result)
-    except:
-        return "Error"
+    # try:
+    #     result = json.loads(result)
+    # except:
+    #     return "Error"
 
-    interfaces = []
+
+    interfaces = ["wlan0"]
     try:
-        for interface in result["interfaces"]:
-            interfaces.append(interface["interface"])
+        # for interface in result["interfaces"]:
+        #     interfaces.append(interface["interface"])
 
         if is_htmx(request):
             return render_template(
@@ -89,7 +90,7 @@ def getscan():
             if network["ssid"] == ssid:
                 scan = {
                     "bssid": network["bssid"],
-                    "keymgmt": network["keymgmt"],
+                    "key_mgmt": network["key_mgmt"],
                     "signal": network["signal"],
                     "freq": network["freq"],
                 }
@@ -153,8 +154,8 @@ def set_network(body):
                 "systemd_service_message: %s",
                 systemd_service_message("wlanpi-core"),
             )
-            current_app.logger.info("%s generated %s response", start_url, response)
-        current_app.logger.info("%s generated %s response", start_url, response)
+            current_app.logger.info("%s generated %s response", start_url, response.content)
+        current_app.logger.info("%s generated %s response", start_url, response.content)
         return response.content
     except requests.exceptions.RequestException:
         current_app.logger.exception("requests error")

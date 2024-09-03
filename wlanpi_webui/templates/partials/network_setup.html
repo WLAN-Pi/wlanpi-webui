@@ -46,11 +46,34 @@
         if (messages.length > 0) {
             console.log("api content recieved");
             console.log(messages[0]);
+
             var statusBar = document.getElementById("setup-status-bar");
-            statusBar.style.color = "#ffffff";
-            statusBar.style.backgroundColor = "#9fce3a";
-            var statusMessage = `<strong style="margin-right: 10px;">Connected to ${messages[0].connectedNet.ssid}!</strong> Network BSSID: ${messages[0].connectedNet.bssid}, Network Freq: ${messages[0].connectedNet.freq} hz, Network Signal Strength: ${messages[0].connectedNet.signal} dbm`
-            statusBar.innerHTML = statusMessage;
+            
+            if (messages[0].status != "connected") {
+                console.log(messages[0].status)
+                
+                statusBar.style.color = "#ffffff";
+                statusBar.style.backgroundColor = "red";
+                var statusMessage = `<strong style="margin-right: 10px;">Something Went Wrong</strong> Error message: ${messages[0].status}`
+                statusBar.innerHTML = statusMessage;
+            }
+            
+            else {
+                statusBar.style.color = "#ffffff";
+                statusBar.style.backgroundColor = "#9fce3a";
+                var statusMessage = `<strong style="margin-right: 10px;">Connected to ${messages[0].connectedNet.ssid}!</strong> Network BSSID: ${messages[0].connectedNet.bssid}, Network Freq: ${messages[0].connectedNet.freq} hz, Network Signal Strength: ${messages[0].connectedNet.signal} dbm`
+                statusBar.innerHTML = statusMessage;
+            }
+            
+            var event_div = document.getElementById("event-log")
+            var event_log = messages[0].response.eventLog
+            var content = ""
+
+            event_log.forEach(log => {
+                content += `<div>${log.time}: ${log.event}</div>`
+            });
+            
+            event_div.innerHTML = content
         }
     });
 
@@ -89,6 +112,14 @@
         margin-top: 10px;
         transition: 0.2s linear
     }
+
+    .event-log {
+        background-color: #eeeeee;
+        padding: 5px;
+        border-radius: 5px;
+        margin-top: 10px;
+        transition: 0.2s linear
+    }
 </style>
 
 <div class="uk-flex uk-flex-1 uk-dark uk-background-muted uk-flex-column uk-padding">
@@ -108,7 +139,7 @@
                         <td>Interface:</td>
                         <td><select class="uk-select" name="interface" required>
                             {% for interface in interfaces %}
-                                <option>{{ interface }}</option>
+                            <option>{{ interface }}</option>
                             {% endfor %}
                         </select></td>
                     </tr>
@@ -161,6 +192,8 @@
                     </tr>
                 </table>
             </form>
+            <div class="event-log" id="event-log">No Logs</div>
+
         </div>
     </div>
     <br />
@@ -180,6 +213,6 @@
                 </div>
             </div>
         </div>
-        {% autoescape false %}<p id="scan" class="uk-text-break"><iframe class="uk-cover" style="pointer-events: all;" src="/network/getscan" width="100%" height="400px"></iframe></p> {% endautoescape %}
+        <!-- {% autoescape false %}<p id="scan" class="uk-text-break"><iframe class="uk-cover" style="pointer-events: all;" src="/network/getscan" width="100%" height="400px"></iframe></p> {% endautoescape %} -->
     </div>
 </div>
