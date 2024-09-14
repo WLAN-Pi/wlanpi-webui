@@ -30,27 +30,30 @@ def netSetup():
         except Exception as e:
             return f"Fail: {e}"
 
-        result = set_network(body)
+        set_result = set_network(body)
 
         try:
-            result = json.loads(result)
+            set_json = json.loads(set_result)
         except:
             pass
 
-        messages.append(result)
-
-    # result = get_interfaces()
-
-    # try:
-    #     result = json.loads(result)
-    # except:
-    #     return "Error"
+        messages.append(set_json)
 
 
-    interfaces = ["wlan0"]
+    interfaces_result = get_interfaces()
+
     try:
-        # for interface in result["interfaces"]:
-        #     interfaces.append(interface["interface"])
+        interfaces_json = json.loads(interfaces_result)
+    except Exception as e:
+        return f"Error {e}"
+
+
+    
+    try:
+        if interfaces_json:
+            interfaces = []
+            for interface in interfaces_json["interfaces"]:
+                interfaces.append(interface["interface"])
 
         if is_htmx(request):
             return render_template(
@@ -60,8 +63,8 @@ def netSetup():
             return render_template(
                 "/extends/network_setup.html", interfaces=interfaces, messages=messages
             )
-    except:
-        return "Error"
+    except Exception as e:
+        return f"Error {e}"
 
 
 @bp.route("/network/getscan")
@@ -78,7 +81,7 @@ def getscan():
     unique_ssids = []
 
     for network in netScan["nets"]:
-        if ("\0" in network["ssid"]) or (network["ssid"] in [" ", ""]):
+        if ("\0" in network["ssid"]) or (network["ssid"] in [' ', ""]):
             network["ssid"] = "<hidden>"
         if not network["ssid"] in unique_ssids:
             unique_ssids.append(network["ssid"])
