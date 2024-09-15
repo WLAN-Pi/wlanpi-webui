@@ -75,6 +75,16 @@
             
             event_div.innerHTML = content
         }
+
+        const iframe = document.createElement("iframe");
+        iframe.src = "/network/getscan";
+        iframe.width = "100%";
+        iframe.height = "400px";
+        iframe.classList.add("uk-cover");
+        iframe.style.pointerEvents = "all";
+
+        document.getElementById("scan").appendChild(iframe);
+
     });
 
 
@@ -97,7 +107,14 @@
         padding-top: 20px;
         gap: 30px;
     }
+
     .spinner {
+        display: flex;
+        flex-wrap: wrap;
+        visibility: hidden;
+    }
+
+    .spinner-center {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -132,6 +149,19 @@
                     </div>
                 </div>
             </div>
+            <div class="uk-margin uk-flex uk-flex-column">
+                <div class="uk-grid-small uk-flex-middle uk-margin-bottom" uk-grid>
+                    <h3 class="uk-margin-remove">Supplicant Service</h3>
+                    <div id="supplicant_div">
+                        <button class="uk-button uk-button-default" uk-tooltip="loading..." 
+                            hx-get="/wpa_supplicant/setup"
+                            hx-trigger="load"
+                            hx-swap="outerHTML"
+                            hx-indicator=".progress">-</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="uk-divider-small">
             <div class="setup-status-bar" id="setup-status-bar">Use the form to connect the device to a network.</div>
             <form method="post" style="width: fit-content" class="uk-form-stacked" onsubmit="showLoadingSpinner()">
                 <table class="uk-table uk-table-divider uk-table-middle uk-table-small">
@@ -186,7 +216,7 @@
                     <tr>
                         <td>
                             <div class="submit-form-area">
-                                <input type="submit" class="uk-button uk-button-default" style="width: fit-content;"><div uk-spinner class="spinner" id="spinner"></div>
+                                <input type="submit" class="uk-button uk-button-default" style="width: fit-content;"><div uk-spinner class="spinner-center" id="spinner"></div>
                             </div>
                         </td>
                     </tr>
@@ -213,6 +243,6 @@
                 </div>
             </div>
         </div>
-        {% autoescape false %}<p id="scan" class="uk-text-break"><iframe class="uk-cover" style="pointer-events: all;" src="/network/getscan" width="100%" height="400px"></iframe></p> {% endautoescape %}
+        {% autoescape false %}<p id="scan" class="uk-text-break"></p> {% endautoescape %}
     </div>
 </div>

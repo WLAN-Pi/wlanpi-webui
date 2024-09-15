@@ -1,10 +1,12 @@
 import json
-
+import time
 import requests
 from flask import current_app, redirect, render_template, request
 
 from wlanpi_webui.network import bp
-from wlanpi_webui.utils import is_htmx, systemd_service_message
+from wlanpi_webui.utils import (is_htmx, start_stop_service,
+                                system_service_running_state,
+                                systemd_service_message, wlanpi_core_warning)
 
 
 @bp.route("/network/setup", methods=("GET", "POST"))
@@ -65,6 +67,101 @@ def netSetup():
             )
     except Exception as e:
         return f"Error {e}"
+    
+    
+@bp.route("/wpa_supplicant/setup")
+def wpa_supplicant_setup():
+    if is_htmx(request):
+        supplicant_message = systemd_service_message("wpa_supplicant@wlan0.service")
+        supplicant_status = system_service_running_state("wpa_supplicant@wlan0.service")
+        supplicant_task_url = "/wpa_supplicant/startstop"
+        if supplicant_status:
+            # active
+            supplicant_task_anchor_text = "STOP"
+        else:
+            # not active
+            supplicant_task_anchor_text = "START"
+        args = {
+            "supplicant_message": supplicant_message,
+            "supplicant_task_url": supplicant_task_url,
+            "supplicant_task_anchor_text": supplicant_task_anchor_text,
+        }
+        if supplicant_status:
+            # active
+            html = """
+            <button class="uk-button uk-button-default" uk-tooltip="wpa_supplicant@wlan0.service is in the correct mode. Stop to restore default supplicant behaviour" 
+                hx-get="{supplicant_task_url}"
+                hx-trigger="click delay:0.2s"
+                hx-swap="outerHTML"
+                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+            """.format(
+                **args
+            )
+        else:
+            # not active
+            html = """
+            <button class="uk-button uk-button-default" uk-tooltip="wpa_supplicant@wlan0.service must be running before attempting to connect to a network." 
+                hx-get="{supplicant_task_url}"
+                hx-trigger="click delay:0.2s"
+                 hx-swap="outerHTML"
+                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+            """.format(
+                **args
+            )
+        return html
+
+
+@bp.route("/wpa_supplicant/startstop")
+def wpa_supplicant_startstop():
+    if is_htmx(request):
+        supplicant_message = systemd_service_message("wpa_supplicant@wlan0.service")
+        supplicant_status = system_service_running_state("wpa_supplicant@wlan0.service")
+        supplicant_task_url = "/wpa_supplicant/startstop"
+        if supplicant_status:
+            # active
+            start_stop_service("stop", "wpa_supplicant@wlan0.service")
+            time.sleep(1)
+            start_stop_service("start", "wpa_supplicant.service")
+            supplicant_task_anchor_text = "START"
+            supplicant_tooltip = "wpa_supplicant@wlan0.service must be running before attempting to connect to a network."
+        else:
+            # not active
+            start_stop_service("stop", "wpa_supplicant.service")
+            time.sleep(1)
+            start_stop_service("start", "wpa_supplicant@wlan0.service")
+            supplicant_task_anchor_text = "STOP"
+            supplicant_tooltip = "wpa_supplicant@wlan0.service is in the correct mode. Stop to restore default supplicant behaviour"
+        args = {
+            "supplicant_message": supplicant_message,
+            "supplicant_task_url": supplicant_task_url,
+            "supplicant_task_anchor_text": supplicant_task_anchor_text,
+            "supplicant_tooltip": supplicant_tooltip,
+        }
+        if supplicant_status:
+            # active
+            html = """
+            <button class="uk-button uk-button-default" uk-tooltip="{supplicant_tooltip}" 
+                hx-get="{supplicant_task_url}"
+                hx-trigger="click delay:0.2s"
+                hx-swap="outerHTML"
+                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+            """.format(
+                **args
+            )
+        else:
+            # not active
+            html = """
+            <button class="uk-button uk-button-default" uk-tooltip="{supplicant_tooltip}" 
+                hx-get="{supplicant_task_url}"
+                hx-trigger="click delay:0.2s"
+                 hx-swap="outerHTML"
+                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+            """.format(
+                **args
+            )
+        return html
+
+
 
 
 @bp.route("/network/getscan")
@@ -116,6 +213,7 @@ def get_wifi_scan(interface):
     params = {
         "type": "active",
         "interface": f"{interface}",
+        "timeout": 20
     }
 
     current_app.logger.info("calling network scan on interface %s", interface)
@@ -131,7 +229,12 @@ def get_wifi_scan(interface):
                 "systemd_service_message: %s",
                 systemd_service_message("wlanpi-core"),
             )
+            current_app.logger.info(
+                "error: %s",
+                response.content,
+            )
             current_app.logger.info("%s generated %s response", start_url, response)
+            return response.content
         current_app.logger.info("%s generated %s response", start_url, response)
         return json.dumps(response.json())
     except requests.exceptions.RequestException:
