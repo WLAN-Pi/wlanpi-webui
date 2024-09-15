@@ -144,7 +144,8 @@ def wpa_supplicant_startstop():
                 hx-get="{supplicant_task_url}"
                 hx-trigger="click delay:0.2s"
                 hx-swap="outerHTML"
-                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+                hx-indicator=".progress"
+                hx-on::after-settle=window.location.reload()>{supplicant_task_anchor_text}</button>
             """.format(
                 **args
             )
@@ -154,8 +155,9 @@ def wpa_supplicant_startstop():
             <button class="uk-button uk-button-default" uk-tooltip="{supplicant_tooltip}" 
                 hx-get="{supplicant_task_url}"
                 hx-trigger="click delay:0.2s"
-                 hx-swap="outerHTML"
-                hx-indicator=".progress">{supplicant_task_anchor_text}</button>
+                hx-swap="outerHTML"
+                hx-indicator=".progress"
+                hx-on::after-settle=window.location.reload()>{supplicant_task_anchor_text}</button>
             """.format(
                 **args
             )
