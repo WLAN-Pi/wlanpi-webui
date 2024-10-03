@@ -36,11 +36,10 @@ def netSetup():
 
         try:
             set_json = json.loads(set_result)
+            messages.append(set_json)
         except:
-            pass
-
-        messages.append(set_json)
-
+            # this should not happen - only will if the set_network api returns a non-json response, like the nginx 502 Bad Gateway page
+            messages.append({"status": "Internal Server Error"})
 
     interfaces_result = get_interfaces()
 
