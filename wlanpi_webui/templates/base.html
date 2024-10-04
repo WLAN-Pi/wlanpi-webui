@@ -80,8 +80,19 @@
                 </ul>
               </div>
             </li>
-            <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-                hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+            <li>
+              <!-- <a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+                hx-swap="innerHTML" style="color: white;">NETWORK</a> -->
+                <a href="#" style="color: white;">NETWORK <span uk-navbar-parent-icon></span></a>
+                <div class="uk-navbar-dropdown">
+                  <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
+                    <li><a hx-get="/network" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                        hx-indicator=".progress">INFO</a></li>
+                    <li><a hx-get="/network/setup" hx-target="#content" hx-swap="innerHTML"
+                        hx-push-url="true" hx-indicator=".progress">WLAN SETUP</a></li>
+                  </ul>
+                </div>
+            </li>
             <li>
               <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown"
@@ -118,8 +129,7 @@
             </li>
             <li class="uk-visible@m">
               <a href="#" uk-icon="icon: settings; ratio: 1.5;"></a>
-              <div class="uk-navbar-dropdown"
-              class="uk-navbar-dropdown">
+              <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
                   <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
                       hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
@@ -195,7 +205,9 @@
         </ul>
         <li class="uk-divider-icon"></li>
         <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-          hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+          hx-swap="innerHTML" style="color: white;">NETWORK INFO</a></li>
+          <li><a hx-get="/network/setup" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
+            hx-swap="innerHTML" style="color: white;">NETWORK WLAN SETUP</a></li>
           <li class="uk-divider-icon"></li>
         <ul class="uk-nav uk-navbar-dropdown-nav" 
             hx-get="/kismet/side_menu"
