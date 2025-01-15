@@ -1,3 +1,9 @@
+wlanpi-webui (1.2.0) unstable; urgency=medium
+
+  * Add support for signature validation of API requests wlanpi-core
+
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Tue, 14 Jan 2025 20:42:09 -0600
+
 wlanpi-webui (1.1.7) stable; urgency=high
 
   * Disable http2 to improve reverse proxy performance for librespeed
