@@ -26,21 +26,19 @@ def get_stats():
     ipStr = f"{IP}"
 
     # determine CPU load
-    # cmd = "top -bn1 | grep load | awk '{printf \"%.2f%%\", $(NF-2)}'"
-    cmd = "mpstat 1 1 -o JSON | grep idle"
+    cmd = "top -bn1 | awk '/Cpu\(s\):/ {print $2 + $4}'"
     try:
-        CPU_JSON = subprocess.check_output(cmd, shell=True).decode()
-        CPU_IDLE = json.loads(CPU_JSON)["idle"]
-        CPU = "{0:.2f}%".format(100 - CPU_IDLE)
-        if CPU_IDLE == 100:
+        CPU_USAGE = subprocess.check_output(cmd, shell=True).decode()
+        CPU = "{0:.0f}%".format(float(CPU_USAGE))
+        if float(CPU_USAGE) == 0:
             CPU = "0%"
-        if CPU_IDLE == 0:
+        elif float(CPU_USAGE) >= 99.99:
             CPU = "100%"
     except Exception:
         CPU = "unknown"
 
     # determine mem useage
-    cmd = "free -m | awk 'NR==2{printf \"%s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
+    cmd = "free -m | awk 'NR==2{printf \"%s/%sMB %.0f%%\", $3,$2,$3*100/$2 }'"
     try:
         MemUsage = subprocess.check_output(cmd, shell=True).decode()
     except Exception:
