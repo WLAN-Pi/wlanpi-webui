@@ -1,3 +1,9 @@
+wlanpi-webui (1.1.7-1) stable; urgency=high
+
+  * Build for bookworm
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 24 Jan 2025 11:08:19 -0400
+
 wlanpi-webui (1.1.7) stable; urgency=high
 
   * Disable http2 to improve reverse proxy performance for librespeed
