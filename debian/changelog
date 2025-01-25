@@ -1,4 +1,4 @@
-wlanpi-webui (1.2.0) unstable; urgency=medium
+wlanpi-webui (1.2.0-1) unstable; urgency=medium
 
   * Add support for signature validation of API requests wlanpi-core
 

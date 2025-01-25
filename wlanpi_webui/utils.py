@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import os
 import subprocess
 import urllib.parse
@@ -23,7 +24,7 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
 
 
 def generate_hmac_signature(
-    method: str, endpoint: str, body: str = ""
+    method: str, endpoint: str, query: str = "", body: str = ""
 ) -> Optional[str]:
     """
     Generates HMAC signature for the request using SHA256.
@@ -31,10 +32,13 @@ def generate_hmac_signature(
     secret = get_shared_secret()
     if not secret:
         return None
-
-    canonical_string = f"{method}\n{endpoint}\n{body}"
-    # print(f"WebUI canonical: {canonical_string!r}")
-    # print(f"WebUI canonical string (hex): {canonical_string.encode().hex()}")
+    canonical_string = f"{method}\n{endpoint}\n{query}\n{body}"
+    current_app.logger.debug(f"WebUI canonical components:")
+    current_app.logger.debug(f"Method: {method}")
+    current_app.logger.debug(f"Path: {endpoint}")
+    current_app.logger.debug(f"Query: {query}")
+    current_app.logger.debug(f"Body: {body}")
+    current_app.logger.debug(f"Hex: {canonical_string.encode().hex()}")
     return hmac.new(secret, canonical_string.encode(), hashlib.sha256).hexdigest()
 
 
@@ -42,16 +46,15 @@ def make_api_request(
     method: str, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
 ) -> requests.Response:
     try:
-        parsed_url = urllib.parse.urlparse(url)
         query_string = urllib.parse.urlencode(params) if params else ""
+        endpoint = urllib.parse.urlparse(url).path
+        body = ""
 
-        endpoint = parsed_url.path
-        signature = generate_hmac_signature(method, endpoint, query_string)
+        signature = generate_hmac_signature(method, endpoint, query_string, body)
 
         headers = {
             "X-Request-Signature": signature,
             "accept": "application/json",
-            "Content-Type": "application/json",
         }
 
         response = requests.post(url=url, headers=headers, params=params)
@@ -183,8 +186,6 @@ def start_stop_service(task, service):
         else:
             current_app.logger.error("Invalid task: %s", task)
             return redirect(request.referrer)
-
-        current_app.logger.info("Making API request with params: %s", params)
 
         response = make_api_request(method="POST", url=url, params=params)
 
