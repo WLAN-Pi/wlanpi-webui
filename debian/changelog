@@ -2,7 +2,7 @@ wlanpi-webui (1.2.0) unstable; urgency=medium
 
   * Add support for signature validation of API requests wlanpi-core
 
- --  Josh Schmelzle <josh@joshschmelzle.com>  Tue, 14 Jan 2025 20:42:09 -0600
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Sat, 25 Jan 2025 09:42:09 -0400
 
 wlanpi-webui (1.1.7) stable; urgency=high
 
