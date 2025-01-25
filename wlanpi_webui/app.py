@@ -15,6 +15,7 @@ from flask_minify import Minify
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
+from wlanpi_webui.utils import package_installed
 
 
 def create_app(config_class=Config):
@@ -82,6 +83,15 @@ def create_app(config_class=Config):
     def inject_vars():
         return {
             "title": f"WLAN Pi: {get_hostname()}",
+        }
+
+    @app.context_processor
+    def utility_processor():
+        return {
+            "profiler_installed": package_installed("wlanpi-profiler"),
+            "kismet_installed": package_installed("kismet"),
+            "cockpit_installed": package_installed("cockpit"),
+            "grafana_installed": package_installed("grafana"),
         }
 
     @app.route("/static/img/<path:filename>")

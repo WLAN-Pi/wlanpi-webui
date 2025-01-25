@@ -2,123 +2,63 @@ import hashlib
 import hmac
 import os
 import subprocess
-from functools import wraps
+import urllib.parse
+from pathlib import Path
 from typing import Optional
 
 import requests
 from flask import current_app, redirect, request
 
-
-class HMACAuth:
-    """Handle HMAC authentication for API calls."""
-
-    def __init__(self):
-        self._requires_hmac = False
-        self._shared_secret: Optional[str] = None
-
-    @property
-    def requires_hmac(self) -> bool:
-        return self._requires_hmac
-
-    @requires_hmac.setter
-    def requires_hmac(self, value: bool):
-        self._requires_hmac = value
-
-    def get_shared_secret(self) -> Optional[str]:
-        """Get shared secret from file, caching the result."""
-        if self._shared_secret is None:
-            secret_path = "/opt/wlanpi-core/.secrets/shared_secret"
-            try:
-                if not os.path.exists(secret_path):
-                    current_app.logger.error(
-                        "Secret file does not exist: %s", secret_path
-                    )
-                    return None
-
-                if not os.access(secret_path, os.R_OK):
-                    current_app.logger.error(
-                        "No read permission for secret file: %s", secret_path
-                    )
-                    return None
-
-                with open(secret_path, "r") as f:
-                    self._shared_secret = f.read().strip()
-                current_app.logger.debug(
-                    "Successfully loaded shared secret from %s", secret_path
-                )
-
-            except IOError as e:
-                current_app.logger.error("IO error reading shared secret: %s", str(e))
-                return None
-            except Exception as e:
-                current_app.logger.error(
-                    "Unexpected error accessing shared secret: %s", str(e)
-                )
-                return None
-
-        return self._shared_secret
-
-    def generate_signature(
-        self, method: str, endpoint: str, payload: str = ""
-    ) -> Optional[str]:
-        """Generate HMAC signature for request."""
-        secret = self.get_shared_secret()
-        if not secret:
-            return None
-
-        canonical_string = f"{method}\n{endpoint}\n{payload}"
-        signature = hmac.new(
-            secret.encode(), canonical_string.encode(), hashlib.sha256
-        ).hexdigest()
-
-        return signature
+SECRET_PATH = "/etc/wlanpi-core/.secrets/shared_secret.bin"
+SERVER = "127.0.0.1"
+PORT = "31415"
 
 
-hmac_auth = HMACAuth()
+def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
+    """Load shared secret from file."""
+    if os.path.exists(secret_path):
+        if os.access(secret_path, os.R_OK):
+            return Path(secret_path).read_bytes()
+    return b""
 
 
-def with_hmac_retry(func):
-    """Decorator to handle HMAC authentication with retry logic."""
+def generate_hmac_signature(
+    method: str, endpoint: str, body: str = ""
+) -> Optional[str]:
+    """
+    Generates HMAC signature for the request using SHA256.
+    """
+    secret = get_shared_secret()
+    if not secret:
+        return None
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not hmac_auth.requires_hmac:
-            response = func(*args, **kwargs)
-            if (
-                response.status_code == 401
-                and "X-Requires-Signature" in response.headers
-            ):
-                current_app.logger.info(
-                    "Signature required, retrying with HMAC signature"
-                )
-                hmac_auth.requires_hmac = True
-                return func(*args, **kwargs)
-            return response
-        return func(*args, **kwargs)
-
-    return wrapper
+    canonical_string = f"{method}\n{endpoint}\n{body}"
+    # print(f"WebUI canonical: {canonical_string!r}")
+    # print(f"WebUI canonical string (hex): {canonical_string.encode().hex()}")
+    return hmac.new(secret, canonical_string.encode(), hashlib.sha256).hexdigest()
 
 
 def make_api_request(
     method: str, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
 ) -> requests.Response:
-    """Make API request with optional HMAC authentication."""
-    if hmac_auth.requires_hmac:
-        headers = headers or {}
-        endpoint = url.split("localhost:31415")[-1]
-        payload = ""
-        signature = hmac_auth.generate_signature(method, endpoint, payload)
-
-        if signature:
-            headers["X-Request-Signature"] = signature
-
     try:
-        response = requests.request(
-            method=method, url=url, params=params, headers=headers
-        )
+        parsed_url = urllib.parse.urlparse(url)
+        query_string = urllib.parse.urlencode(params) if params else ""
+
+        endpoint = parsed_url.path
+        signature = generate_hmac_signature(method, endpoint, query_string)
+
+        headers = {
+            "X-Request-Signature": signature,
+            "accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(url=url, headers=headers, params=params)
+        response.raise_for_status()
         return response
-    except requests.exceptions.RequestException as e:
-        current_app.logger.error("API request failed: %s", str(e))
+    except requests.exceptions.HTTPError as e:
+        print(f"Error response: {e.response.text}")
         raise
 
 
@@ -142,6 +82,13 @@ def get_service_down_message(service: str):
     return f"{service.capitalize()} service is unavailable or down."
 
 
+def package_installed(package_name: str) -> bool:
+    """Check if a package exists using systemctl."""
+    cmd = f"/bin/systemctl list-unit-files {package_name}.service"
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
+    return result.returncode == 0
+
+
 def system_service_exists(service):
     """Check if a systemd service exists.
     Returns true if systemd service exists, false otherwise.
@@ -161,7 +108,7 @@ def system_service_exists(service):
     1
     """
     cmd = f"/bin/systemctl list-unit-files {service}.*"
-    current_app.logger.debug("subprocess is running %s", cmd)
+    current_app.logger.info("subprocess is running %s", cmd)
     result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
     if result.returncode == 0:
         return True
@@ -176,16 +123,14 @@ def system_service_running_state(service):
     try:
         # this cmd fails if service not installed
         cmd = f"/bin/systemctl is-active --quiet {service}"
-        current_app.logger.debug("subprocess is running %s", cmd)
+        current_app.logger.info("subprocess is running %s", cmd)
         # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
         subprocess.run(cmd, shell=True).check_returncode()
     except subprocess.CalledProcessError as exc:
-        # cmd failed, so systemd service not installed
-        current_app.logger.debug(
-            "service %s, error code %s, output %s", service, exc.returncode
+        current_app.logger.info(
+            "service %s is not running (error code: %s)", service, exc.returncode
         )
         return False
-
     return True
 
 
@@ -220,16 +165,11 @@ def systemd_service_message(service):
         return f"{service} is not running"
 
 
-@with_hmac_retry
 def start_stop_service(task, service):
     """
     Starts or stops a service using wlanpi-core API.
     With HMAC authentication support.
     """
-    headers = {
-        "accept": "application/json",
-        "content-type": "application/x-www-form-urlencoded",
-    }
     params = {
         "name": f"{service}",
     }
@@ -243,15 +183,30 @@ def start_stop_service(task, service):
         else:
             current_app.logger.error("Invalid task: %s", task)
             return redirect(request.referrer)
-        start_url = "http://127.0.0.1:31415/api/v1/system/service/start"
-        response = make_api_request(
-            method="POST", url=url, params=params, headers=headers
-        )
+
+        current_app.logger.info("Making API request with params: %s", params)
+
+        response = make_api_request(method="POST", url=url, params=params)
+
+        current_app.logger.info("Response status: %s", response.status_code)
+
         if response.status_code != 200:
+            current_app.logger.error(
+                "Request failed with status %s. Response body: %s",
+                response.status_code,
+                response.text,
+            )
             current_app.logger.info(
                 "systemd_service_message: %s",
                 systemd_service_message("wlanpi-core"),
             )
+            current_app.logger.info("%s generated %s response", url, response)
+
+            # Add additional error context
+            if response.status_code == 401:
+                current_app.logger.error(
+                    "Authentication failed. Verify HMAC configuration and shared secret access."
+                )
             current_app.logger.info("%s generated %s response", url, response)
         return redirect(request.referrer)
     except requests.exceptions.RequestException:
