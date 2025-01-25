@@ -11,7 +11,7 @@ User=wlanpi
 Group=wlanpi
 
 # workingdirectory is mapped during install via maintainer scripts
-# for support multiple versions of Python because unit files will not follow symlinks
+# this is to support multiple versions of system Python across distros because unit files will not follow symlinks
 WorkingDirectory=/opt/wlanpi-webui/workingdirectory
 
 ExecStart=/opt/wlanpi-webui/bin/gunicorn --workers 1 --bind unix:wlanpi_webui.sock wsgi:app

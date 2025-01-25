@@ -193,6 +193,7 @@ def grafana_menu(type):
         pass
     else:
         data_streams_html = """
+            <li class='uk-nav-divider'></li>
             <li class="uk-parent">
                 <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
                 <ul class="uk-nav-sub">
@@ -238,7 +239,6 @@ def grafana_menu(type):
                 hx-push-url="true"
                 hx-swap="innerHTML">OPEN GRAFANA IFRAME</a></li>
         <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
-        <li class='uk-nav-divider'></li>
         {data_streams_html}
         """.format(
             **args
@@ -308,7 +308,8 @@ def start_stop_grafana_wipry24(task):
         else:
             return wlanpi_core_warning
     return "", 204
-    
+
+
 @bp.route("/<task>grafanawipry5")
 def start_stop_grafana_wipry5(task):
     if is_htmx(request):
@@ -318,6 +319,7 @@ def start_stop_grafana_wipry5(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanawipry6")
 def start_stop_grafana_wipry6(task):
@@ -329,6 +331,7 @@ def start_stop_grafana_wipry6(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanawispy24")
 def start_stop_grafana_wispy24(task):
     if is_htmx(request):
@@ -338,6 +341,7 @@ def start_stop_grafana_wispy24(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanawispy5")
 def start_stop_grafana_wispy5(task):

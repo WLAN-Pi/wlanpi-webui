@@ -17,7 +17,6 @@ function clean_up_if_exists() {
     fi
 }
 
-unlink_if_exists /etc/nginx/nginx.conf
 unlink_if_exists /etc/nginx/sites-enabled/wlanpi_librespeed.conf
 unlink_if_exists /etc/nginx/sites-enabled/wlanpi_webui.conf
 unlink_if_exists /opt/wlanpi-webui/workingdirectory

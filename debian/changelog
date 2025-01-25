@@ -1,8 +1,8 @@
-wlanpi-webui (1.1.7-1) stable; urgency=high
+wlanpi-webui (1.2.0) unstable; urgency=medium
 
-  * Build for bookworm
+  * Add support for signature validation of API requests wlanpi-core
 
- -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 24 Jan 2025 11:08:19 -0400
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Sat, 25 Jan 2025 09:42:09 -0400
 
 wlanpi-webui (1.1.7) stable; urgency=high
 

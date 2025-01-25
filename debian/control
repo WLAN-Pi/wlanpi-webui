@@ -12,12 +12,12 @@ Build-Depends: debhelper (>= 11),
                python3-distutils,
                python3-venv
 Standards-Version: 4.6.0
-X-Python3-Version: >= 3.7
+X-Python3-Version: >= 3.9
 Homepage: https://github.com/WLAN-Pi/wlanpi-webui
 
 Package: wlanpi-webui
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3 (>=3.7), ${misc:Pre-Depends}
-Depends: wlanpi-core (>= 1.0.0-7)
+Depends: wlanpi-core (>= 2.0.0)
 Recommends: wlanpi-common, wlanpi-profiler
 Description: WLAN Pi - a web interface
