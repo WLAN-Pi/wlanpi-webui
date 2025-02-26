@@ -1,3 +1,9 @@
+wlanpi-webui (1.2.0-3) unstable; urgency=medium
+
+  * Fix postinst script to handle nginx configuration transition to wlanpi-core
+
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Wed, 26 Feb 2025 09:00:00 -0400
+
 wlanpi-webui (1.2.0-2) unstable; urgency=medium
 
   * Add support for signature validation of API requests wlanpi-core

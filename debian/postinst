@@ -59,12 +59,84 @@ if ! isValidSymlink $WLANPI_WEBUI; then
     CONF_CHANGED=0
 fi
 
-# if we changed a nginx config file, test config, and restart nginx.
-if [ $CONF_CHANGED -eq 0 ]; then
-    # check nginx actually exists first
-    if which nginx; then
-        echo "Restarting nginx ..."
-        deb-systemd-invoke restart nginx.service
+# Transitional logic for nginx configuration which is now handled in wlanpi-core
+# This code exists to handle legacy wlanpi-webui postinst scripts 
+if [ ! -f /etc/nginx/nginx.conf ]; then
+    LOCK_FILE="/var/lock/wlanpi-nginx-transition.lock"
+
+    NGINX_CONFIG="user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 512;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    charset utf-8;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    gzip on;
+    server_tokens off;
+    include /etc/nginx/sites-enabled/*.conf;
+}"
+    if mkdir "$LOCK_FILE" 2>/dev/null; then
+        trap 'rmdir "$LOCK_FILE"; exit $?' INT TERM EXIT
+        if [ ! -f /etc/nginx/nginx.conf ]; then
+            echo "nginx configuration file is missing ..."
+            if dpkg -l | grep -q "wlanpi-core"; then
+                echo "triggering wlanpi-core reconfiguration ..."
+                dpkg-reconfigure -fnoninteractive wlanpi-core || true
+                if [ ! -f /etc/nginx/nginx.conf ]; then
+                    echo "nginx.conf still missing after wlanpi-core reconfiguration, creating fallback ..."
+                    mkdir -p /etc/nginx
+                    echo "$NGINX_CONFIG" > /etc/nginx/nginx.conf
+                    chown root:root /etc/nginx/nginx.conf
+                    chmod 644 /etc/nginx/nginx.conf
+                fi
+            else
+                echo "wlanpi-core not installed, creating temporary nginx configuration ..."
+                mkdir -p /etc/nginx
+                echo "$NGINX_CONFIG" > /etc/nginx/nginx.conf
+                chown root:root /etc/nginx/nginx.conf
+                chmod 644 /etc/nginx/nginx.conf
+                echo "Please install wlanpi-core package which now handles nginx configuration ..."
+            fi
+        fi
+
+        rmdir "$LOCK_FILE"
+        trap - INT TERM EXIT
+    else
+        echo "Another process is handling nginx configuration, waiting up to 5 seconds ..."
+        for i in $(seq 1 5); do
+            if ! [ -d "$LOCK_FILE" ] || [ -f /etc/nginx/nginx.conf ]; then
+                # Lock is released or config exists
+                break
+            fi
+            sleep 1
+        done
+    fi
+fi
+
+if [ -f /etc/nginx/nginx.conf ]; then
+    echo "nginx.conf configuration exists ..."
+else
+    echo "WARNING: Failed to create nginx configuration"
+fi
+
+# Handle nginx restart when needed
+if which nginx >/dev/null 2>&1; then
+    if [ $CONF_CHANGED -eq 0 ] || systemctl is-failed nginx.service >/dev/null 2>&1; then
+        echo "Restarting nginx..."
+        deb-systemd-invoke restart nginx.service || true
+
+        # If restart failed, log a warning, but don't fail the installation
+        if systemctl is-failed nginx.service >/dev/null 2>&1; then
+            echo "WARNING: Nginx service failed to restart. Manual intervention may be required."
+            echo "Run 'nginx -t' to check for configuration errors."
+        fi
     fi
 fi
 
