@@ -1,8 +1,8 @@
-wlanpi-webui (1.2.0-4) unstable; urgency=medium
+wlanpi-webui (1.2.0-5) unstable; urgency=medium
 
   * Package size reduction
 
- --  Josh Schmelzle <josh@joshschmelzle.com>  Fri, 28 Mar 2025 09:00:00 -0400
+ --  Josh Schmelzle <josh@joshschmelzle.com>  Mon, 31 Mar 2025 09:00:00 -0400
 
 wlanpi-webui (1.2.0-3) unstable; urgency=medium
 
