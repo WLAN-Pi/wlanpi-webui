@@ -1,6 +1,6 @@
-wlanpi-webui (2.0.0-3) unstable; urgency=medium
+wlanpi-webui (1.3.1-1) unstable; urgency=medium
 
-  * Adds support for multiple interfaces for Grafana WLAN Scanner
+  * Adds support for multiple interfaces for Grafana WLAN scanner
 
  -- Bryan Ward <bryan@bryanward.net> Fri, 13 Apr 2025 17:00:00 -0500
 
