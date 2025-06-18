@@ -1,3 +1,9 @@
+wlanpi-webui (1.4.0-1) unstable; urgency=medium
+
+  * Update secrets path for API shared secret
+
+ -- Josh Schmelzle <josh@joshschmelzle.com> Tue, 17 Jun 2025 22:49:00 -0800
+
 wlanpi-webui (1.3.1-1) unstable; urgency=medium
 
   * Adds support for multiple interfaces for Grafana WLAN scanner

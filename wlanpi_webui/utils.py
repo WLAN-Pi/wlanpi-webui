@@ -10,7 +10,7 @@ from typing import Optional
 import requests
 from flask import current_app, redirect, request
 
-SECRET_PATH = "/etc/wlanpi-core/.secrets/shared_secret.bin"
+SECRET_PATH = "/home/wlanpi/.local/share/wlanpi-core/secrets/shared_secret.bin"
 SERVER = "127.0.0.1"
 PORT = "31415"
 
