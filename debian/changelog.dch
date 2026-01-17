@@ -1,3 +1,10 @@
+wlanpi-webui (1.4.0-1.1) UNRELEASED; urgency=medium
+
+  * Non-maintainer upload.
+  * 
+
+ -- Josh Schmelzle <jsz@frodo>  Sat, 17 Jan 2026 15:58:32 -0500
+
 wlanpi-webui (1.4.0-1) unstable; urgency=medium
 
   * Update secrets path for API shared secret
