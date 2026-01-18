@@ -5,11 +5,16 @@ from flask import current_app, redirect, render_template, request
 from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.grafana import bp
-from wlanpi_webui.utils import (get_apt_package_version,
-                                get_service_down_message, is_htmx,
-                                start_stop_service, system_service_exists,
-                                system_service_running_state,
-                                systemd_service_message, wlanpi_core_warning)
+from wlanpi_webui.utils import (
+    get_apt_package_version,
+    get_service_down_message,
+    is_htmx,
+    start_stop_service,
+    system_service_exists,
+    system_service_running_state,
+    systemd_service_message,
+    wlanpi_core_warning,
+)
 
 
 def try_url(url):
@@ -20,7 +25,6 @@ def try_url(url):
         if e.code == 502:
             return 502
     return 0
-
 
 
 @bp.route("/grafana_url")
@@ -113,17 +117,13 @@ def get_datastream_info(
     if ds_service_unit_exists:
         ds_service_running = system_service_running_state(datastream)
         if ds_service_running:
-            enabled_ds = """
+            enabled_ds = f"""
             <li><span><a hx-get="{stop_task}" hx-indicator=".progress"><span uk-icon="close"></span></a></span> {friendly_name}</li>
-            """.format(
-                friendly_name=friendly_name, stop_task=stop_task
-            )
+            """
         else:
-            disabled_ds += """
+            disabled_ds += f"""
             <li><span><a hx-get="{start_task}" hx-indicator=".progress"><span uk-icon="play-circle"></span></a> {friendly_name}</span></li>
-            """.format(
-                friendly_name=friendly_name, start_task=start_task
-            )
+            """
     return enabled_ds, disabled_ds
 
 
@@ -211,7 +211,7 @@ def grafana_menu(type):
     if enabled_data_streams == "" and disabled_data_streams == "":
         pass
     else:
-        data_streams_html = """
+        data_streams_html = f"""
             <li class="uk-parent">
                 <li>DATA STREAMS <span data-uk-icon="chevron-down"></span></li>
                 <ul class="uk-nav-sub">
@@ -222,10 +222,7 @@ def grafana_menu(type):
                     {disabled_data_streams}
                 </ul>
             </li>
-            """.format(
-            enabled_data_streams=enabled_data_streams,
-            disabled_data_streams=disabled_data_streams,
-        )
+            """
     grafana_message = systemd_service_message("grafana-server").replace("-server", "")
     grafana_status = system_service_running_state("grafana-server")
     if grafana_status:
@@ -259,18 +256,14 @@ def grafana_menu(type):
         <li><a class="uk-link" href="/grafana_url" target="_blank">LAUNCH GRAFANA NEW TAB</a></li>
         <li class='uk-nav-divider'></li>
         {data_streams_html}
-        """.format(
-            **args
-        )
+        """.format(**args)
     else:
         # not active
         html = """
         <li class="uk-nav-header">{grafana_message}</li>
         <li><a hx-get="{grafana_task_url}"
                 hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
-        """.format(
-            **args
-        )
+        """.format(**args)
     return html
 
 
@@ -284,6 +277,7 @@ def start_stop_grafana(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanascanner0")
 def start_stop_grafana_scanner0(task):
     if is_htmx(request):
@@ -293,6 +287,7 @@ def start_stop_grafana_scanner0(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanascanner1")
 def start_stop_grafana_scanner1(task):
@@ -304,6 +299,7 @@ def start_stop_grafana_scanner1(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanascanner2")
 def start_stop_grafana_scanner2(task):
     if is_htmx(request):
@@ -313,6 +309,7 @@ def start_stop_grafana_scanner2(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanascat")
 def start_stop_grafana_scat(task):
@@ -324,6 +321,7 @@ def start_stop_grafana_scat(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanascatpcap")
 def start_stop_grafana_scat_pcap(task):
     if is_htmx(request):
@@ -333,6 +331,7 @@ def start_stop_grafana_scat_pcap(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanagps")
 def start_stop_grafana_gps(task):
@@ -344,6 +343,7 @@ def start_stop_grafana_gps(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanaqscan")
 def start_stop_grafana_qscan(task):
     if is_htmx(request):
@@ -353,6 +353,7 @@ def start_stop_grafana_qscan(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanainternet")
 def start_stop_grafana_internet(task):
@@ -386,6 +387,7 @@ def start_stop_grafana_wipry24(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanawipry5")
 def start_stop_grafana_wipry5(task):
     if is_htmx(request):
@@ -395,6 +397,7 @@ def start_stop_grafana_wipry5(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanawipry6")
 def start_stop_grafana_wipry6(task):
@@ -406,6 +409,7 @@ def start_stop_grafana_wipry6(task):
             return wlanpi_core_warning
     return "", 204
 
+
 @bp.route("/<task>grafanawispy24")
 def start_stop_grafana_wispy24(task):
     if is_htmx(request):
@@ -415,6 +419,7 @@ def start_stop_grafana_wispy24(task):
         else:
             return wlanpi_core_warning
     return "", 204
+
 
 @bp.route("/<task>grafanawispy5")
 def start_stop_grafana_wispy5(task):

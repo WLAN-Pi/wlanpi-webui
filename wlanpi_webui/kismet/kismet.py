@@ -2,9 +2,13 @@ from flask import redirect, request
 from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.kismet import bp
-from wlanpi_webui.utils import (is_htmx, start_stop_service,
-                                system_service_running_state,
-                                systemd_service_message, wlanpi_core_warning)
+from wlanpi_webui.utils import (
+    is_htmx,
+    start_stop_service,
+    system_service_running_state,
+    systemd_service_message,
+    wlanpi_core_warning,
+)
 
 
 @bp.route("/kismet")
@@ -50,18 +54,14 @@ def kismet_side_menu():
             <li><a hx-get="{kismet_task_url}"
                    hx-indicator=".progress">{kismet_task_anchor_text}</a></li>
             <li><a class="uk-link" href="/kismet" target="_blank">LAUNCH KISMET</a></li>
-            """.format(
-                **args
-            )
+            """.format(**args)
         else:
             # not active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
             <li><a hx-get="{kismet_task_url}"
                    hx-indicator=".progress">{kismet_task_anchor_text}</li>
-            """.format(
-                **args
-            )
+            """.format(**args)
         return html
 
 
@@ -91,16 +91,12 @@ def kismet_main_menu():
                    hx-indicator=".progress">{kismet_task_anchor_text}</a></li>
             <li class="uk-nav-divider"></li>
             <li><a class="uk-link" href="/kismet" target="_blank">LAUNCH KISMET</a></li>
-            """.format(
-                **args
-            )
+            """.format(**args)
         else:
             # not active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
             <li><a hx-get="{kismet_task_url}"
                    hx-indicator=".progress">{kismet_task_anchor_text}</li>
-            """.format(
-                **args
-            )
+            """.format(**args)
         return html

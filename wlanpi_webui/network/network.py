@@ -57,7 +57,7 @@ def network():
     def readlines(_file):
         out = ""
         if os.path.exists(_file):
-            with open(_file, "r") as reader:
+            with open(_file) as reader:
                 for line in reader.readlines():
                     line = line.replace("\n", "<br />")
                     out += line

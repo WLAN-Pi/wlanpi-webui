@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import hashlib
 import hmac
-import json
 import os
 import subprocess
 import urllib.parse
 from pathlib import Path
+from time import time
 from typing import Optional
 
 import requests
@@ -33,7 +35,7 @@ def generate_hmac_signature(
     if not secret:
         return None
     canonical_string = f"{method}\n{endpoint}\n{query}\n{body}"
-    current_app.logger.debug(f"WebUI canonical components:")
+    current_app.logger.debug("WebUI canonical components:")
     current_app.logger.debug(f"Method: {method}")
     current_app.logger.debug(f"Path: {endpoint}")
     current_app.logger.debug(f"Query: {query}")
@@ -83,13 +85,6 @@ def is_htmx(request):
 
 def get_service_down_message(service: str):
     return f"{service.capitalize()} service is unavailable or down."
-
-
-def package_installed(package_name: str) -> bool:
-    """Check if a package exists using systemctl."""
-    cmd = f"/bin/systemctl list-unit-files {package_name}.service"
-    result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
-    return result.returncode == 0
 
 
 def system_service_exists(service):
@@ -222,42 +217,49 @@ def package_installed(package):
     return True
 
 
+_package_cache: dict[str, tuple[str, float, float]] = {}
+_dpkg_status_file = "/var/lib/dpkg/status"
+CACHE_TTL = 60
+
+
+def get_dpkg_status_mtime():
+    try:
+        return os.path.getmtime(_dpkg_status_file)
+    except OSError:
+        return 0
+
+
 def get_apt_package_version(package) -> str:
-    """Retrieve apt package version from apt-cache policy
+    current_time = time()
+    current_mtime = get_dpkg_status_mtime()
 
-    Installed example:
-        $ apt-cache policy wlanpi-webui
-        wlanpi-webui:
-        Installed: 1.1.6-5
-        Candidate: 1.1.6-5
-        Version table:
-        *** 1.1.6-5 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-                100 /var/lib/dpkg/status
-            1.1.6-4 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
+    if package in _package_cache:
+        version, cache_time, cache_mtime = _package_cache[package]
+        cache_age = current_time - cache_time
 
-    Not installed example:
-        $ apt-cache policy wlanpi-webui
-        wlanpi-webui:
-        Installed: (none)
-        Candidate: 1.1.6-5
-        Version table:
-            1.1.6-5 500
-                500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-            1.1.6-4 500
-            500 https://packagecloud.io/wlanpi/dev/debian bullseye/main arm64 Packages
-    """
-    package_version = ""
-    cmd = f"apt-cache policy {package}"
-    apt_cache = subprocess.check_output(cmd, shell=True).decode()
-    hit = False
-    for match in apt_cache.lower().split("\n"):
-        if "installed" in match:
-            if "none" not in match:
-                package_version = match
-                hit = True
-                break
-    if hit:
-        package_version = package_version.split(":")[1].strip()
-    return package_version
+        if cache_mtime == current_mtime:
+            if cache_age < CACHE_TTL:
+                return version
+            else:
+                _package_cache[package] = (version, current_time, current_mtime)
+                return version
+
+    try:
+        version = (
+            subprocess.check_output(
+                ["dpkg-query", "-W", "-f=${Version}", package],
+                timeout=5,
+                stderr=subprocess.DEVNULL,
+            )
+            .decode()
+            .strip()
+        )
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
+        version = ""
+
+    _package_cache[package] = (version, current_time, current_mtime)
+    return version

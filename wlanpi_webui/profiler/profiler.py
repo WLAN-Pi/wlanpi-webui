@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import glob
 import os
 from dataclasses import dataclass
@@ -10,9 +12,14 @@ from flask_minify import decorators as minify_decorators
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.profiler import bp
-from wlanpi_webui.utils import (is_htmx, run_command, start_stop_service,
-                                system_service_running_state,
-                                systemd_service_message, wlanpi_core_warning)
+from wlanpi_webui.utils import (
+    is_htmx,
+    run_command,
+    start_stop_service,
+    system_service_running_state,
+    systemd_service_message,
+    wlanpi_core_warning,
+)
 
 getting_started = """
 <ul uk-accordion="">
@@ -81,7 +88,7 @@ class ProfilerFileAttributes:
     profiletype: ProfileResultType
 
 
-def get_profiler_file_listing_html(target) -> list:
+def get_profiler_file_listing_html(target) -> str | None:
     """Function to generate custom html file listing for a specific result"""
     files = get_files()
     html = ""
@@ -125,19 +132,17 @@ _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profil
                         break
     except Exception as error:
         raise Exception(
-            "ERROR: problem building profile html results for {profile}\n{error}".format(
-                profile=profile, error=error
-            )
+            f"ERROR: problem building profile html results for {profile}\n{error}"
         )
     return html
 
 
-def get_profiler_files_listing_html() -> list:
+def get_profiler_files_listing_html() -> list[str] | None:
     """Function to generate custom html file listing for profiler results"""
     files = get_files()
     reports = []
     results = []
-    seen_hash = {}
+    seen_hash: dict[str, Profile] = {}
     try:
         if len(files) == 0:
             return None
@@ -153,17 +158,15 @@ def get_profiler_files_listing_html() -> list:
                 if profile.profiletype == ProfileResultType.TEXT:
                     profile_stub = f"{friendly.split('/')[-1].replace('.txt', '').replace('.', '')}"
                     div_id = f"profile_{profile_stub}"
-                    tooltip = f'View text report for {client.split("/")[-1]}'
-                    text = """<button 
+                    tooltip = f"View text report for {client.split('/')[-1]}"
+                    text = f"""<button 
 class="uk-button uk-button-default uk-button-small" 
-hx-get="/profiler/profile?profile={stub}" 
+hx-get="/profiler/profile?profile={profile_stub}" 
 hx-trigger="click" 
 hx-target="#profiler-modals"
-uk-tooltip="{tip}"
+uk-tooltip="{tooltip}"
 hx-indicator=".progress"
-_="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>""".format(
-                        stub=profile_stub, id=div_id, tip=tooltip
-                    )
+_="on htmx:afterOnLoad wait 10ms then add .uk-open to #{div_id}">profile</button>"""
 
                 pcap = ""
                 if profile.profiletype == ProfileResultType.PCAP:
@@ -172,7 +175,7 @@ _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>"""
 </a>""".format(
                         request.url_root,
                         client,
-                        f'Download {client.split("/")[-1]} ',
+                        f"Download {client.split('/')[-1]} ",
                     )
 
                 if _key not in seen_hash.keys():
@@ -241,9 +244,7 @@ _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{id}">profile</button>"""
             results.append("</tbody></table></div>")
     except Exception as error:
         return [
-            "ERROR: problem in get_profiler_files_listing_html() building link results {0}\n{1}".format(
-                error, files
-            )
+            f"ERROR: problem in get_profiler_files_listing_html() building link results {error}\n{files}"
         ]
     return results
 
@@ -311,12 +312,10 @@ def purge():
     """Purges profiler files"""
     files = get_profiler_files_to_purge()
     inner = "\r\n".join([f"rm {file}" for file in files])
-    content = """<div>
+    content = f"""<div>
 <p>The <tt>webui</tt> process does not have permission to remove files.</p>
-<p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{0}</pre></p>
-</div>""".format(
-        inner
-    )
+<p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{inner}</pre></p>
+</div>"""
     if not files:
         content = '<div class="uk-alert-danger" uk-alert><p>No profiler files found on host to generate purge script.</p></div>'
     resp_data = {"content": content}
@@ -341,12 +340,10 @@ def profiler():
     """Profiles"""
     custom_output = get_profiler_files_listing_html()
     if not custom_output:
-        content = """
-        {0}
+        content = f"""
+        {getting_started}
         <div class="uk-alert-danger" uk-alert><p>No client profiles found on host. See the getting started instructions above to get started.</p></div>
-        """.format(
-            getting_started
-        )
+        """
     else:
         content = "".join(custom_output)
         content += """
@@ -417,9 +414,7 @@ def profiler_side_menu():
     hx-target="#content"
     hx-swap="innerHTML"
     hx-push-url="true"
-    hx-indicator=".progress">PURGE DATA</a></li>""".format(
-            **args
-        )
+    hx-indicator=".progress">PURGE DATA</a></li>""".format(**args)
         return html
 
 
@@ -432,9 +427,7 @@ def profiler_main_menu():
         profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
         if "No such file" not in profiler_ssid and profiler_status:
             # qrcode_spec = "WIFI:S:{0};T:WPA;P:{1};;".format(profiler_ssid, "0123456789")
-            profiler_ssid = """<li>SSID: {profiler_ssid}</li>""".format(
-                profiler_ssid=profiler_ssid,
-            )
+            profiler_ssid = f"""<li>SSID: {profiler_ssid}</li>"""
         # qrcode_spec=qrcode_spec
         # <div id="qrcode" style="width:200px; height:200px;"></div>
         # <script type="text/javascript">
@@ -470,7 +463,5 @@ def profiler_main_menu():
     hx-target="#content"
     hx-swap="innerHTML"
     hx-push-url="true"
-    hx-indicator=".progress">PURGE DATA</a></li>""".format(
-            **args
-        )
+    hx-indicator=".progress">PURGE DATA</a></li>""".format(**args)
         return html
