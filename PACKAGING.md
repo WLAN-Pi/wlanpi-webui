@@ -15,7 +15,7 @@ Our goal is to use dh-virtualenv for packaging, symlinks (where we can), configu
 On your _build host_, install the build tools (these are only needed on your build host):
 
 ```
-sudo apt-get install build-essential debhelper devscripts equivs python3-pip python3-all python3-dev python3-setuptools dh-virtualenv
+sudo apt-get install build-essential debhelper devscripts equivs python3-pip python3-all python3-dev python3-setuptools dh-virtualenv dh-python
 ```
 
 Install Python depends:
