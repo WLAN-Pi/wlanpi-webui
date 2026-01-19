@@ -15,7 +15,7 @@ Our goal is to use dh-virtualenv for packaging, symlinks (where we can), configu
 On your _build host_, install the build tools (these are only needed on your build host):
 
 ```
-sudo apt-get install build-essential debhelper devscripts equivs python3-pip python3-all python3-dev python3-setuptools dh-virtualenv dh-python
+sudo apt-get install build-essential debhelper devscripts equivs python3-pip python3-all python3-dev python3-setuptools dh-virtualenv dh-python python3-venv
 ```
 
 Install Python depends:
@@ -32,6 +32,10 @@ From the root directory of this repository run:
 
 ```
 dpkg-buildpackage -us -uc -b
+
+or
+
+time dpkg-buildpackage -us -uc -b
 ```
 
 If you are found favorable by the packaging gods, you should see some output files at `../wlanpi-webui` like this:
