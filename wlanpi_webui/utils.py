@@ -25,6 +25,43 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
     return b""
 
 
+def get_safe_redirect_target(target: Optional[str]) -> str:
+    """
+    Return a safe redirect target derived from the given URL-like string.
+
+    Only relative paths without scheme or netloc are allowed. If the target is
+    missing or unsafe, fall back to '/'.
+    """
+    # Default safe target
+    default_target = "/"
+
+    if not target:
+        return default_target
+
+    # Normalize backslashes that some browsers treat as path separators
+    normalized = target.replace("\\", "/")
+
+    parsed = urllib.parse.urlparse(normalized)
+
+    # Disallow any URL that specifies a scheme (http, https, etc.) or netloc (host)
+    if parsed.scheme or parsed.netloc:
+        return default_target
+
+    # Only allow absolute paths or empty paths; prevent open redirects via `//...`
+    path = parsed.path or "/"
+    if not path.startswith("/"):
+        return default_target
+
+    # Reconstruct the safe relative URL with query and fragment, if any
+    safe = path
+    if parsed.query:
+        safe = f"{safe}?{parsed.query}"
+    if parsed.fragment:
+        safe = f"{safe}#{parsed.fragment}"
+
+    return safe
+
+
 def generate_hmac_signature(
     method: str, endpoint: str, query: str = "", body: str = ""
 ) -> Optional[str]:
@@ -180,7 +217,7 @@ def start_stop_service(task, service):
             url = "http://127.0.0.1:31415/api/v1/system/service/stop"
         else:
             current_app.logger.error("Invalid task: %s", task)
-            return redirect(request.referrer)
+            return redirect(get_safe_redirect_target(request.referrer))
 
         response = make_api_request(method="POST", url=url, params=params)
 
@@ -204,10 +241,10 @@ def start_stop_service(task, service):
                     "Authentication failed. Verify HMAC configuration and shared secret access."
                 )
             current_app.logger.info("%s generated %s response", url, response)
-        return redirect(request.referrer)
+        return redirect(get_safe_redirect_target(request.referrer))
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
-        return redirect(request.referrer)
+        return redirect(get_safe_redirect_target(request.referrer))
 
 
 def package_installed(package):
