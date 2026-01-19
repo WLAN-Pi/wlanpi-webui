@@ -1,26 +1,31 @@
 <script>
   function copyCardToClipboard(card) {
-    if (window.clipboardData && window.clipboardData.setData) {
-      // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
-      return window.clipboardData.setData("Text", text);
+    const text = document.getElementById(card).innerText;
+
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      return true;
     }
-    else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
-      var input = document.createElement("textarea");
-      // we're copying from a <p> tag in this instance
-      input.textContent = document.getElementById(card).innerText;
-      input.style.position = "fixed";
-      document.body.appendChild(input);
-      input.select();
-      try {
-        document.execCommand("copy");
-      }
-      catch (ex) {
-        console.warn("Copy to clipboard failed.", ex);
-        return false;
-      }
-      finally {
-        document.body.removeChild(input);
-      }
+
+    return fallbackCopy(text);
+  }
+
+  function fallbackCopy(text) {
+    if (!document.queryCommandSupported?.("copy")) return false;
+
+    const input = document.createElement("textarea");
+    input.textContent = text;
+    input.style.position = "fixed";
+    document.body.appendChild(input);
+    input.select();
+    try {
+      document.execCommand("copy");
+      return true;
+    } catch (ex) {
+      console.warn("Copy to clipboard failed.", ex);
+      return false;
+    } finally {
+      document.body.removeChild(input);
     }
   }
 </script>
