@@ -46,7 +46,7 @@ psutil==5.9.5
     # via -r requirements.in
 rcssmin==1.1.1
     # via flask-minify
-requests==2.31.0
+requests==2.32.4
     # via -r requirements.in
 six==1.16.0
     # via flask-minify
