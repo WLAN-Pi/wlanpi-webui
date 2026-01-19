@@ -4,8 +4,6 @@
 #
 #    pip-compile requirements.in
 #
---extra-index-url https://www.piwheels.org/simple
-
 blinker==1.6.2
     # via flask
 certifi==2023.7.22
@@ -20,7 +18,7 @@ flask==2.3.3
     #   flask-minify
 flask-minify==0.42
     # via -r requirements.in
-gunicorn==21.2.0
+gunicorn==22.0.0
     # via -r requirements.in
 htmlmin==0.1.12
     # via flask-minify
