@@ -22,7 +22,7 @@ gunicorn==21.2.0
     # via -r requirements.in
 htmlmin==0.1.12
     # via flask-minify
-idna==3.4
+idna==3.7
     # via requests
 importlib-metadata==6.8.0
     # via flask
