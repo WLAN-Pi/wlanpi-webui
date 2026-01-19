@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 
 """
 wlanpi_webui.app
@@ -9,13 +8,14 @@ the main flask app
 """
 
 import logging
+from time import time
 
 from flask import Flask, abort, send_from_directory
 from flask_minify import Minify
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
-from wlanpi_webui.utils import package_installed
+from wlanpi_webui.utils import get_dpkg_status_mtime, package_installed
 
 
 def create_app(config_class=Config):
@@ -85,14 +85,36 @@ def create_app(config_class=Config):
             "title": f"WLAN Pi: {get_hostname()}",
         }
 
+    _context_cache = {}
+    _context_cache_time = 0
+    _context_cache_mtime = 0
+    CONTEXT_CACHE_TTL = 60
+
     @app.context_processor
     def utility_processor():
-        return {
+        nonlocal _context_cache, _context_cache_time, _context_cache_mtime
+
+        current_time = time()
+        current_mtime = get_dpkg_status_mtime()
+        cache_age = current_time - _context_cache_time
+
+        if (
+            _context_cache
+            and cache_age < CONTEXT_CACHE_TTL
+            and _context_cache_mtime == current_mtime
+        ):
+            return _context_cache
+
+        _context_cache = {
             "profiler_installed": package_installed("wlanpi-profiler"),
             "kismet_installed": package_installed("kismet"),
             "cockpit_installed": package_installed("cockpit"),
             "grafana_installed": package_installed("grafana"),
         }
+        _context_cache_time = current_time
+        _context_cache_mtime = current_mtime
+
+        return _context_cache
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

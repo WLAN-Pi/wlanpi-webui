@@ -1,0 +1,158 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# ============================================================================
+# PYRIGHT (LSP) CONFIGURATION
+# ============================================================================
+
+[tool.pyright]
+venvPath = "."
+venv = "venv"
+pythonVersion = "3.9"
+pythonPlatform = "Linux"
+
+# Type checking settings
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportUnusedImport = "warning"
+reportUnusedVariable = "warning"
+
+# Include/exclude patterns
+include = ["wlanpi_webui"]
+exclude = [
+    "**/__pycache__",
+    ".tox",
+    "build",
+    "dist",
+    "venv",
+    ".venv"
+]
+
+# ============================================================================
+# BLACK CONFIGURATION
+# ============================================================================
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.tox
+  | \.venv
+  | venv
+  | build
+  | dist
+)/
+'''
+
+# ============================================================================
+# ISORT CONFIGURATION
+# ============================================================================
+
+[tool.isort]
+profile = "black"
+line_length = 88
+skip_gitignore = true
+known_first_party = ["wlanpi_webui"]
+
+# ============================================================================
+# MYPY CONFIGURATION
+# ============================================================================
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+# Exclude directories
+exclude = [
+    '\.tox',
+    'venv',
+    'build',
+    'dist',
+]
+
+# ============================================================================
+# COVERAGE CONFIGURATION
+# ============================================================================
+[tool.coverage.run]
+source = ["wlanpi_webui"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.tox/*"
+]
+
+[tool.coverage.report]
+show_missing = true
+
+# ============================================================================
+# RUFF CONFIGURATION
+# ============================================================================
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+
+exclude = [
+    ".tox",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "venv",
+    ".venv",
+    "*.egg-info"
+]
+
+[tool.ruff.lint]
+# Enable rules equivalent to the flake8 plugins used previously:
+# E/W: pycodestyle errors and warnings
+# F: Pyflakes
+# B: flake8-bugbear (replaces several plugins)
+# C4: flake8-comprehensions
+# I: isort
+# UP: pyupgrade (replaces flake8-2020)
+# S: flake8-bandit (security)
+# T20: flake8-print
+# ERA: eradicate (commented code)
+# A: flake8-builtins
+# G: flake8-logging-format
+# FIX: flake8-fixme
+select = ["E", "W", "F", "B", "C4", "I", "UP", "S", "T20", "ERA", "A", "G", "FIX"]
+
+# Ignore rules that match the previous flake8 config and reduce noise
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "E402",   # Module level import not at top of file
+    "E401",   # Multiple imports on one line
+    "S607",   # Starting a process with a partial executable path
+    "S603",   # subprocess call - check for execution of untrusted input
+    "S602",   # subprocess call with shell=True
+    "S104",   # Possible binding to all interfaces (0.0.0.0)
+    "S108",   # Probable insecure usage of temp file
+    "S323",   # Insecure SSL/TLS protocol version
+    "S310",   # Audit URL open for permitted schemes
+    "ERA001", # Found commented-out code (too noisy)
+    "T20",    # Print statements (common in debug/dev)
+    "FIX002", # Line contains TODO (too strict)
+    "G004",   # Logging statement uses f-string
+    "UP030",  # Use implicit references for positional format fields
+    "A002",   # Function argument shadowing builtin (sometimes needed)
+    "B018",   # Found useless expression
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Unused imports in __init__.py
+
+[tool.ruff.format]
+# Use Black-compatible formatting
+quote-style = "double"
+indent-style = "space"

@@ -1,5 +1,4 @@
 # stats for homepage
-import json
 import socket
 import subprocess
 
@@ -26,10 +25,10 @@ def get_stats():
     ipStr = f"{IP}"
 
     # determine CPU load
-    cmd = "top -bn1 | awk '/Cpu\(s\):/ {print $2 + $4}'"
+    cmd = r"top -bn1 | awk '/Cpu\(s\):/ {print $2 + $4}'"
     try:
         CPU_USAGE = subprocess.check_output(cmd, shell=True).decode()
-        CPU = "{0:.0f}%".format(float(CPU_USAGE))
+        CPU = f"{float(CPU_USAGE):.0f}%"
         if float(CPU_USAGE) == 0:
             CPU = "0%"
         elif float(CPU_USAGE) >= 99.99:
@@ -62,7 +61,7 @@ def get_stats():
     tempStr = "%sC" % str(round(tempI, 1))
 
     # determine uptime
-    cmd = "uptime -p | sed -r 's/up|,//g' | sed -r 's/\s*week[s]?/w/g' | sed -r 's/\s*day[s]?/d/g' | sed -r 's/\s*hour[s]?/h/g' | sed -r 's/\s*minute[s]?/m/g'"
+    cmd = r"uptime -p | sed -r 's/up|,//g' | sed -r 's/\s*week[s]?/w/g' | sed -r 's/\s*day[s]?/d/g' | sed -r 's/\s*hour[s]?/h/g' | sed -r 's/\s*minute[s]?/m/g'"
     try:
         uptime = subprocess.check_output(cmd, shell=True).decode().strip()
     except Exception:
@@ -110,7 +109,5 @@ def stream_stats():
 <div class="stat-icon"><img src="/static/icon/uptime.svg"></div>
 <div class="stat-text">{UPTIME}</div>
 </div>
-""".format(
-            **stats
-        )
+""".format(**stats)
         return html

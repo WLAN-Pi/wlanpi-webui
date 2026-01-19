@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 
 """
 wlanpi_webui.config
@@ -7,6 +6,8 @@ wlanpi_webui.config
 
 globals that will be passed around the app
 """
+
+from __future__ import annotations
 
 import os
 import socket
@@ -30,7 +31,7 @@ def get_mac(interface: str) -> str:
     return mac
 
 
-def get_interfaces() -> str:
+def get_interfaces() -> list[str]:
     """Retrieve a list of interfaces found on host"""
     return list(psutil.net_if_addrs().keys())
 
@@ -69,7 +70,7 @@ def get_our_package_version() -> str:
     return f"{__version__}"
 
 
-class Config(object):
+class Config:
     WLANPI_VERSION = get_wlanpi_version()
     WEBUI_VERSION = get_our_package_version()
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")

@@ -67,6 +67,7 @@ override_dh_virtualenv:
 	rm -rfv $(DH_VENV_DIR)/lib/python*/site-packages/wheel || true
 	rm -rfv $(DH_VENV_DIR)/lib/python*/site-packages/_distutils_hack || true
 	rm -rfv $(DH_VENV_DIR)/lib/python*/site-packages/*.dist-info || true
+	rm -rfv $(DH_VENV_DIR)/lib/python*/site-packages/*.pth || true
 
 	@echo "AFTER BUILD TOOLS CLEANUP:"
 	du -sh $(DH_VENV_DIR)/bin/pip* 2>/dev/null || echo "No pip binaries found - good!" || true
@@ -74,3 +75,4 @@ override_dh_virtualenv:
 	du -sh $(DH_VENV_DIR)/lib/python*/site-packages/setuptools 2>/dev/null || echo "No setuptools found - good!" || true
 	du -sh $(DH_VENV_DIR)/lib/python*/site-packages/wheel 2>/dev/null || echo "No wheel found - good!" || true
 	du -sh $(DH_VENV_DIR)/lib/python*/site-packages/_distutils_hack 2>/dev/null || echo "No distutils hack found - good!" || true
+	du -sh $(DH_VENV_DIR)/lib/python*/site-packages/*.pth 2>/dev/null || echo "No .pth files found - good!" || true

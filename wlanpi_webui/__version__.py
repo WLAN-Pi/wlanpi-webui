@@ -5,7 +5,7 @@
 #    \_/\_/ |_|\__,_|_| |_| .__/|_|      \_/\_/ \___|_.__/ \__,_|_|
 #                         |_|
 
-""" version information for wlanpi-webui """
+"""version information for wlanpi-webui"""
 
 __title__ = "wlanpi_webui"
 __description__ = "a custom web interface for the WLAN Pi"

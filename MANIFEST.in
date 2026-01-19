@@ -1,3 +1,5 @@
+include extras.txt
+include requirements.txt
 include LICENSE
 graft wlanpi_webui/static
 graft wlanpi_webui/templates
