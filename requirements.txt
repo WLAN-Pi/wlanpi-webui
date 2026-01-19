@@ -4,8 +4,6 @@
 #
 #    pip-compile requirements.in
 #
---extra-index-url https://www.piwheels.org/simple
-
 blinker==1.6.2
     # via flask
 certifi==2023.7.22
@@ -52,7 +50,7 @@ requests==2.31.0
     # via -r requirements.in
 six==1.16.0
     # via flask-minify
-urllib3==2.0.4
+urllib3==2.6.3
     # via requests
 werkzeug==2.3.7
     # via flask
