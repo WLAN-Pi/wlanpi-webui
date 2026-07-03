@@ -1,3 +1,15 @@
+wlanpi-webui (1.4.0-2) unstable; urgency=medium
+
+  * Add support for building on Debian trixie (Python 3.13)
+  * Drop python3-distutils build dependency (package removed in trixie)
+  * Bump flask-minify 0.42 -> 0.50 (htmlmin imports the cgi module, which was
+    removed in Python 3.13; flask-minify 0.50 uses the htmlminf fork instead)
+  * Bump psutil 5.9.5 -> 7.0.0 for Python 3.13 support
+  * Update venv build toolchain: pip 24.3.1, setuptools>=68, wheel>=0.43
+  * Drop unused --extras flag from dh_virtualenv invocation
+
+ -- Jake Snyder <jsnyder81@gmail.com>  Fri, 03 Jul 2026 01:34:56 +0000
+
 wlanpi-webui (1.4.0-1) unstable; urgency=medium
 
   * Update secrets path for API shared secret
