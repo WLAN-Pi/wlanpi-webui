@@ -22,10 +22,8 @@ gunicorn==22.0.0
     # via -r requirements.in
 htmlminf==0.1.13
     # via flask-minify
-idna==3.7
+idna==3.15
     # via requests
-importlib-metadata==6.8.0
-    # via flask
 itsdangerous==2.1.2
     # via flask
 jinja2==3.1.6
@@ -56,5 +54,3 @@ werkzeug==3.1.5
     # via flask
 xxhash==3.8.0
     # via flask-minify
-zipp==3.19.1
-    # via importlib-metadata
