@@ -16,11 +16,11 @@ flask==2.3.3
     # via
     #   -r requirements.in
     #   flask-minify
-flask-minify==0.42
+flask-minify==0.50
     # via -r requirements.in
 gunicorn==22.0.0
     # via -r requirements.in
-htmlmin==0.1.12
+htmlminf==0.1.13
     # via flask-minify
 idna==3.7
     # via requests
@@ -42,19 +42,19 @@ packaging==23.1
     # via gunicorn
 ply==3.11
     # via lesscpy
-psutil==5.9.5
+psutil==7.0.0
     # via -r requirements.in
-rcssmin==1.1.1
+rcssmin==1.2.2
     # via flask-minify
 requests==2.32.4
     # via -r requirements.in
-six==1.16.0
+six==1.17.0
     # via flask-minify
 urllib3==2.6.3
     # via requests
 werkzeug==3.1.5
     # via flask
-xxhash==3.3.0
+xxhash==3.8.0
     # via flask-minify
 zipp==3.19.1
     # via importlib-metadata

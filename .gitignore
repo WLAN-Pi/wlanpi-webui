@@ -13,9 +13,13 @@ app.log*
 # dpkg ignores
 
 *.build
+!Dockerfile.build
 *.deb
 *.changes
 *.buildinfo
+
+# container package build
+.build-manifest.txt
 
 # dh-virtualenv
 .pybuild/
