@@ -1,3 +1,9 @@
+wlanpi-webui (1.4.0-3) unstable; urgency=medium
+
+  * Rebuild to publish packages for Debian trixie to packagecloud
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 09 Jul 2026 23:26:39 -0400
+
 wlanpi-webui (1.4.0-2) unstable; urgency=medium
 
   * Add support for building on Debian trixie (Python 3.13)
