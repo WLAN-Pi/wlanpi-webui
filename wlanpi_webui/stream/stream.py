@@ -1,12 +1,11 @@
 # stats for homepage
 import socket
-import subprocess
 
 from flask import request
 from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.stream import bp
-from wlanpi_webui.utils import is_htmx
+from wlanpi_webui.utils import is_htmx, run_pipeline
 
 
 def get_stats():
@@ -25,9 +24,10 @@ def get_stats():
     ipStr = f"{IP}"
 
     # determine CPU load
-    cmd = r"top -bn1 | awk '/Cpu\(s\):/ {print $2 + $4}'"
     try:
-        CPU_USAGE = subprocess.check_output(cmd, shell=True).decode()
+        CPU_USAGE = run_pipeline(
+            ["top", "-bn1"], ["awk", r"/Cpu\(s\):/ {print $2 + $4}"]
+        )
         CPU = f"{float(CPU_USAGE):.0f}%"
         if float(CPU_USAGE) == 0:
             CPU = "0%"
@@ -37,16 +37,19 @@ def get_stats():
         CPU = "unknown"
 
     # determine mem useage
-    cmd = "free -m | awk 'NR==2{printf \"%s/%sMB %.0f%%\", $3,$2,$3*100/$2 }'"
     try:
-        MemUsage = subprocess.check_output(cmd, shell=True).decode()
+        MemUsage = run_pipeline(
+            ["free", "-m"],
+            ["awk", 'NR==2{printf "%s/%sMB %.0f%%", $3,$2,$3*100/$2 }'],
+        )
     except Exception:
         MemUsage = "unknown"
 
     # determine disk util
-    cmd = 'df -h | awk \'$NF=="/"{printf "%d/%dGB %s", $3,$2,$5}\''
     try:
-        Disk = subprocess.check_output(cmd, shell=True).decode()
+        Disk = run_pipeline(
+            ["df", "-h"], ["awk", '$NF=="/"{printf "%d/%dGB %s", $3,$2,$5}']
+        )
     except Exception:
         Disk = "unknown"
 
@@ -61,9 +64,15 @@ def get_stats():
     tempStr = "%sC" % str(round(tempI, 1))
 
     # determine uptime
-    cmd = r"uptime -p | sed -r 's/up|,//g' | sed -r 's/\s*week[s]?/w/g' | sed -r 's/\s*day[s]?/d/g' | sed -r 's/\s*hour[s]?/h/g' | sed -r 's/\s*minute[s]?/m/g'"
     try:
-        uptime = subprocess.check_output(cmd, shell=True).decode().strip()
+        uptime = run_pipeline(
+            ["uptime", "-p"],
+            ["sed", "-r", "s/up|,//g"],
+            ["sed", "-r", r"s/\s*week[s]?/w/g"],
+            ["sed", "-r", r"s/\s*day[s]?/d/g"],
+            ["sed", "-r", r"s/\s*hour[s]?/h/g"],
+            ["sed", "-r", r"s/\s*minute[s]?/m/g"],
+        ).strip()
     except Exception:
         uptime = "unknown"
 

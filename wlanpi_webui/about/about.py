@@ -4,23 +4,25 @@ from flask import render_template, request
 
 from wlanpi_webui.about import bp
 from wlanpi_webui.config import Config, get_apt_package_version, get_hostname
-from wlanpi_webui.utils import is_htmx, system_service_running_state
+from wlanpi_webui.utils import is_htmx, run_pipeline, system_service_running_state
 
 
 @bp.route("/about")
 def about():
     try:
-        kernel_version = subprocess.check_output("uname -r", shell=True).decode()
+        kernel_version = subprocess.check_output(["uname", "-r"]).decode()
     except Exception:
         kernel_version = "unknown"
     try:
-        hardware_model = subprocess.check_output(
-            "cat /proc/cpuinfo | grep Model | cut -d ':' -f 2", shell=True
-        ).decode()
+        hardware_model = run_pipeline(
+            ["grep", "Model", "/proc/cpuinfo"],
+            ["cut", "-d", ":", "-f", "2"],
+        )
     except Exception:
         hardware_model = "unknown"
     try:
-        mode = subprocess.check_output("cat /etc/wlanpi-state", shell=True).decode()
+        with open("/etc/wlanpi-state") as state_file:
+            mode = state_file.read()
     except Exception:
         mode = "unknown"
     resp_data = {
