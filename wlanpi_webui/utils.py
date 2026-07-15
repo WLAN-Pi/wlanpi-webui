@@ -233,6 +233,9 @@ def start_stop_service(task, service):
     Starts or stops a service using wlanpi-core API.
     With HMAC authentication support.
     """
+    if task == "start" and not system_service_exists(service):
+        return service_not_installed_warning(service)
+
     params = {
         "name": f"{service}",
     }
@@ -328,3 +331,34 @@ def get_apt_package_version(package) -> str:
 
     _package_cache[package] = (version, current_time, current_mtime)
     return version
+
+
+def service_not_installed_warning(service_name):
+    friendly_name = service_name
+    # Clean up some common systemd service suffixes/prefixes for friendly display
+    if friendly_name.endswith(".service"):
+        friendly_name = friendly_name[:-8]
+    if friendly_name.startswith("wlanpi-grafana-"):
+        friendly_name = friendly_name.replace("wlanpi-grafana-", "Grafana ")
+        friendly_name = friendly_name.replace("-", " ").title()
+    elif friendly_name == "grafana-server":
+        friendly_name = "Grafana"
+    elif friendly_name == "wlanpi-profiler":
+        friendly_name = "Profiler"
+    elif friendly_name == "cockpit":
+        friendly_name = "Cockpit"
+    elif friendly_name == "kismet":
+        friendly_name = "Kismet"
+    else:
+        friendly_name = friendly_name.replace("-", " ").title()
+
+    return f"""
+<script>
+UIkit.notification({{
+    message: '<span uk-icon="icon: warning; ratio: 2"></span> {friendly_name} is not installed.',
+    status: 'warning',
+    pos: 'top-right',
+    timeout: 10000
+}});
+</script>
+"""

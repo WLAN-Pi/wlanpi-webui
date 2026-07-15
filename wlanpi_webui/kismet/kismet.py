@@ -21,7 +21,9 @@ def start_stop_kismet(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
         if core_status:
-            start_stop_service(task, "kismet")
+            res = start_stop_service(task, "kismet")
+            if isinstance(res, str):
+                return res
         else:
             return wlanpi_core_warning
     return "", 204
