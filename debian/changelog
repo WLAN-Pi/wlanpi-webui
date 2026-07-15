@@ -1,3 +1,16 @@
+wlanpi-webui (1.4.0-4) unstable; urgency=medium
+
+  * Remove shell=True from subprocess calls (harden against shell injection).
+  * Regenerate dependency locks, fix security alerts, and drop flask-minify.
+  * Upgrade UIKit 3.16.26 -> 3.25.20.
+  * Show a UIkit alert when starting a service that is not installed
+    (closes #48).
+  * Optimize LibreSpeed reverse proxy performance by enabling keepalive.
+  * Build for Debian trixie only and publish to packagecloud.
+  * CI: do not post to Slack from fork PRs (secrets are unavailable there).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 15 Jul 2026 03:24:02 -0400
+
 wlanpi-webui (1.4.0-3) unstable; urgency=medium
 
   * Rebuild to publish packages for Debian trixie to packagecloud
