@@ -142,9 +142,9 @@ def system_service_exists(service):
     $ echo $?
     1
     """
-    cmd = f"/bin/systemctl list-unit-files {service}.*"
+    cmd = ["/bin/systemctl", "list-unit-files", f"{service}.*"]
     current_app.logger.info("subprocess is running %s", cmd)
-    result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL)
+    result = subprocess.run(cmd, stdout=subprocess.DEVNULL)
     if result.returncode == 0:
         return True
     return False
@@ -157,10 +157,10 @@ def system_service_running_state(service):
     """
     try:
         # this cmd fails if service not installed
-        cmd = f"/bin/systemctl is-active --quiet {service}"
+        cmd = ["/bin/systemctl", "is-active", "--quiet", service]
         current_app.logger.info("subprocess is running %s", cmd)
         # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
-        subprocess.run(cmd, shell=True).check_returncode()
+        subprocess.run(cmd).check_returncode()
     except subprocess.CalledProcessError as exc:
         current_app.logger.info(
             "service %s is not running (error code: %s)", service, exc.returncode
@@ -186,6 +186,34 @@ def run_command(cmd: list, suppress_output=False) -> str:
             return cp.stderr
 
     return "completed process return code is non-zero with no stdout or stderr"
+
+
+def run_pipeline(*commands, timeout: int = 10) -> str:
+    """Run piped commands without a shell and return decoded stdout.
+
+    Each argument is a command as a list, e.g.
+    ``run_pipeline(["top", "-bn1"], ["awk", "{print $1}"])`` is the
+    shell-free equivalent of ``top -bn1 | awk '{print $1}'``. Arguments are
+    passed to each program directly, so there is no shell interpolation and
+    no command injection is possible.
+    """
+    procs = []
+    prev_stdout = None
+    for command in commands:
+        proc = subprocess.Popen(
+            command,
+            stdin=prev_stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        if prev_stdout is not None:
+            prev_stdout.close()  # let the upstream process receive SIGPIPE
+        prev_stdout = proc.stdout
+        procs.append(proc)
+    out, _ = procs[-1].communicate(timeout=timeout)
+    for proc in procs[:-1]:
+        proc.wait(timeout=timeout)
+    return out.decode()
 
 
 def systemd_service_message(service):
