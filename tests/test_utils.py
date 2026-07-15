@@ -47,3 +47,24 @@ class TestGetSafeRedirectTargetWithRequestContext:
     def test_different_origin_blocked(self):
         result = get_safe_redirect_target("http://evil.com/services")
         assert result == "/"
+
+
+from wlanpi_webui.utils import start_stop_service, service_not_installed_warning
+
+class TestServiceNotInstalled:
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_start_uninstalled_service_returns_warning(self, mock_exists):
+        mock_exists.return_value = False
+        res = start_stop_service("start", "kismet")
+        assert "Kismet is not installed" in res
+        assert "UIkit.notification" in res
+
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_start_uninstalled_grafana_returns_warning(self, mock_exists):
+        mock_exists.return_value = False
+        res = start_stop_service("start", "grafana-server")
+        assert "Grafana is not installed" in res
+
+    def test_service_not_installed_warning_formatting(self):
+        res = service_not_installed_warning("wlanpi-profiler")
+        assert "Profiler is not installed" in res
