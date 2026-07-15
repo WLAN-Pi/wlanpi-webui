@@ -11,7 +11,6 @@ import logging
 from time import time
 
 from flask import Flask, abort, send_from_directory
-from flask_minify import Minify
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
@@ -21,7 +20,6 @@ from wlanpi_webui.utils import get_dpkg_status_mtime, package_installed
 def create_app(config_class=Config):
     app = Flask(__name__)
 
-    Minify(app=app, passive=True)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     app.config.from_object(config_class)

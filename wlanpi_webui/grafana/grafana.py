@@ -2,7 +2,6 @@ import ssl
 import urllib
 
 from flask import current_app, redirect, render_template, request
-from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (
@@ -94,14 +93,12 @@ def grafana():
 
 
 @bp.route("/grafana/side_menu")
-@minify_decorators.minify(html=True)
 def grafana_side_menu():
     if is_htmx(request):
         return grafana_menu("side")
 
 
 @bp.route("/grafana/main_menu")
-@minify_decorators.minify(html=True)
 def grafana_main_menu():
     if is_htmx(request):
         return grafana_menu("main")

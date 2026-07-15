@@ -2,7 +2,6 @@
 import socket
 
 from flask import request
-from flask_minify import decorators as minify_decorators
 
 from wlanpi_webui.stream import bp
 from wlanpi_webui.utils import is_htmx, run_pipeline
@@ -91,7 +90,6 @@ def get_stats():
 
 
 @bp.route("/stream/stats")
-@minify_decorators.minify(html=True)
 def stream_stats():
     stats = get_stats()
     if is_htmx(request):
