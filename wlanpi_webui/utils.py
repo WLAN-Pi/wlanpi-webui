@@ -13,6 +13,7 @@ import requests
 from flask import current_app, redirect, request
 
 SECRET_PATH = "/home/wlanpi/.local/share/wlanpi-core/secrets/shared_secret.bin"
+CA_CERT = "/etc/nginx/ssl/self-signed-wlanpi.cert"
 SERVER = "127.0.0.1"
 PORT = "31415"
 
@@ -96,7 +97,7 @@ def make_api_request(
             "accept": "application/json",
         }
 
-        response = requests.post(url=url, headers=headers, params=params)
+        response = requests.post(url=url, headers=headers, params=params, verify=CA_CERT)
         response.raise_for_status()
         return response
     except requests.exceptions.HTTPError as e:
@@ -242,10 +243,10 @@ def start_stop_service(task, service):
     try:
         if task == "start":
             current_app.logger.info("starting %s", service)
-            url = "http://127.0.0.1:31415/api/v1/system/service/start"
+            url = "https://127.0.0.1:31415/api/v1/system/service/start"
         elif task == "stop":
             current_app.logger.info("stopping %s", service)
-            url = "http://127.0.0.1:31415/api/v1/system/service/stop"
+            url = "https://127.0.0.1:31415/api/v1/system/service/stop"
         else:
             current_app.logger.error("Invalid task: %s", task)
             return redirect(get_safe_redirect_target(request.referrer))
