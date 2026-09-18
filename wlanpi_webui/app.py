@@ -122,7 +122,7 @@ def create_app(config_class=Config):
             return None
         if is_htmx(request) or request.headers.get("X-Requested-With"):
             return "", 401
-        return redirect(url_for("auth.login", next=request.full_path))
+        return redirect(url_for("auth.login"))
 
     _context_cache = {}
     _context_cache_time = 0

@@ -19,7 +19,7 @@ import requests
 from flask import abort, redirect, render_template, request, session, url_for
 
 from wlanpi_webui.auth import bp
-from wlanpi_webui.utils import get_safe_redirect_target, make_api_request
+from wlanpi_webui.utils import make_api_request
 
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
 CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
@@ -110,29 +110,15 @@ def login():
         status = pam_authenticate(username, password)
         if status == "success":
             _login_session(username)
-            return redirect(get_safe_redirect_target(request.form.get("next")))
+            return redirect("/")
         if status == "password_change_required":
-            return redirect(
-                url_for(
-                    "auth.change_password",
-                    next=get_safe_redirect_target(request.form.get("next")),
-                )
-            )
+            return redirect(url_for("auth.change_password"))
         if status is None:
             error = "Unable to reach wlanpi-core. Is the service running?"
         else:
             error = "Incorrect username or password."
-        return (
-            render_template(
-                "login.html",
-                next=get_safe_redirect_target(request.form.get("next")),
-                error=error,
-            ),
-            401,
-        )
-    return render_template(
-        "login.html", next=get_safe_redirect_target(request.args.get("next"))
-    )
+        return render_template("login.html", error=error), 401
+    return render_template("login.html")
 
 
 @bp.route("/change_password", methods=["GET", "POST"])
@@ -146,7 +132,7 @@ def change_password():
         status = pam_change_password(username, current_password, new_password)
         if status == "success":
             _login_session(username)
-            return redirect(get_safe_redirect_target(request.form.get("next")))
+            return redirect("/")
         if status is None:
             error = "Unable to reach wlanpi-core. Is the service running?"
         else:
