@@ -12,6 +12,14 @@
     } catch (e) {
       /* storage unavailable; keep the in-page theme only */
     }
+    try {
+      // Cookie so the server can render the theme (no flash) and so it
+      // survives when localStorage is unavailable.
+      document.cookie =
+        "wlanpi_theme=" + theme + "; path=/; max-age=31536000; SameSite=Lax";
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   window.wlanpiToggleTheme = function () {
@@ -25,7 +33,7 @@
   try {
     var stored = localStorage.getItem("wlanpi-theme");
     if (stored === "dark" || stored === "light") {
-      document.documentElement.setAttribute("data-theme", stored);
+      applyTheme(stored);
     }
   } catch (e) {
     /* ignore */
@@ -42,6 +50,21 @@
       });
     }
   };
+
+  // Debug aid: fire a test toast from the query string, e.g.
+  //   /about?toast=Hello&status=warning
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var toastMessage = params.get("toast");
+    if (toastMessage) {
+      var toastStatus = params.get("status") || "primary";
+      window.addEventListener("load", function () {
+        window.wlanpiToast(toastMessage, toastStatus);
+      });
+    }
+  } catch (e) {
+    /* ignore */
+  }
 
   // ---- Session expiry -------------------------------------------------
   // nginx rewrites an expired session to a redirect to /login, which htmx
