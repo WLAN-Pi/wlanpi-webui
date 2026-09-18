@@ -118,7 +118,8 @@ def login():
         else:
             error = "Incorrect username or password."
         return render_template("login.html", error=error), 401
-    return render_template("login.html")
+    expired = request.args.get("reason") == "expired"
+    return render_template("login.html", expired=expired)
 
 
 @bp.route("/change_password", methods=["GET", "POST"])

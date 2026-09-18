@@ -1,13 +1,183 @@
+/* ==========================================================================
+   Design tokens
+   A small, buildless design vocabulary. UIKit stays the component engine;
+   these tokens colour and shape it. See UI_REDESIGN.md.
+   ========================================================================== */
+
+:root {
+    /* Brand */
+    --brand: #f45625;
+    --brand-hover: #da3e15;
+    --brand-contrast: #ffffff;
+
+    /* Surfaces */
+    --bg-page: #f8f8f8;
+    --bg-surface: #ffffff;
+    --navbar-bg: #222222;
+    --navbar-text: #ffffff;
+
+    /* Text and lines */
+    --text: #222222;
+    --text-muted: #777777;
+    --border: #e5e5e5;
+
+    /* Status */
+    --danger: #d32f2f;
+    --warning: #f9a825;
+    --success: #2e7d32;
+    --info: #0277bd;
+    --focus-ring: rgba(244, 86, 37, 0.4);
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --container: 980px;
+
+    /* Shape and shadow */
+    --radius-sm: 3px;
+    --radius-md: 6px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark theme values are defined here for the toggle that ships in phase 2. */
+[data-theme="dark"] {
+    --bg-page: #101417;
+    --bg-surface: #1a2026;
+    --navbar-bg: #0b0f13;
+    --text: #e6eaee;
+    --text-muted: #9aa5b1;
+    --border: #2a343d;
+}
+
+/* ==========================================================================
+   Base elements
+   ========================================================================== */
+
 a {
-    color: #f45625;
+    color: var(--brand);
 }
 
 a:hover {
-    color: black;
+    color: var(--text);
 }
 
+/* ==========================================================================
+   Utilities (only where UIKit has gaps)
+   ========================================================================== */
+
+.bg-page {
+    background: var(--bg-page);
+    color: var(--text);
+}
+
+.bg-surface {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+}
+
+.bg-brand {
+    background: var(--brand);
+    color: var(--brand-contrast);
+}
+
+.text-dim {
+    color: var(--text-muted);
+}
+
+.text-brand {
+    color: var(--brand);
+}
+
+.radius-sm {
+    border-radius: var(--radius-sm);
+}
+
+.radius-md {
+    border-radius: var(--radius-md);
+}
+
+.shadow-sm {
+    box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+    box-shadow: var(--shadow-md);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==========================================================================
+   UIKit component mappings (bounded set)
+   ========================================================================== */
+
 .uk-button-secondary {
-    background-color: #f45625;
+    background-color: var(--brand);
+}
+
+.uk-card,
+.uk-card-default {
+    background: var(--bg-surface);
+    color: var(--text);
+}
+
+.uk-navbar-container {
+    background: var(--navbar-bg) !important;
+}
+
+.uk-navbar-nav > li > a {
+    color: var(--navbar-text);
+}
+
+.uk-navbar-dropdown,
+.uk-dropdown {
+    background: var(--bg-surface);
+    color: var(--text);
+}
+
+.uk-button-default {
+    background: var(--bg-surface);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.uk-input,
+.uk-select,
+.uk-textarea {
+    background: var(--bg-surface);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+/* ==========================================================================
+   App-specific
+   ========================================================================== */
+
+.app-stats {
+    background-color: var(--brand);
+}
+
+.auth-shell {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.auth-logo {
+    width: 128px;
 }
 
 .uk-divider-icon {
@@ -19,7 +189,7 @@ a:hover {
 .stat-container {
     display: inline-flex;
     padding: 2px 0px 2px 0px;
-    color: #fff;
+    color: var(--navbar-text);
 }
 
 .stat-icon {
