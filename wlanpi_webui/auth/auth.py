@@ -54,11 +54,12 @@ def csrf_required(f):
     return wrapper
 
 
-def hx_post_anchor(url: str, inner: str) -> str:
+def hx_post_anchor(url: str, inner: str, target: str | None = None) -> str:
     """Build an htmx POST anchor carrying the CSRF token for ``url``."""
     token = get_csrf_token()
+    swap = f' hx-target="{target}" hx-swap="innerHTML"' if target else ""
     return (
-        f'<a hx-post="{url}" hx-indicator=".progress" '
+        f'<a hx-post="{url}" hx-indicator=".progress"{swap} '
         f'hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</a>'
     )
 

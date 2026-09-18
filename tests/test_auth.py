@@ -183,7 +183,9 @@ class TestMutatingRoutes:
         _login(client, monkeypatch)
         profiler = __import__("wlanpi_webui.profiler.profiler", fromlist=["x"])
         monkeypatch.setattr(profiler, "system_service_running_state", lambda s: True)
-        monkeypatch.setattr(profiler, "start_stop_service", lambda task, service: None)
+        monkeypatch.setattr(
+            profiler, "start_stop_service", lambda task, service: ("", 204)
+        )
         with client.session_transaction() as sess:
             csrf = sess["csrf_token"]
         resp = client.post(

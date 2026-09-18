@@ -225,6 +225,18 @@ function initUI(){
 			display:block;
 			margin: 0 auto;
 	}
+	.back-home{
+		position:fixed;
+		top:0.6em;
+		left:0.8em;
+		z-index:100;
+		font-size:0.9em;
+		text-decoration:none;
+		color:#6060AA;
+	}
+	.back-home:hover{
+		text-decoration:underline;
+	}
 	@media all and (max-width:40em){
 			body{
 					font-size:0.8em;
@@ -234,6 +246,7 @@ function initUI(){
 <title>WLAN Pi: LibreSpeed</title>
 </head>
 <body>
+<a class="back-home" href="/">&larr; Home</a>
 <br />
 <div>
 	<div id="startStopBtn" onclick="startStop()"></div>

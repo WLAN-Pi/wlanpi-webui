@@ -132,10 +132,16 @@ sequentially after #99 and #101.
 
 ### Phase 3 — dashboard at `/` (done; #108 folded in)
 - Reclaim `/`: remove `@bp.route("/")` from the librespeed blueprint.
-- New dashboard blueprint at `/`: system info from `GET
-  /api/v1/system/device/info`, a lazily-loaded network card
-  (`/dashboard/network`) from `GET /api/v1/utils/reachability` +
-  `GET /api/v1/network/info/`, and quick links to installed apps.
+- New dashboard blueprint at `/`: a Flipper Zero-style tile launcher
+  (hostname/mode status strip, app tiles, version footer). Tiles are
+  launchers — Speed Test same-tab, Kismet/Grafana/Cockpit new tab,
+  Profiler/Network in-app.
+- New Apps page (`/apps`) consolidating control for Speed Test, Profiler,
+  Kismet, Grafana and Cockpit, and a Settings page (`/settings`) for About,
+  the dark-mode toggle, Debug and logout. The per-app navbar dropdowns are
+  gone; the navbar is HOME / APPS / NETWORK plus a settings gear.
+- No iframes: Cockpit and the Kismet/Grafana UIs open in a new tab; Speed
+  Test navigates in the same tab and links back home.
 - Migrate the `/network` cards from the bash scripts to the same core API
   (reachability, public IP, eth0 IP config, LLDP/CDP neighbours).
 

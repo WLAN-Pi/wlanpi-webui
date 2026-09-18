@@ -92,6 +92,19 @@ def get_safe_redirect_target(target: str | None) -> str:
     return safe
 
 
+def get_safe_referrer_target() -> str:
+    """Safe redirect target for the current page's path.
+
+    ``request.referrer`` is an absolute URL, which get_safe_redirect_target
+    rejects; reduce it to its path first so callers return to the page they
+    were on rather than the home page. htmx sends ``HX-Current-URL``, which is
+    preferred when present.
+    """
+    source = request.headers.get("HX-Current-URL") or request.referrer or ""
+    path = urllib.parse.urlparse(source).path
+    return get_safe_redirect_target(path)
+
+
 def generate_hmac_signature(
     method: str, endpoint: str, query: str = "", body: str = ""
 ) -> str | None:
@@ -294,7 +307,7 @@ def start_stop_service(task, service):
             url = "https://127.0.0.1:31415/api/v1/system/service/stop"
         else:
             current_app.logger.error("Invalid task: %s", task)
-            return redirect(get_safe_redirect_target(request.referrer))
+            return redirect(get_safe_referrer_target())
 
         response = make_api_request(method="POST", url=url, params=params)
 
@@ -318,10 +331,10 @@ def start_stop_service(task, service):
                     "Authentication failed. Verify HMAC configuration and shared secret access."
                 )
             current_app.logger.info("%s generated %s response", url, response)
-        return redirect(get_safe_redirect_target(request.referrer))
+        return redirect(get_safe_referrer_target())
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
-        return redirect(get_safe_redirect_target(request.referrer))
+        return redirect(get_safe_referrer_target())
 
 
 def package_installed(package):

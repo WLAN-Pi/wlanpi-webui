@@ -1,0 +1,78 @@
+<div class="uk-flex uk-flex-1 uk-flex-column uk-padding">
+  <h3 class="uk-h3">Apps</h3>
+  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid
+    uk-height-match="target: > div > .uk-card">
+
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Speed Test</h3>
+        <p class="uk-text-meta">Measure download and upload throughput.</p>
+        <p>
+          <a class="uk-button uk-button-primary" href="/speedtest/librespeed">Start test</a>
+          <a class="uk-button uk-button-text" href="/speedtest/librespeed/details">Details</a>
+        </p>
+      </div>
+    </div>
+
+    {% if profiler_installed %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Profiler</h3>
+        <p class="uk-text-meta">{{ profiler_status }}</p>
+        <p>{{ profiler_toggle|safe }}</p>
+        <p>
+          <a hx-get="/profiler/profiles" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">Profiles</a>
+          <a class="uk-margin-left" hx-get="/profiler/purge" hx-target="#content" hx-swap="innerHTML"
+            hx-push-url="true" hx-indicator=".progress">Purge data</a>
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if kismet_installed %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Kismet</h3>
+        <p class="uk-text-meta">{{ kismet_status }}</p>
+        <p>{{ kismet_toggle|safe }}</p>
+        {% if kismet_running %}
+        <p><a class="uk-button uk-button-primary" href="/kismet" target="_blank">Launch Kismet</a></p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if grafana_installed %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Grafana</h3>
+        <p class="uk-text-meta">{{ grafana_status }}</p>
+        <p>{{ grafana_toggle|safe }}</p>
+        {% if grafana_running %}
+        <p><a class="uk-button uk-button-primary" href="/grafana_url" target="_blank">Launch Grafana</a></p>
+        {% endif %}
+        {% if grafana_data_streams %}
+        <h4 class="uk-margin-small-bottom">Data streams</h4>
+        <ul class="uk-list uk-list-divider uk-margin-remove-top">
+          {% for stream in grafana_data_streams %}
+          <li>{{ stream.anchor|safe }} {{ stream.name }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if cockpit_installed %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Cockpit</h3>
+        <p class="uk-text-meta">System management console.</p>
+        <p><a class="uk-button uk-button-primary" href="/app/cockpit" target="_blank">Launch Cockpit</a></p>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>

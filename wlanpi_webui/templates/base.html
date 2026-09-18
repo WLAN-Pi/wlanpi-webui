@@ -61,67 +61,10 @@
           <ul class="uk-navbar-nav uk-visible@m">
             <li><a hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
                 hx-indicator=".progress">HOME</a></li>
-            <li>
-              <a href="#">SPEED TEST <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
-                  <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                      hx-indicator=".progress">LIBRESPEED</a></li>
-                  <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"
-                      hx-push-url="true" hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
-                </ul>
-              </div>
-            </li>
-            {% if profiler_installed %}
-            <li>
-              <a href="#">PROFILER <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown"
-                   hx-get="/profiler/main_menu"
-                   hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('profiler_dropdown').classList.contains('uk-open')]"
-                   hx-target="#profiler_ul"
-                   hx-swap="innerHTML swap:0ms settle:0ms"
-                   id="profiler_dropdown"
-                   class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav" id="profiler_ul">
-                </ul>
-              </div>
-            </li>
-            {% endif %}
+            <li><a hx-get="/apps" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                hx-indicator=".progress">APPS</a></li>
             <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
                 hx-swap="innerHTML">NETWORK</a></li>
-            {% if kismet_installed %}
-            <li>
-              <a href="#">KISMET <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown"
-                      hx-get="/kismet/main_menu"
-                      hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('kismet_dropdown').classList.contains('uk-open')]"
-                      hx-target="#kismet_ul"
-                      hx-swap="innerHTML"
-                      id="kismet_dropdown"
-                      class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav" id="kismet_ul">
-                </ul>
-              </div>
-            </li>
-            {% endif %}
-            {% if grafana_installed %}
-            <li><a href="#">GRAFANA <span uk-navbar-parent-icon></span></a>
-              <div class="uk-navbar-dropdown"
-                   hx-get="/grafana/main_menu"
-                   hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('grafana_dropdown').classList.contains('uk-open')]"
-                   hx-target="#grafana_ul"
-                   hx-swap="innerHTML"
-                   id="grafana_dropdown"
-                   class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav" id="grafana_ul">
-                </ul>
-              </div>
-            </li>
-            {% endif %}
-            {% if cockpit_installed %}
-            <li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
-                hx-push-url="true">COCKPIT</a></li>
-            {% endif %}
           </ul>
         </div>
         <div class="uk-navbar-right">
@@ -130,24 +73,8 @@
               <a href="#" uk-icon="icon: warning; ratio: 1.5;" title="Connection error." data-uk-tooltip></a>
             </li>
             <li class="uk-visible@m">
-              <a href="#" uk-icon="icon: user; ratio: 1.5;"></a>
-              <div class="uk-navbar-dropdown">
-                <ul class="uk-nav uk-navbar-dropdown-nav">
-                  {% if current_user %}
-                  <li class="uk-nav-header">Signed in as {{ current_user }}</li>
-                  {% endif %}
-                  <li><a hx-get="/about" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                      hx-indicator=".progress">ABOUT</a></li>
-                  <li><a href="#" onclick="wlanpiToggleTheme(); return false;">TOGGLE THEME</a></li>
-                  <li class="uk-nav-divider"></li>
-                  <li>
-                    <form method="post" action="{{ url_for('auth.logout') }}" class="uk-margin-remove">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                      <button class="uk-button uk-button-text uk-width-1-1 uk-text-left" type="submit">LOGOUT</button>
-                    </form>
-                  </li>
-                </ul>
-              </div>
+              <a hx-get="/settings" hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress"
+                uk-icon="icon: settings; ratio: 1.5;" title="Settings" data-uk-tooltip></a>
             </li>
           </ul>
           <div class="uk-navbar-item">
@@ -208,45 +135,13 @@
       <ul class="uk-nav uk-nav-default" uk-nav>
         <li><a hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
             hx-indicator=".progress">HOME</a></li>
-        <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-          hx-indicator=".progress">LIBRESPEED</a></li>
-        <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"
-            hx-push-url="true" hx-indicator=".progress">LIBRESPEED (DETAILS)</a></li>
-        {% if profiler_installed %}
-        <li class="uk-divider-icon"></li>
-        <ul class="uk-nav uk-navbar-dropdown-nav" 
-        hx-get="/profiler/side_menu"
-        hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
-        hx-swap="innerHTML">
-        </ul>
-        {% endif %}
-        <li class="uk-divider-icon"></li>
+        <li><a hx-get="/apps" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">APPS</a></li>
         <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-          hx-swap="innerHTML">NETWORK</a></li>
-        {% if kismet_installed %}
+            hx-swap="innerHTML">NETWORK</a></li>
         <li class="uk-divider-icon"></li>
-        <ul class="uk-nav uk-navbar-dropdown-nav" 
-            hx-get="/kismet/side_menu"
-            hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
-            hx-swap="innerHTML">
-        </ul>
-        {% endif %}
-        {% if grafana_installed %}
-        <li class="uk-divider-icon"></li>
-        <ul class="uk-nav uk-navbar-dropdown-nav" 
-            hx-get="/grafana/side_menu"
-            hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('offcanvas-nav').classList.contains('uk-open')]"
-            hx-swap="innerHTML">
-        </ul>
-        {% endif %}
-        {% if cockpit_installed %}
-        <li class="uk-divider-icon"></li>
-        <li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
-          hx-push-url="true">COCKPIT</a></li>
-        {% endif %}
-        <li class="uk-divider-icon"></li>
-        <li><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
-          hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
+        <li><a hx-get="/settings" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">SETTINGS</a></li>
       </ul>
     </div>
   </div>

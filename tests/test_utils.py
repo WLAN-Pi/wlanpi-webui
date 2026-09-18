@@ -1,10 +1,22 @@
 from unittest.mock import patch
 
+import pytest
+
 from wlanpi_webui.utils import (
     get_safe_redirect_target,
     service_not_installed_warning,
     start_stop_service,
 )
+
+
+@pytest.fixture()
+def app(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "wlanpi_webui.config.Config.SESSION_KEY_PATH", str(tmp_path / "session_key")
+    )
+    from wlanpi_webui.app import create_app
+
+    return create_app()
 
 
 class TestGetSafeRedirectTarget:
@@ -50,6 +62,31 @@ class TestGetSafeRedirectTargetWithRequestContext:
     def test_different_origin_blocked(self):
         result = get_safe_redirect_target("http://evil.com/services")
         assert result == "/"
+
+
+class TestGetSafeReferrerTarget:
+    def test_uses_referrer_path(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context(headers={"Referer": "https://wlanpi.local/apps"}):
+            assert utils.get_safe_referrer_target() == "/apps"
+
+    def test_no_referrer_falls_back_to_root(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context():
+            assert utils.get_safe_referrer_target() == "/"
+
+    def test_prefers_hx_current_url(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context(
+            headers={
+                "Referer": "https://wlanpi.local/",
+                "HX-Current-URL": "https://wlanpi.local/apps",
+            }
+        ):
+            assert utils.get_safe_referrer_target() == "/apps"
 
 
 class TestServiceNotInstalled:

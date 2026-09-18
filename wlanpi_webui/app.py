@@ -31,16 +31,10 @@ from wlanpi_webui.utils import (
     read_boot_id,
 )
 
-# Endpoints polled in the background (stats bar and open nav dropdowns). These
-# must not refresh the idle timer, or an open tab would never time out.
+# Endpoints polled in the background (the stats bar). These must not refresh
+# the idle timer, or an open tab would never time out.
 BACKGROUND_ENDPOINTS = {
     "stream.stream_stats",
-    "profiler.profiler_main_menu",
-    "profiler.profiler_side_menu",
-    "kismet.kismet_main_menu",
-    "kismet.kismet_side_menu",
-    "grafana.grafana_main_menu",
-    "grafana.grafana_side_menu",
 }
 
 
@@ -131,6 +125,18 @@ def create_app(config_class=Config):
 
     app.register_blueprint(dashboard_bp)
     app.logger.debug("dashboard blueprint registered")
+
+    app.logger.debug("registering apps blueprint")
+    from wlanpi_webui.apps import bp as apps_bp
+
+    app.register_blueprint(apps_bp)
+    app.logger.debug("apps blueprint registered")
+
+    app.logger.debug("registering settings blueprint")
+    from wlanpi_webui.settings import bp as settings_bp
+
+    app.register_blueprint(settings_bp)
+    app.logger.debug("settings blueprint registered")
 
     @app.context_processor
     def inject_vars():
