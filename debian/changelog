@@ -1,3 +1,21 @@
+wlanpi-webui (1.5.0-1) unstable; urgency=medium
+
+  * PAM-backed session login: the WebUI now requires a session established
+    via wlanpi-core's PAM broker (/api/v1/auth/pam, wlanpi-core >= 2.1.19).
+    Adds /login, /logout, and a first-boot expired-password change page
+    (/change_password). Logged-in identity is stored in a signed, HttpOnly
+    session cookie with a per-process random key.
+  * Mutating service start/stop routes (profiler, kismet, grafana x15,
+    cockpit) are now POST-only and require a per-session CSRF token; htmx
+    menus carry the token in X-CSRF-Token headers. Anonymous GETs can no
+    longer start/stop services or reach management apps.
+  * nginx: gate the WebUI and proxied management apps (grafana, cockpit,
+    librespeed) behind an auth_request session check that redirects
+    unauthenticated browsers to /login.
+  * Remove HMAC canonical-string debug logging (could leak request bodies).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 21:51:00 -0400
+
 wlanpi-webui (1.4.0-4) unstable; urgency=medium
 
   * Remove shell=True from subprocess calls (harden against shell injection).

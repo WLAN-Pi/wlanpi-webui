@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import subprocess
 import urllib.parse
@@ -73,22 +74,20 @@ def generate_hmac_signature(
     if not secret:
         return None
     canonical_string = f"{method}\n{endpoint}\n{query}\n{body}"
-    current_app.logger.debug("WebUI canonical components:")
-    current_app.logger.debug(f"Method: {method}")
-    current_app.logger.debug(f"Path: {endpoint}")
-    current_app.logger.debug(f"Query: {query}")
-    current_app.logger.debug(f"Body: {body}")
-    current_app.logger.debug(f"Hex: {canonical_string.encode().hex()}")
     return hmac.new(secret, canonical_string.encode(), hashlib.sha256).hexdigest()
 
 
 def make_api_request(
-    method: str, url: str, params: Optional[dict] = None, headers: Optional[dict] = None
+    method: str,
+    url: str,
+    params: Optional[dict] = None,
+    headers: Optional[dict] = None,
+    json_body: Optional[dict] = None,
 ) -> requests.Response:
     try:
         query_string = urllib.parse.urlencode(params) if params else ""
         endpoint = urllib.parse.urlparse(url).path
-        body = ""
+        body = json.dumps(json_body) if json_body is not None else ""
 
         signature = generate_hmac_signature(method, endpoint, query_string, body)
 
@@ -96,8 +95,17 @@ def make_api_request(
             "X-Request-Signature": signature,
             "accept": "application/json",
         }
+        if json_body is not None:
+            headers["Content-Type"] = "application/json"
 
-        response = requests.post(url=url, headers=headers, params=params, verify=CA_CERT)
+        response = requests.post(
+            url=url,
+            headers=headers,
+            params=params,
+            data=body,
+            verify=CA_CERT,
+            timeout=10,
+        )
         response.raise_for_status()
         return response
     except requests.exceptions.HTTPError as e:

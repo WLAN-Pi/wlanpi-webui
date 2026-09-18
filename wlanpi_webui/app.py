@@ -8,13 +8,22 @@ the main flask app
 """
 
 import logging
+import os
 from time import time
 
-from flask import Flask, abort, send_from_directory
+from flask import (
+    Flask,
+    abort,
+    redirect,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
-from wlanpi_webui.utils import get_dpkg_status_mtime, package_installed
+from wlanpi_webui.utils import get_dpkg_status_mtime, is_htmx, package_installed
 
 
 def create_app(config_class=Config):
@@ -23,6 +32,15 @@ def create_app(config_class=Config):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     app.config.from_object(config_class)
+    # Random per-process key: signed session cookies are invalidated on restart.
+    app.secret_key = os.urandom(32)
+
+    app.logger.debug("registering auth blueprint")
+    from wlanpi_webui.auth import bp as auth_bp
+
+    app.register_blueprint(auth_bp)
+    app.logger.debug("auth blueprint registered")
+
     app.logger.debug("registering errors blueprint")
     from wlanpi_webui.errors import bp as errors_bp
 
@@ -82,6 +100,29 @@ def create_app(config_class=Config):
         return {
             "title": f"WLAN Pi: {get_hostname()}",
         }
+
+    @app.context_processor
+    def inject_csrf_token():
+        from wlanpi_webui.auth.auth import get_csrf_token
+
+        return {"csrf_token": get_csrf_token()}
+
+    @app.before_request
+    def require_login():
+        if session.get("user"):
+            return None
+        if request.path.startswith("/static"):
+            return None
+        if request.endpoint is None:
+            return None
+        if request.blueprint in ("auth", "errors") or request.endpoint in (
+            "static",
+            "img",
+        ):
+            return None
+        if is_htmx(request) or request.headers.get("X-Requested-With"):
+            return "", 401
+        return redirect(url_for("auth.login", next=request.full_path))
 
     _context_cache = {}
     _context_cache_time = 0

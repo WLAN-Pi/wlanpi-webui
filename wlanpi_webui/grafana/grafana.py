@@ -3,6 +3,7 @@ import urllib
 
 from flask import current_app, redirect, render_template, request
 
+from wlanpi_webui.auth.auth import csrf_required, hx_post_anchor
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (
     get_apt_package_version,
@@ -115,11 +116,11 @@ def get_datastream_info(
         ds_service_running = system_service_running_state(datastream)
         if ds_service_running:
             enabled_ds = f"""
-            <li><span><a hx-get="{stop_task}" hx-indicator=".progress"><span uk-icon="close"></span></a></span> {friendly_name}</li>
+            <li><span>{hx_post_anchor(stop_task, '<span uk-icon="close"></span>')}</span> {friendly_name}</li>
             """
         else:
             disabled_ds += f"""
-            <li><span><a hx-get="{start_task}" hx-indicator=".progress"><span uk-icon="play-circle"></span></a> {friendly_name}</span></li>
+            <li><span>{hx_post_anchor(start_task, '<span uk-icon="play-circle"></span>')}</span> {friendly_name}</li>
             """
     return enabled_ds, disabled_ds
 
@@ -232,16 +233,16 @@ def grafana_menu(type):
         grafana_task_anchor_text = "START"
     args = {
         "grafana_message": grafana_message,
-        "grafana_task_url": grafana_task_url,
-        "grafana_task_anchor_text": grafana_task_anchor_text,
+        "grafana_task_anchor": hx_post_anchor(
+            grafana_task_url, grafana_task_anchor_text
+        ),
         "data_streams_html": data_streams_html,
     }
     if grafana_status:
         # active
         html = """
         <li class="uk-nav-header">{grafana_message}</li>
-        <li><a hx-get="{grafana_task_url}"
-                hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+        <li>{grafana_task_anchor}</li>
         <li class="uk-nav-divider"></li>
         <li><a class="uk-link"
                 hx-get="/grafana"
@@ -258,13 +259,13 @@ def grafana_menu(type):
         # not active
         html = """
         <li class="uk-nav-header">{grafana_message}</li>
-        <li><a hx-get="{grafana_task_url}"
-                hx-indicator=".progress">{grafana_task_anchor_text}</a></li>
+        <li>{grafana_task_anchor}</li>
         """.format(**args)
     return html
 
 
-@bp.route("/<task>grafana")
+@bp.route("/<task>grafana", methods=["POST"])
+@csrf_required
 def start_stop_grafana(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -277,7 +278,8 @@ def start_stop_grafana(task):
     return "", 204
 
 
-@bp.route("/<task>grafanascanner0")
+@bp.route("/<task>grafanascanner0", methods=["POST"])
+@csrf_required
 def start_stop_grafana_scanner0(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -290,7 +292,8 @@ def start_stop_grafana_scanner0(task):
     return "", 204
 
 
-@bp.route("/<task>grafanascanner1")
+@bp.route("/<task>grafanascanner1", methods=["POST"])
+@csrf_required
 def start_stop_grafana_scanner1(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -303,7 +306,8 @@ def start_stop_grafana_scanner1(task):
     return "", 204
 
 
-@bp.route("/<task>grafanascanner2")
+@bp.route("/<task>grafanascanner2", methods=["POST"])
+@csrf_required
 def start_stop_grafana_scanner2(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -316,7 +320,8 @@ def start_stop_grafana_scanner2(task):
     return "", 204
 
 
-@bp.route("/<task>grafanascat")
+@bp.route("/<task>grafanascat", methods=["POST"])
+@csrf_required
 def start_stop_grafana_scat(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -329,7 +334,8 @@ def start_stop_grafana_scat(task):
     return "", 204
 
 
-@bp.route("/<task>grafanascatpcap")
+@bp.route("/<task>grafanascatpcap", methods=["POST"])
+@csrf_required
 def start_stop_grafana_scat_pcap(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -342,7 +348,8 @@ def start_stop_grafana_scat_pcap(task):
     return "", 204
 
 
-@bp.route("/<task>grafanagps")
+@bp.route("/<task>grafanagps", methods=["POST"])
+@csrf_required
 def start_stop_grafana_gps(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -355,7 +362,8 @@ def start_stop_grafana_gps(task):
     return "", 204
 
 
-@bp.route("/<task>grafanaqscan")
+@bp.route("/<task>grafanaqscan", methods=["POST"])
+@csrf_required
 def start_stop_grafana_qscan(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -368,7 +376,8 @@ def start_stop_grafana_qscan(task):
     return "", 204
 
 
-@bp.route("/<task>grafanainternet")
+@bp.route("/<task>grafanainternet", methods=["POST"])
+@csrf_required
 def start_stop_grafana_internet(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -381,7 +390,8 @@ def start_stop_grafana_internet(task):
     return "", 204
 
 
-@bp.route("/<task>grafanahealth")
+@bp.route("/<task>grafanahealth", methods=["POST"])
+@csrf_required
 def start_stop_grafana_health(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -394,7 +404,8 @@ def start_stop_grafana_health(task):
     return "", 204
 
 
-@bp.route("/<task>grafanawipry24")
+@bp.route("/<task>grafanawipry24", methods=["POST"])
+@csrf_required
 def start_stop_grafana_wipry24(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -407,7 +418,8 @@ def start_stop_grafana_wipry24(task):
     return "", 204
 
 
-@bp.route("/<task>grafanawipry5")
+@bp.route("/<task>grafanawipry5", methods=["POST"])
+@csrf_required
 def start_stop_grafana_wipry5(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -420,7 +432,8 @@ def start_stop_grafana_wipry5(task):
     return "", 204
 
 
-@bp.route("/<task>grafanawipry6")
+@bp.route("/<task>grafanawipry6", methods=["POST"])
+@csrf_required
 def start_stop_grafana_wipry6(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -433,7 +446,8 @@ def start_stop_grafana_wipry6(task):
     return "", 204
 
 
-@bp.route("/<task>grafanawispy24")
+@bp.route("/<task>grafanawispy24", methods=["POST"])
+@csrf_required
 def start_stop_grafana_wispy24(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -446,7 +460,8 @@ def start_stop_grafana_wispy24(task):
     return "", 204
 
 
-@bp.route("/<task>grafanawispy5")
+@bp.route("/<task>grafanawispy5", methods=["POST"])
+@csrf_required
 def start_stop_grafana_wispy5(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")

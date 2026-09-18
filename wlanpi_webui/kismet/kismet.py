@@ -1,5 +1,6 @@
 from flask import redirect, request
 
+from wlanpi_webui.auth.auth import csrf_required, hx_post_anchor
 from wlanpi_webui.kismet import bp
 from wlanpi_webui.utils import (
     is_htmx,
@@ -16,7 +17,8 @@ def kismet():
     return redirect(f"http://{base}:2501", code=302)
 
 
-@bp.route("/<task>kismet")
+@bp.route("/<task>kismet", methods=["POST"])
+@csrf_required
 def start_stop_kismet(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -44,23 +46,22 @@ def kismet_side_menu():
             kismet_task_anchor_text = "START"
         args = {
             "kismet_message": kismet_message,
-            "kismet_task_url": kismet_task_url,
-            "kismet_task_anchor_text": kismet_task_anchor_text,
+            "kismet_task_anchor": hx_post_anchor(
+                kismet_task_url, kismet_task_anchor_text
+            ),
         }
         if kismet_status:
             # active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
-            <li><a hx-get="{kismet_task_url}"
-                   hx-indicator=".progress">{kismet_task_anchor_text}</a></li>
+            <li>{kismet_task_anchor}</li>
             <li><a class="uk-link" href="/kismet" target="_blank">LAUNCH KISMET</a></li>
             """.format(**args)
         else:
             # not active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
-            <li><a hx-get="{kismet_task_url}"
-                   hx-indicator=".progress">{kismet_task_anchor_text}</li>
+            <li>{kismet_task_anchor}</li>
             """.format(**args)
         return html
 
@@ -80,15 +81,15 @@ def kismet_main_menu():
             kismet_task_anchor_text = "START"
         args = {
             "kismet_message": kismet_message,
-            "kismet_task_url": kismet_task_url,
-            "kismet_task_anchor_text": kismet_task_anchor_text,
+            "kismet_task_anchor": hx_post_anchor(
+                kismet_task_url, kismet_task_anchor_text
+            ),
         }
         if kismet_status:
             # active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
-            <li><a hx-get="{kismet_task_url}"
-                   hx-indicator=".progress">{kismet_task_anchor_text}</a></li>
+            <li>{kismet_task_anchor}</li>
             <li class="uk-nav-divider"></li>
             <li><a class="uk-link" href="/kismet" target="_blank">LAUNCH KISMET</a></li>
             """.format(**args)
@@ -96,7 +97,6 @@ def kismet_main_menu():
             # not active
             html = """
             <li class="uk-nav-header">{kismet_message}</li>
-            <li><a hx-get="{kismet_task_url}"
-                   hx-indicator=".progress">{kismet_task_anchor_text}</li>
+            <li>{kismet_task_anchor}</li>
             """.format(**args)
         return html

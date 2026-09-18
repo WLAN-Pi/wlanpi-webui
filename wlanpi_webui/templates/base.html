@@ -131,6 +131,13 @@
                 <ul class="uk-nav uk-navbar-dropdown-nav">
                   <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
                       hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
+                  <li class="uk-nav-divider"></li>
+                  <li>
+                    <form method="post" action="{{ url_for('auth.logout') }}" class="uk-margin-remove">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button class="uk-button uk-button-text uk-width-1-1 uk-text-left" type="submit">LOGOUT</button>
+                    </form>
+                  </li>
                 </ul>
               </div>
             </li>
