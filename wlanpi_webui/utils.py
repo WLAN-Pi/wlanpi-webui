@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import subprocess
 import urllib.parse
 from pathlib import Path
@@ -24,6 +25,34 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
         if os.access(secret_path, os.R_OK):
             return Path(secret_path).read_bytes()
     return b""
+
+
+def read_boot_id() -> str | None:
+    """Return the current kernel boot id, or None when it cannot be read."""
+    try:
+        return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+    except OSError:
+        return None
+
+
+def load_or_create_session_key(path: str) -> bytes:
+    """Load the persisted Flask session key, creating it if needed.
+
+    Falls back to a random per-process key when the path is unusable.
+    """
+    try:
+        key_path = Path(path)
+        if key_path.is_file():
+            data = key_path.read_bytes()
+            if len(data) >= 32:
+                return data
+        key = secrets.token_bytes(32)
+        key_path.parent.mkdir(parents=True, exist_ok=True)
+        key_path.write_bytes(key)
+        key_path.chmod(0o600)
+        return key
+    except OSError:
+        return secrets.token_bytes(32)
 
 
 def get_safe_redirect_target(target: str | None) -> str:
@@ -115,12 +144,7 @@ def make_api_request(
 
 wlanpi_core_warning = """
 <script>
-UIkit.notification({
-    message: '<span uk-icon="icon: warning; ratio: 2"></span> wlanpi-core not running.',
-    status: 'danger',
-    pos: 'top-right',
-    timeout: 10000
-});
+wlanpiToast('<span uk-icon="icon: warning; ratio: 2"></span> wlanpi-core not running.', 'danger');
 </script>
 """
 
@@ -363,11 +387,6 @@ def service_not_installed_warning(service_name):
 
     return f"""
 <script>
-UIkit.notification({{
-    message: '<span uk-icon="icon: warning; ratio: 2"></span> {friendly_name} is not installed.',
-    status: 'warning',
-    pos: 'top-right',
-    timeout: 10000
-}});
+wlanpiToast('<span uk-icon="icon: warning; ratio: 2"></span> {friendly_name} is not installed.', 'warning');
 </script>
 """

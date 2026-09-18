@@ -28,4 +28,9 @@ clean_up_if_exists /var/www/librespeed/librespeed/garbage.dat
 
 #DEBHELPER#
 
+# remove the persisted session key state on purge
+if [ "$1" = "purge" ]; then
+    rm -rf /var/lib/wlanpi-webui
+fi
+
 exit 0

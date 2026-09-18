@@ -74,3 +74,11 @@ class Config:
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")
     FILES_ROOT_DIR = "/var/www/html/"
     PROFILER_DIR = "/var/www/html/profiler/"
+    # Idle auto-logout window in seconds (default 4 hours). Any user activity
+    # refreshes it; background polling does not.
+    IDLE_TIMEOUT = int(os.environ.get("WLANPI_WEBUI_IDLE_TIMEOUT", 4 * 60 * 60))
+    # Persisted Flask signing key so a service restart does not sign users out
+    # (a reboot still does, via the boot id check).
+    SESSION_KEY_PATH = os.environ.get(
+        "WLANPI_WEBUI_SESSION_KEY", "/var/lib/wlanpi-webui/session_key"
+    )

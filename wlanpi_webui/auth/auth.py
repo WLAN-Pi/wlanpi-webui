@@ -14,12 +14,13 @@ from __future__ import annotations
 
 import hmac
 import secrets
+from time import time
 
 import requests
 from flask import abort, redirect, render_template, request, session, url_for
 
 from wlanpi_webui.auth import bp
-from wlanpi_webui.utils import make_api_request
+from wlanpi_webui.utils import make_api_request, read_boot_id
 
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
 CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
@@ -94,10 +95,13 @@ def pam_change_password(
     return status if isinstance(status, str) else None
 
 
-def _login_session(username: str):
+def _login_session(username: str) -> None:
     session.clear()
     session["user"] = username
     session["csrf_token"] = secrets.token_urlsafe(32)
+    session["boot_id"] = read_boot_id()
+    session["last_seen"] = time()
+    session.permanent = True
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -118,6 +122,8 @@ def login():
         else:
             error = "Incorrect username or password."
         return render_template("login.html", error=error), 401
+    if session.get("user"):
+        return redirect("/")
     expired = request.args.get("reason") == "expired"
     return render_template("login.html", expired=expired)
 

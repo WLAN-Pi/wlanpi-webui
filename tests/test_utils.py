@@ -58,7 +58,7 @@ class TestServiceNotInstalled:
         mock_exists.return_value = False
         res = start_stop_service("start", "kismet")
         assert "Kismet is not installed" in res
-        assert "UIkit.notification" in res
+        assert "wlanpiToast" in res
 
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_start_uninstalled_grafana_returns_warning(self, mock_exists):
