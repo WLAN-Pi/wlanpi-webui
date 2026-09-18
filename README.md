@@ -7,10 +7,14 @@ wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/
 
  - [flask](https://github.com/pallets/flask)
  - [librespeed](https://github.com/librespeed/speedtest)
- - [uikit](https://github.com/uikit/uikit)
- - [htmx](https://htmx.org/)
- - [///_hyperscript](https://hyperscript.org/)
+ - [uikit](https://github.com/uikit/uikit) 3.25.23
+ - [htmx](https://htmx.org/) 2.0.10
+ - [///_hyperscript](https://hyperscript.org/) 0.9.93
+ - [qrcodejs](https://github.com/davidshimjs/qrcodejs) 1.0.0
  - [debian new maintainers' guide](https://www.debian.org/doc/manuals/maint-guide/)
+
+Vendored frontend asset versions and checksums are pinned in
+[`wlanpi_webui/static/ASSETS.md`](wlanpi_webui/static/ASSETS.md).
 
 ## Stack
 

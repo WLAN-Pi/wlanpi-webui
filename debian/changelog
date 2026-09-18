@@ -1,4 +1,4 @@
-wlanpi-webui (1.5.0-1) unstable; urgency=medium
+wlanpi-webui (1.5.1-1) unstable; urgency=medium
 
   * PAM-backed session login: the WebUI now requires a session established
     via wlanpi-core's PAM broker (/api/v1/auth/pam, wlanpi-core >= 2.1.19).
@@ -13,6 +13,12 @@ wlanpi-webui (1.5.0-1) unstable; urgency=medium
     librespeed) behind an auth_request session check that redirects
     unauthenticated browsers to /login.
   * Remove HMAC canonical-string debug logging (could leak request bodies).
+  * Update and pin vendored frontend assets (recorded in
+    wlanpi_webui/static/ASSETS.md):
+    - htmx 1.9.6 -> 2.0.10 (npm `latest`; htmx 4 tracked in #100)
+    - UIKit 3.25.20 -> 3.25.23
+    - _hyperscript 0.9.1 -> 0.9.93
+    - qrcodejs 1.0.0 (unchanged; upstream unmaintained, already latest)
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 21:51:00 -0400
 
