@@ -1,55 +1,63 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head-row">
     <div class="page-head">
+      <p class="page-eyebrow">Connectivity</p>
       <h2 class="page-title">Network</h2>
       <p class="page-lede">Uplink, reachability, and neighbour data.</p>
     </div>
     <div class="page-head-controls">
       <label class="visually-hidden" for="net-interval">Refresh interval</label>
-      <select id="net-interval" class="uk-select uk-form-small" data-poll-select="network-cards"
+      <select id="net-interval" class="uk-select" data-poll-select="network-cards"
         onchange="wlanpiStartPoll('network-cards', 'refresh-network', parseInt(this.value, 10))">
         <option value="5">5s</option>
         <option value="15" selected>15s</option>
         <option value="30">30s</option>
         <option value="60">60s</option>
       </select>
-      <button class="uk-button uk-button-small uk-button-default" type="button" data-poll-toggle="network-cards"
+      <button class="uk-button uk-button-default" type="button" data-poll-toggle="network-cards"
         onclick="wlanpiTogglePoll('network-cards', 'refresh-network', this)" aria-pressed="false">Pause refresh</button>
-      <button class="uk-button uk-button-small uk-button-default" type="button"
+      <button class="uk-button uk-button-default" type="button"
         onclick="wlanpiFirePoll('network-cards', 'refresh-network')">Refresh now</button>
     </div>
   </div>
   <script>wlanpiInitPoll('network-cards', 'refresh-network', 15)</script>
-  <script src="{{ url_for('static', filename='js/Chart.bundle.min.js') }}"></script>
   <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
     <h3 class="uk-card-title">Latency</h3>
-    <div class="latency-wrap"><canvas id="latency-chart"></canvas></div>
+    <div class="latency-wrap">
+      <canvas id="latency-chart" aria-label="Latency over the last five minutes"></canvas>
+      <div class="latency-empty" id="latency-empty" hidden>Collecting latency samples...</div>
+    </div>
   </div>
   <script>
   // Latency history: samples the Reachability card after every cards refresh
-  // and draws ping google / ping gateway / arping on one graph. No new
-  // endpoints: the data already flows through /network/cards.
+  // and draws ping google / ping gateway / arping on one graph. Chart.js is
+  // lazy-loaded so the 200 KB bundle never blocks the page, and the colours
+  // come from the theme tokens.
   (function () {
     if (window.wlanpiLatencyInit) return;
     window.wlanpiLatencyInit = true;
 
     var KEY = "wlanpi-latency";
     var MAX = 120;
+    var chartUrl = "{{ url_for('static', filename='js/Chart.bundle.min.js') }}";
+
+    function loadChart(cb) {
+      if (window.Chart) { cb(); return; }
+      var s = document.getElementById("chartjs-loader");
+      if (s) { s.addEventListener("load", cb, { once: true }); return; }
+      s = document.createElement("script");
+      s.id = "chartjs-loader";
+      s.src = chartUrl;
+      s.onload = cb;
+      document.head.appendChild(s);
+    }
 
     function load() {
-      try {
-        return JSON.parse(localStorage.getItem(KEY)) || [];
-      } catch (e) {
-        return [];
-      }
+      try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
     }
 
     function save(hist) {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(hist.slice(-MAX)));
-      } catch (e) {
-        /* ignore */
-      }
+      try { localStorage.setItem(KEY, JSON.stringify(hist.slice(-MAX))); } catch (e) { /* ignore */ }
     }
 
     function parseVal(text, label) {
@@ -57,7 +65,24 @@
       return m ? parseFloat(m[1]) : null;
     }
 
-    function dataset(hist, key, label, color) {
+    function cssVar(name, fallback) {
+      try {
+        var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+        return (v && v.trim()) || fallback;
+      } catch (e) { return fallback; }
+    }
+
+    function colors() {
+      return {
+        text: cssVar("--text-muted", "#888"),
+        grid: cssVar("--border", "rgba(128,128,128,0.25)"),
+        brand: cssVar("--brand", "#f45625"),
+        info: cssVar("--info", "#0277bd"),
+        success: cssVar("--success", "#2e7d32")
+      };
+    }
+
+    function dataset(hist, key, label, color, pointRadius) {
       return {
         label: label,
         data: hist.map(function (p) { return p[key]; }),
@@ -65,55 +90,89 @@
         lineTension: 0.1,
         borderColor: color,
         backgroundColor: color,
-        pointRadius: 0,
+        pointRadius: pointRadius,
         spanGaps: false
       };
     }
 
-    function render() {
-      if (!window.Chart) return;
-      var canvas = document.getElementById("latency-chart");
-      if (!canvas) return;
-      if (window.wlanpiLatencyChart && !canvas.dataset.live) {
-        window.wlanpiLatencyChart.destroy();
-        window.wlanpiLatencyChart = null;
-      }
-      // Rolling 5-minute window; older points age out of view (history
-      // itself stays capped at MAX in storage).
+    function history() {
       var cutoff = Date.now() - 5 * 60 * 1000;
-      var hist = load().filter(function (p) { return p.t >= cutoff; });
-      var opts = {
+      return load().filter(function (p) { return p.t >= cutoff; });
+    }
+
+    function dataFor(hist, c) {
+      // Dots while the window is sparse, so the first sample is visible.
+      var pr = hist.length <= 8 ? 2 : 0;
+      return {
+        labels: hist.map(function (p) { return new Date(p.t).toLocaleTimeString(); }),
+        datasets: [
+          dataset(hist, "g", "Ping Google", c.brand, pr),
+          dataset(hist, "gw", "Ping Gateway", c.info, pr),
+          dataset(hist, "arp", "Arping Gateway", c.success, pr)
+        ]
+      };
+    }
+
+    function options(c) {
+      var narrow = window.innerWidth < 640;
+      return {
         type: "line",
-        data: {
-          labels: hist.map(function (p) {
-            return new Date(p.t).toLocaleTimeString();
-          }),
-          datasets: [
-            dataset(hist, "g", "Ping Google", "#f45625"),
-            dataset(hist, "gw", "Ping Gateway", "#0277bd"),
-            dataset(hist, "arp", "Arping Gateway", "#2e7d32")
-          ]
-        },
+        data: { labels: [], datasets: [] },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          legend: { position: "top", labels: { fontColor: "#888" } },
+          legend: {
+            position: narrow ? "bottom" : "top",
+            labels: { fontColor: c.text, fontSize: narrow ? 10 : 12, boxWidth: narrow ? 10 : 12 }
+          },
           scales: {
-            xAxes: [{ ticks: { fontColor: "#888", maxTicksLimit: 8 } }],
+            xAxes: [{
+              gridLines: { color: c.grid },
+              ticks: { fontColor: c.text, maxTicksLimit: narrow ? 4 : 8, fontSize: narrow ? 9 : 11 }
+            }],
             yAxes: [{
-              ticks: { fontColor: "#888", beginAtZero: true },
-              scaleLabel: { display: true, labelString: "ms", fontColor: "#888" }
+              gridLines: { color: c.grid },
+              ticks: { fontColor: c.text, beginAtZero: true, fontSize: narrow ? 9 : 11 },
+              scaleLabel: { display: !narrow, labelString: "ms", fontColor: c.text }
             }]
           }
         }
       };
-      if (!window.wlanpiLatencyChart) {
+    }
+
+    function render() {
+      var canvas = document.getElementById("latency-chart");
+      if (!canvas) return;
+      var empty = document.getElementById("latency-empty");
+      var hist = history();
+      var points = hist.filter(function (p) {
+        return p.g != null || p.gw != null || p.arp != null;
+      }).length;
+      if (empty) empty.hidden = points >= 1;
+      if (points < 1) {
+        canvas.style.visibility = "hidden";
+        return;
+      }
+      canvas.style.visibility = "visible";
+      if (!window.Chart) return;
+      var c = colors();
+      if (!window.wlanpiLatencyChart || !canvas.dataset.live) {
+        if (window.wlanpiLatencyChart) window.wlanpiLatencyChart.destroy();
+        var opts = options(c);
+        opts.data = dataFor(hist, c);
         window.wlanpiLatencyChart = new Chart(canvas.getContext("2d"), opts);
         canvas.dataset.live = "1";
       } else {
-        window.wlanpiLatencyChart.data.labels = opts.data.labels;
-        window.wlanpiLatencyChart.data.datasets = opts.data.datasets;
-        window.wlanpiLatencyChart.update();
+        var ch = window.wlanpiLatencyChart;
+        var data = dataFor(hist, c);
+        ch.data.labels = data.labels;
+        ch.data.datasets = data.datasets;
+        ch.options.legend.labels.fontColor = c.text;
+        ch.options.scales.xAxes[0].ticks.fontColor = c.text;
+        ch.options.scales.xAxes[0].gridLines.color = c.grid;
+        ch.options.scales.yAxes[0].ticks.fontColor = c.text;
+        ch.options.scales.yAxes[0].gridLines.color = c.grid;
+        ch.update();
       }
     }
 
@@ -137,6 +196,15 @@
         sample();
       }
     });
+
+    // Follow the theme: re-read the tokens when it flips.
+    try {
+      new MutationObserver(render).observe(document.documentElement, {
+        attributes: true, attributeFilter: ["data-theme"]
+      });
+    } catch (e) { /* ignore */ }
+
+    loadChart(render);
     render();
   })();
   </script>

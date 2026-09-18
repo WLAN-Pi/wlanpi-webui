@@ -256,4 +256,41 @@
       redirectToLogin();
     }
   });
+
+  // ---- Konami code ----------------------------------------------------
+  // Hidden shortcut to /packetstorm. Ignores keystrokes in form fields,
+  // never preventDefaults, and stays quiet when already there.
+  (function () {
+    var seq = [
+      "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown",
+      "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight",
+      "b", "a",
+    ];
+    var pos = 0;
+    document.addEventListener("keydown", function (evt) {
+      var t = evt.target;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      ) {
+        pos = 0;
+        return;
+      }
+      pos = evt.key === seq[pos] ? pos + 1 : evt.key === seq[0] ? 1 : 0;
+      if (pos === seq.length) {
+        pos = 0;
+        if (window.location.pathname === "/packetstorm" || !window.htmx) {
+          return;
+        }
+        window.htmx.ajax("GET", "/packetstorm", {
+          target: "#content",
+          swap: "innerHTML",
+          pushUrl: true,
+        });
+      }
+    });
+  })();
 })();

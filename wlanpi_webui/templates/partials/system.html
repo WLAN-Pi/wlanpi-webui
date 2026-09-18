@@ -1,20 +1,22 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head-row">
     <div class="page-head">
+      <p class="page-eyebrow">Device</p>
       <h2 class="page-title">System</h2>
+      <p class="page-lede">Live health, versions, and hardware details.</p>
     </div>
     <div class="page-head-controls">
       <label class="visually-hidden" for="sys-interval">Refresh interval</label>
-      <select id="sys-interval" class="uk-select uk-form-small" data-poll-select="system-health"
+      <select id="sys-interval" class="uk-select" data-poll-select="system-health"
         onchange="wlanpiStartPoll('system-health', 'refresh-system', parseInt(this.value, 10))">
         <option value="5" selected>5s</option>
         <option value="15">15s</option>
         <option value="30">30s</option>
         <option value="60">60s</option>
       </select>
-      <button class="uk-button uk-button-small uk-button-default" type="button" data-poll-toggle="system-health"
+      <button class="uk-button uk-button-default" type="button" data-poll-toggle="system-health"
         onclick="wlanpiTogglePoll('system-health', 'refresh-system', this)" aria-pressed="false">Pause refresh</button>
-      <button class="uk-button uk-button-small uk-button-default" type="button"
+      <button class="uk-button uk-button-default" type="button"
         onclick="wlanpiFirePoll('system-health', 'refresh-system')">Refresh now</button>
     </div>
   </div>

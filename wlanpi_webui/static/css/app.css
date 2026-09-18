@@ -560,6 +560,13 @@ h6 {
     #thebiglebowski {
         min-height: 139vh;
     }
+
+    /* Center the dashboard flipper in the visible viewport instead of
+       centering it inside the 139vh shell and pushing it below the fold. */
+    #thebiglebowski:has(.flipper-screen) {
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
 }
 
 .progress {
@@ -785,9 +792,48 @@ h6 {
     width: auto;
 }
 
+/* Narrow screens: stack the header and let the controls cascade and wrap
+   instead of overflowing the viewport to the right. */
+@media (max-width: 640px) {
+    .page-head-row {
+        flex-direction: column;
+        align-items: stretch;
+        margin-bottom: var(--stack-sm);
+    }
+
+    .page-head-row .page-head {
+        margin-bottom: var(--space-3);
+    }
+
+    .page-head-controls {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .page-head-controls .uk-select {
+        flex: 1 1 auto;
+    }
+}
+
 .latency-wrap {
     position: relative;
     height: 220px;
+}
+
+.latency-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+}
+
+@media (max-width: 640px) {
+    .latency-wrap {
+        height: 180px;
+    }
 }
 
 .page-eyebrow {
@@ -874,6 +920,7 @@ h6 {
     white-space: nowrap;
 }
 
+.data-list,
 .sys-facts {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
@@ -924,6 +971,19 @@ h6 {
 .app-card {
     display: flex;
     flex-direction: column;
+}
+
+/* Shared card title row: title left, optional action right */
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.card-head .uk-card-title {
+    margin-bottom: 0;
 }
 
 .app-card-head {
@@ -1082,4 +1142,126 @@ h6 {
     letter-spacing: 0.06em;
     text-align: center;
     text-transform: uppercase;
+}
+
+/* Bound the shell to the visible viewport whenever the game is mounted, so
+   the 139vh mobile floor and 100vh min-height cannot push the stage and its
+   thumb controls below the fold. :has() tracks the stage through htmx swaps. */
+#thebiglebowski:has(.packetstorm-stage) {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#thebiglebowski:has(.packetstorm-stage) #content {
+    min-height: 0;
+}
+
+#thebiglebowski:has(.packetstorm-stage) .packetstorm-stage {
+    min-height: 0;
+}
+
+.packetstorm-stage {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    overflow: hidden;
+    background: var(--bg-page);
+}
+
+.packetstorm-stage canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+
+.packetstorm-stage canvas:focus {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+}
+
+.packetstorm-touch {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+    display: flex;
+    justify-content: space-between;
+    padding: 0 var(--space-4);
+    pointer-events: none;
+}
+
+.packetstorm-touch[hidden] {
+    display: none;
+}
+
+.packetstorm-pad {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+}
+
+.packetstorm-touch button {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--brand);
+    background: var(--bg-surface);
+    color: var(--brand-ink, inherit);
+    opacity: 0.92;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease;
+}
+
+.packetstorm-touch button svg {
+    width: 2.1rem;
+    height: 2.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.packetstorm-touch button:active {
+    background: var(--brand);
+    color: #0b0f13;
+    transform: scale(0.94);
+}
+
+.packetstorm-touch button[data-ps="fire"] {
+    width: 5.25rem;
+    height: 5.25rem;
+    background: var(--brand);
+    color: #0b0f13;
+}
+
+.packetstorm-touch button[data-ps="fire"] svg {
+    width: 2.4rem;
+    height: 2.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .packetstorm-touch button {
+        transition: none;
+    }
+    .packetstorm-touch button:active {
+        transform: none;
+    }
 }

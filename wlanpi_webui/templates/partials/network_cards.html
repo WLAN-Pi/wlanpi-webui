@@ -50,20 +50,14 @@
 {% macro card(id, title, lines) %}
 <div>
   <div class="uk-card uk-card-default uk-card-hover uk-card-body">
-    <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
-      <div class="uk-grid-small uk-flex-middle" uk-grid>
-        <div class="uk-width-auto">
-          <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">{{ title }}</h3>
-        </div>
-        <div class="uk-width-expand">
-          <p class="uk-text-meta uk-margin-remove-top uk-align-right"><button class="uk-icon-button" type="button"
-              uk-tooltip="Copy to Clipboard" aria-label="Copy {{ title }} to clipboard"
-              onclick="copyCardToClipboard('{{ id }}', this, '{{ hostname }}', '{{ title }}')"><img
-                src="{{ url_for('static', filename='icon/clip.svg') }}" alt="" /></button></p>
-        </div>
-      </div>
+    <div class="card-head">
+      <h3 class="uk-card-title">{{ title }}</h3>
+      <button class="uk-icon-button" type="button" uk-tooltip="Copy to Clipboard"
+        aria-label="Copy {{ title }} to clipboard"
+        onclick="copyCardToClipboard('{{ id }}', this, '{{ hostname }}', '{{ title }}')"><img
+          src="{{ url_for('static', filename='icon/clip.svg') }}" alt="" /></button>
     </div>
-    <ul id="{{ id }}" class="uk-list uk-margin-remove uk-text-break">
+    <ul id="{{ id }}" class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
       {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">Unavailable.</li>{% endfor %}
     </ul>
   </div>
