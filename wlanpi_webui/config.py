@@ -55,9 +55,7 @@ def get_wlanpi_version() -> str:
             lines = _file.read().splitlines()
             for line in lines:
                 if "VERSION" in line:
-                    wlanpi_version = "{0}".format(
-                        line.split("=")[1].replace('"', "").strip()
-                    )
+                    wlanpi_version = line.split("=")[1].replace('"', "").strip()
     except OSError:
         pass
     return wlanpi_version

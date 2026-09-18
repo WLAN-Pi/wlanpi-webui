@@ -2,4 +2,4 @@ from flask import Blueprint
 
 bp = Blueprint("profiler", __name__)
 
-from wlanpi_webui.profiler import profiler  # noqa: F401
+from wlanpi_webui.profiler import profiler

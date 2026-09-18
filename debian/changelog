@@ -1,3 +1,21 @@
+wlanpi-webui (1.5.2-1) unstable; urgency=medium
+
+  * Migrate lint/format to ruff (parity with wlanpi-core/wlanpi-mcp):
+    `tox -e lint` now runs `ruff check` + `mypy`, and `tox -e format` /
+    `tox -e formatcheck` run `ruff format`, replacing flake8, black, isort
+    and autoflake. Docstring (D) rules are intentionally not enabled:
+    unlike core/mcp, WebUI docstrings do not surface anywhere.
+  * Add "Python Lint Police" and "Python Format Police" workflows.
+  * Target Python 3.13 (trixie) explicitly in setup.py, debian/control and
+    the pyright/mypy config.
+  * Refresh the dev dependency lockfile (extras.txt) without the removed
+    lint/format tools.
+  * Bump pinned runtime dependencies (pip-compile, Python 3.13): certifi,
+    charset-normalizer, click, gunicorn, idna, urllib3; packaging is no
+    longer a gunicorn dependency.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 23:08:00 -0400
+
 wlanpi-webui (1.5.1-1) unstable; urgency=medium
 
   * PAM-backed session login: the WebUI now requires a session established

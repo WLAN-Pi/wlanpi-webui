@@ -8,7 +8,6 @@ import subprocess
 import urllib.parse
 from pathlib import Path
 from time import time
-from typing import Optional
 
 import requests
 from flask import current_app, redirect, request
@@ -27,7 +26,7 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
     return b""
 
 
-def get_safe_redirect_target(target: Optional[str]) -> str:
+def get_safe_redirect_target(target: str | None) -> str:
     """
     Return a safe redirect target derived from the given URL-like string.
 
@@ -66,7 +65,7 @@ def get_safe_redirect_target(target: Optional[str]) -> str:
 
 def generate_hmac_signature(
     method: str, endpoint: str, query: str = "", body: str = ""
-) -> Optional[str]:
+) -> str | None:
     """
     Generates HMAC signature for the request using SHA256.
     """
@@ -80,9 +79,9 @@ def generate_hmac_signature(
 def make_api_request(
     method: str,
     url: str,
-    params: Optional[dict] = None,
-    headers: Optional[dict] = None,
-    json_body: Optional[dict] = None,
+    params: dict | None = None,
+    headers: dict | None = None,
+    json_body: dict | None = None,
 ) -> requests.Response:
     try:
         query_string = urllib.parse.urlencode(params) if params else ""
@@ -109,7 +108,8 @@ def make_api_request(
         response.raise_for_status()
         return response
     except requests.exceptions.HTTPError as e:
-        print(f"Error response: {e.response.text}")
+        if e.response is not None:
+            print(f"Error response: {e.response.text}")
         raise
 
 
