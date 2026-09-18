@@ -1,3 +1,12 @@
+wlanpi-webui (1.7.2-1) unstable; urgency=medium
+
+  * Add a /debug page (toast tests, theme toggle and session details),
+    linked from the About page.
+  * Persist the theme in a cookie and render it server-side, so it applies
+    before paint and survives when localStorage is unavailable.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 00:30:00 -0400
+
 wlanpi-webui (1.7.1-1) unstable; urgency=medium
 
   * Map the UIKit components used by the WebUI onto the design tokens so the

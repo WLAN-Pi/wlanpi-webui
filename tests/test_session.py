@@ -87,3 +87,22 @@ class TestSessionKey:
         app2 = create_app()
         assert app1.secret_key == app2.secret_key
         assert Path(key_path).exists()
+
+
+class TestDebugPage:
+    def test_requires_login(self, client):
+        assert client.get("/debug").status_code == 302
+
+    def test_renders(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/debug")
+        assert resp.status_code == 200
+        assert b"wlanpiToast" in resp.data
+        assert b"Toggle theme" in resp.data
+
+
+class TestThemeCookie:
+    def test_theme_cookie_renders_data_theme(self, client):
+        client.set_cookie("wlanpi_theme", "dark")
+        resp = client.get("/login")
+        assert b'data-theme="dark"' in resp.data

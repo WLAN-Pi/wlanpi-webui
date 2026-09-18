@@ -120,6 +120,12 @@ def create_app(config_class=Config):
     app.register_blueprint(about_bp)
     app.logger.debug("about blueprint registered")
 
+    app.logger.debug("registering debug blueprint")
+    from wlanpi_webui.debug import bp as debug_bp
+
+    app.register_blueprint(debug_bp)
+    app.logger.debug("debug blueprint registered")
+
     @app.context_processor
     def inject_vars():
         return {
@@ -135,6 +141,13 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_current_user():
         return {"current_user": session.get("user")}
+
+    @app.context_processor
+    def inject_theme():
+        # Theme is persisted in a cookie so it can be rendered server-side
+        # (no flash) and survives even when localStorage is unavailable.
+        theme = request.cookies.get("wlanpi_theme")
+        return {"theme": theme if theme in ("dark", "light") else None}
 
     @app.before_request
     def enforce_session_freshness():
