@@ -8,7 +8,7 @@ the main flask app
 """
 
 import logging
-import os
+from datetime import timedelta
 from time import time
 
 from flask import (
@@ -23,7 +23,25 @@ from flask import (
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
-from wlanpi_webui.utils import get_dpkg_status_mtime, is_htmx, package_installed
+from wlanpi_webui.utils import (
+    get_dpkg_status_mtime,
+    is_htmx,
+    load_or_create_session_key,
+    package_installed,
+    read_boot_id,
+)
+
+# Endpoints polled in the background (stats bar and open nav dropdowns). These
+# must not refresh the idle timer, or an open tab would never time out.
+BACKGROUND_ENDPOINTS = {
+    "stream.stream_stats",
+    "profiler.profiler_main_menu",
+    "profiler.profiler_side_menu",
+    "kismet.kismet_main_menu",
+    "kismet.kismet_side_menu",
+    "grafana.grafana_main_menu",
+    "grafana.grafana_side_menu",
+}
 
 
 def create_app(config_class=Config):
@@ -32,8 +50,15 @@ def create_app(config_class=Config):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     app.config.from_object(config_class)
-    # Random per-process key: signed session cookies are invalidated on restart.
-    app.secret_key = os.urandom(32)
+    # Persisted key: sessions survive a service restart. A reboot still signs
+    # everyone out via the boot id check in enforce_session_freshness.
+    app.secret_key = load_or_create_session_key(app.config["SESSION_KEY_PATH"])
+    # Idle timeout: the cookie slides only on user activity (see
+    # enforce_session_freshness), not on background polling.
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+        seconds=app.config["IDLE_TIMEOUT"]
+    )
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = False
 
     app.logger.debug("registering auth blueprint")
     from wlanpi_webui.auth import bp as auth_bp
@@ -106,6 +131,27 @@ def create_app(config_class=Config):
         from wlanpi_webui.auth.auth import get_csrf_token
 
         return {"csrf_token": get_csrf_token()}
+
+    @app.context_processor
+    def inject_current_user():
+        return {"current_user": session.get("user")}
+
+    @app.before_request
+    def enforce_session_freshness():
+        if not session.get("user"):
+            return None
+        now = time()
+        boot_id = read_boot_id()
+        if boot_id and session.get("boot_id") != boot_id:
+            session.clear()  # the device rebooted
+            return None
+        last_seen = session.get("last_seen")
+        if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
+            session.clear()  # idle for too long
+            return None
+        if request.endpoint not in BACKGROUND_ENDPOINTS:
+            session["last_seen"] = now
+        return None
 
     @app.before_request
     def require_login():

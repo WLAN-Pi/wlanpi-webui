@@ -8,6 +8,11 @@
 
 #DEBHELPER#
 
+# state directory for the persisted Flask session signing key
+if getent passwd wlanpi >/dev/null 2>&1; then
+    install -d -o wlanpi -g wlanpi -m 0750 /var/lib/wlanpi-webui
+fi
+
 # function to check if a given path is a symlink
 function isValidSymlink() {
     if [ -L "$1" ]; then

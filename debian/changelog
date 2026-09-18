@@ -1,3 +1,39 @@
+wlanpi-webui (1.7.1-1) unstable; urgency=medium
+
+  * Map the UIKit components used by the WebUI onto the design tokens so the
+    dark theme is coherent across pages: page background, cards, headings,
+    tables, forms, buttons, alerts, modals, offcanvas and icon buttons.
+  * Use the brand colour for primary buttons instead of UIKit blue.
+  * Invert the black clip icon on the dark icon button.
+  * Stop the navbar dropdowns spanning the full width (drop dropbar mode).
+  * Map default card titles and card hover to tokens so they follow the
+    theme (no white hover on dark).
+  * Replace the profiler "Getting started" accordion with a native <details>
+    disclosure so it is clearly expandable.
+  * Fix remaining dark-mode contrast: dropdown menu headers and links, the
+    logout button, and inline <kbd>/<samp> (no near-white background).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 00:01:00 -0400
+
+wlanpi-webui (1.7.0-1) unstable; urgency=medium
+
+  * UI redesign phase 2: session UX.
+  * Persist the Flask session signing key (/var/lib/wlanpi-webui/session_key,
+    created by postinst) so a service restart no longer signs users out.
+  * Sign everyone out on reboot by comparing a boot id stored at login;
+    fail open if the boot id cannot be read.
+  * Add a 4h sliding idle timeout (WLANPI_WEBUI_IDLE_TIMEOUT); background
+    polls (stats bar and nav menus) do not refresh it. Runs for every
+    endpoint, including the nginx auth_request check.
+  * Redirect to /login?reason=expired client-side when an htmx request comes
+    back as the login page, instead of swapping it into the page.
+  * Navbar user menu showing the signed-in user, a theme toggle and logout.
+  * Add static/js/app.js with a shared wlanpiToast() helper, the theme
+    toggle and the expiry redirect; use it for the service warnings.
+  * Add session lifecycle tests.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 23:50:00 -0400
+
 wlanpi-webui (1.6.0-1) unstable; urgency=medium
 
   * UI redesign phase 1: add a design-token layer to app.css (colors,

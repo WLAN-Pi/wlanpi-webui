@@ -15,6 +15,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='img/site.webmanifest') }}">
+  <!--App JS (theme must apply before the stylesheets to avoid a flash)-->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <!--UIkit CSS-->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
   <!--App CSS-->
@@ -50,7 +52,7 @@
   <div id="thebiglebowski" class="uk-flex uk-flex-column">
     <!--HEADER-->
     <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
-      <nav class="uk-navbar-container" uk-navbar="dropbar: true;" id="navbar" data-uk-navbar>
+      <nav class="uk-navbar-container" uk-navbar id="navbar">
         <div class="uk-navbar-left">
           <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
             href="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
@@ -125,12 +127,15 @@
               <a href="#" uk-icon="icon: warning; ratio: 1.5;" title="Connection error." data-uk-tooltip></a>
             </li>
             <li class="uk-visible@m">
-              <a href="#" uk-icon="icon: settings; ratio: 1.5;"></a>
-              <div class="uk-navbar-dropdown"
-              class="uk-navbar-dropdown">
+              <a href="#" uk-icon="icon: user; ratio: 1.5;"></a>
+              <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav">
-                  <li class="uk-nav-header"><a hx-get="/about" hx-target="#content" hx-swap="innerHTML"
-                      hx-push-url="true" hx-indicator=".progress">ABOUT</a></li>
+                  {% if current_user %}
+                  <li class="uk-nav-header">Signed in as {{ current_user }}</li>
+                  {% endif %}
+                  <li><a hx-get="/about" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                      hx-indicator=".progress">ABOUT</a></li>
+                  <li><a href="#" onclick="wlanpiToggleTheme(); return false;">TOGGLE THEME</a></li>
                   <li class="uk-nav-divider"></li>
                   <li>
                     <form method="post" action="{{ url_for('auth.logout') }}" class="uk-margin-remove">
@@ -187,7 +192,7 @@
     </div>
     <!--/HEADER-->
     <!--CONTENT-->
-    <div id="content" class="uk-flex-1 uk-flex uk-dark uk-background-muted">
+    <div id="content" class="uk-flex-1 uk-flex bg-page">
       {% block content %}
       {% endblock %}
     </div>
