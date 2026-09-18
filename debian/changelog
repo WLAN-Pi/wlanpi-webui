@@ -1,3 +1,14 @@
+wlanpi-webui (1.4.1-1) unstable; urgency=medium
+
+  * Update and pin vendored frontend assets (recorded in
+    wlanpi_webui/static/ASSETS.md):
+    - htmx 1.9.6 -> 2.0.10 (npm `latest`; htmx 4 tracked in #100)
+    - UIKit 3.25.20 -> 3.25.23
+    - _hyperscript 0.9.1 -> 0.9.93
+    - qrcodejs 1.0.0 (unchanged; upstream unmaintained, already latest)
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 22:15:00 -0400
+
 wlanpi-webui (1.4.0-4) unstable; urgency=medium
 
   * Remove shell=True from subprocess calls (harden against shell injection).
