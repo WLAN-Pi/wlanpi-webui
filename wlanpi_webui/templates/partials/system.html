@@ -1,0 +1,44 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head-row">
+    <div class="page-head">
+      <h2 class="page-title">System</h2>
+    </div>
+    <div class="page-head-controls">
+      <label class="visually-hidden" for="sys-interval">Refresh interval</label>
+      <select id="sys-interval" class="uk-select uk-form-small" data-poll-select="system-health"
+        onchange="wlanpiStartPoll('system-health', 'refresh-system', parseInt(this.value, 10))">
+        <option value="5" selected>5s</option>
+        <option value="15">15s</option>
+        <option value="30">30s</option>
+        <option value="60">60s</option>
+      </select>
+      <button class="uk-button uk-button-small uk-button-default" type="button" data-poll-toggle="system-health"
+        onclick="wlanpiTogglePoll('system-health', 'refresh-system', this)" aria-pressed="false">Pause refresh</button>
+      <button class="uk-button uk-button-small uk-button-default" type="button"
+        onclick="wlanpiFirePoll('system-health', 'refresh-system')">Refresh now</button>
+    </div>
+  </div>
+  <script>wlanpiInitPoll('system-health', 'refresh-system', 5)</script>
+  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid
+    uk-height-match="target: > div > .uk-card">
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Health</h3>
+        <div class="sys-live" id="system-health" hx-get="/stream/stats" hx-swap="innerHTML" hx-target="this"
+          hx-trigger="load, refresh-system" aria-busy="true" aria-label="Loading">
+          {% for _ in range(4) %}
+          <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div hx-get="/system/facts" hx-trigger="load" hx-swap="innerHTML" hx-indicator=".progress">
+      <div class="uk-card uk-card-default uk-card-body" aria-busy="true" aria-label="Loading">
+        <p class="skel" style="height: 1.1em; width: 40%;"></p>
+        <p class="skel" style="height: 0.85em;"></p>
+        <p class="skel" style="height: 0.85em; width: 80%;"></p>
+        <p class="skel" style="height: 0.85em; width: 65%;"></p>
+      </div>
+    </div>
+  </div>
+</div>

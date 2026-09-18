@@ -70,15 +70,15 @@ class TestApps:
 
     def test_renders_speed_test_without_extras(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.get("/apps")
+        resp = client.get("/apps/cards")
         assert resp.status_code == 200
-        assert b"Speed Test" in resp.data
+        assert b"Speedtest" in resp.data
         assert b'href="/speedtest/librespeed"' in resp.data
 
     def test_renders_all_installed_apps(self, client, monkeypatch):
         _everything_installed(monkeypatch)
         _login(client, monkeypatch)
-        resp = client.get("/apps")
+        resp = client.get("/apps/cards")
         assert resp.status_code == 200
         for name in (b"Profiler", b"Kismet", b"Grafana", b"Cockpit"):
             assert name in resp.data
@@ -87,6 +87,13 @@ class TestApps:
         assert b'href="/grafana_url"' in resp.data
         assert b'href="/app/cockpit"' in resp.data
         assert b"Internet Monitoring" in resp.data
+
+    def test_shell_loads_without_services(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/apps")
+        assert resp.status_code == 200
+        assert b"apps/cards" in resp.data
+        assert b"Speedtest" not in resp.data
 
     def test_toggle_redirects_back_to_referrer(self, client, monkeypatch):
         _login(client, monkeypatch)

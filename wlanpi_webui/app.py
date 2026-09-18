@@ -114,11 +114,11 @@ def create_app(config_class=Config):
     app.register_blueprint(about_bp)
     app.logger.debug("about blueprint registered")
 
-    app.logger.debug("registering debug blueprint")
-    from wlanpi_webui.debug import bp as debug_bp
+    app.logger.debug("registering system blueprint")
+    from wlanpi_webui.system import bp as system_bp
 
-    app.register_blueprint(debug_bp)
-    app.logger.debug("debug blueprint registered")
+    app.register_blueprint(system_bp)
+    app.logger.debug("system blueprint registered")
 
     app.logger.debug("registering dashboard blueprint")
     from wlanpi_webui.dashboard import bp as dashboard_bp

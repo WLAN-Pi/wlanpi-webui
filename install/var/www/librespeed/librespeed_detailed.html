@@ -9,9 +9,12 @@
 <script src="librespeed_detailed_base.js"></script>
 </head>
 <body>
-<a href="/" style="position:fixed;top:0.6em;left:0.8em;z-index:100;font-size:0.9em;text-decoration:none;color:#6060AA;">&larr; Home</a>
+<a class="back-home" href="/"><img src="/static/img/wlanpi-sticker.png" alt="WLAN Pi logo" width="96" height="37"><span>&larr; Home</span></a>
 <br />
 <div class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></div>
+	<div id="settings_top">
+		<label><script>trw('test_length');</script> <input id="length" type="number" step=1 min=4 max=60> seconds</label>
+	</div>
 <div id="test">
 	<div class="test_group">
 		<div class="test_area">
@@ -44,36 +47,28 @@
 		<canvas id="chart_du_area"></canvas>
 	</div>
 </div>
-<div class="btn" id="show_advanced"><script>trw('show_advanced');</script></div>
-	<div id="advanced">
-		<div class="test_group">
-			<h3><script>trw('settings');</script></h3>
-			<table id="settings_table" class="left_tables">
-				<tr>
-					<th><script>trw('test_length');</script></th><td><input id="length" type="number" step=1 min=4 max=60> seconds</td>
-				</tr>
-			</table>
-			<h3><script>trw('stats');</script></h3>
-			<table id="ip_table" class="left_tables">
-				<tr>
-					<th><script>trw('ip_address');</script></th><td id="ip"></td>
-				</tr>
-			</table>
-			<table id="stats_table" class="left_tables">
-			</table>
-		</div>
-		<div class="test_group">
-			<h3>Download</h3>
-			<table id="results_table_download" class="right_tables"></table>
-			<h3>Upload</h3>
-			<table id="results_table_upload" class="right_tables"></table>
-		</div>
+<div id="stats_block">
+	<h3><script>trw('stats');</script></h3>
+	<table id="stats_table" class="left_tables">
+	</table>
+</div>
+<div class="results-row">
+	<div class="test_group">
+		<h3>Download</h3>
+		<table id="results_table_download" class="right_tables"></table>
+	</div>
+	<div class="test_group">
+		<h3>Upload</h3>
+		<table id="results_table_upload" class="right_tables"></table>
+	</div>
 </div>
 <div id="footer">
-	<p class="footer">Works best on Chrome, Edge, and Firefox browsers.<br>
-	<span class="clickable" id="show_speedtest_info"><script>trw('show_detailed_a');</script></span> <script>trw('show_detailed_b');</script></p>
+	<p class="footer">Powered by <a href="https://github.com/librespeed/speedtest" target="_blank">LibreSpeed</a></p>
 	<div class="footer" id="speedtest_info">
+		<p>How LibreSpeed works and the algorithms involved:</p>
 		<ul>
+			<li>Unloaded ping and jitter are measured on an idle link, before any download or upload traffic starts.</li>
+			<li>Loaded ping and jitter are measured while the download and upload streams saturate the link, showing how latency degrades under load.</li>
 			<li><script>trw('desc_ping');</script></li>
 			<li><script>trw('desc_jitter');</script></li>
 			<li><script>trw('desc_down_up');</script></li>

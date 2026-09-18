@@ -7,6 +7,7 @@ import os
 import secrets
 import subprocess
 import urllib.parse
+from functools import lru_cache
 from pathlib import Path
 from time import time
 
@@ -27,6 +28,9 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
     return b""
 
 
+# shortcut: cached for the life of the process; the boot id only changes on
+# reboot, which restarts this service.
+@lru_cache(maxsize=1)
 def read_boot_id() -> str | None:
     """Return the current kernel boot id, or None when it cannot be read."""
     try:

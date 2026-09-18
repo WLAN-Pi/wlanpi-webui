@@ -69,7 +69,7 @@ class TestNetwork:
 
         monkeypatch.setattr(n, "get_core_json", fake)
         _login(client, monkeypatch)
-        resp = client.get("/network")
+        resp = client.get("/network/cards")
         assert resp.status_code == 200
         assert b"Ping Google: 5ms" in resp.data
         assert b"192.168.6.63" in resp.data
@@ -81,6 +81,51 @@ class TestNetwork:
 
         monkeypatch.setattr(n, "get_core_json", lambda *a, **k: None)
         _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert resp.status_code == 200
+        assert resp.data.count(b"Unavailable.") == 6
+
+    def test_renders_wlan_cards(self, client, monkeypatch):
+        from wlanpi_webui.network import network as n
+
+        def fake(path, params=None):
+            if "reachability" in path:
+                return {"Ping Google": "5ms", "custom": []}
+            return {
+                "public_ip": {"info": []},
+                "eth0_ipconfig_info": {"info": []},
+                "lldp_neighbour_info": {"info": []},
+                "cdp_neighbour_info": {"info": []},
+                "wlan_interfaces": {
+                    "wlan0": {
+                        "driver": "brcmfmac",
+                        "addr": "AABBCCDDEEFF",
+                        "mode": "managed",
+                        "ssid": "HomeNet",
+                        "freq": 2437,
+                        "channel": 6,
+                    }
+                },
+            }
+
+        monkeypatch.setattr(n, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert resp.status_code == 200
+        assert b"wlan0" in resp.data
+        assert b"Mode: managed" in resp.data
+        assert b"SSID: HomeNet" in resp.data
+        assert b"Channel 6 (2437 MHz)" in resp.data
+        assert b"MAC: AA:BB:CC:DD:EE:FF" in resp.data
+
+    def test_shell_loads_without_core(self, client, monkeypatch):
+        _login(client, monkeypatch)
         resp = client.get("/network")
         assert resp.status_code == 200
-        assert resp.data.count(b"Unavailable.") == 5
+        assert b"network/cards" in resp.data
+        assert b"refresh-network" in resp.data
+        assert b"Pause refresh" in resp.data
+        assert b"Refresh now" in resp.data
+        assert b"Unavailable." not in resp.data
+        assert b"latency-chart" in resp.data
+        assert b"Chart.bundle.min.js" in resp.data

@@ -1,0 +1,80 @@
+<script>
+  function copyCardToClipboard(card, btn, hostname, title) {
+    const body = document.getElementById(card).innerText;
+    const text = hostname + " - " + title + " - " + new Date().toISOString() + "\n" + body;
+
+    function done(ok) {
+      if (ok && btn) {
+        btn.classList.add("copy-ok");
+        setTimeout(() => btn.classList.remove("copy-ok"), 1500);
+      }
+      if (window.wlanpiToast) {
+        window.wlanpiToast(
+          ok ? "Copied to clipboard." : "Copy to clipboard failed.",
+          ok ? "success" : "warning"
+        );
+      }
+      return ok;
+    }
+
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(
+        () => done(true),
+        () => done(fallbackCopy(text))
+      );
+      return true;
+    }
+
+    return done(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    if (!document.queryCommandSupported?.("copy")) return false;
+
+    const input = document.createElement("textarea");
+    input.textContent = text;
+    input.style.position = "fixed";
+    document.body.appendChild(input);
+    input.select();
+    try {
+      document.execCommand("copy");
+      return true;
+    } catch (ex) {
+      console.warn("Copy to clipboard failed.", ex);
+      return false;
+    } finally {
+      document.body.removeChild(input);
+    }
+  }
+</script>
+{% macro card(id, title, lines) %}
+<div>
+  <div class="uk-card uk-card-default uk-card-hover uk-card-body">
+    <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
+      <div class="uk-grid-small uk-flex-middle" uk-grid>
+        <div class="uk-width-auto">
+          <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">{{ title }}</h3>
+        </div>
+        <div class="uk-width-expand">
+          <p class="uk-text-meta uk-margin-remove-top uk-align-right"><button class="uk-icon-button" type="button"
+              uk-tooltip="Copy to Clipboard" aria-label="Copy {{ title }} to clipboard"
+              onclick="copyCardToClipboard('{{ id }}', this, '{{ hostname }}', '{{ title }}')"><img
+                src="{{ url_for('static', filename='icon/clip.svg') }}" alt="" /></button></p>
+        </div>
+      </div>
+    </div>
+    <ul id="{{ id }}" class="uk-list uk-margin-remove uk-text-break">
+      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">Unavailable.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endmacro %}
+<div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid
+  uk-height-match="target: > div > .uk-card">
+  {{ card("reachability", "Reachability", reachability) }}
+  {{ card("publicip", "Public IP", publicip) }}
+  {{ card("ipconfig", "Eth0 IP Config", ipconfig) }}
+  {% for w in wlan_cards %}{{ card(w.id, w.title, w.lines) }}{% else %}{{ card("wlan", "WLAN", []) }}{% endfor %}
+  {{ card("lldp", "LLDP Neighbour", lldp) }}
+  {{ card("cdp", "CDP Neighbour", cdp) }}
+</div>

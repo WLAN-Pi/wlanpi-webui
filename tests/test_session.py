@@ -89,17 +89,28 @@ class TestSessionKey:
         assert Path(key_path).exists()
 
 
-class TestDebugPage:
+class TestSystemPage:
     def test_requires_login(self, client):
-        assert client.get("/debug").status_code == 302
+        assert client.get("/system").status_code == 302
 
     def test_renders(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.get("/debug")
+        resp = client.get("/system")
         assert resp.status_code == 200
-        assert b"wlanpiToast" in resp.data
-        assert b"Toggle theme" in resp.data
-        assert b"wlanpi-core version" in resp.data
+        assert b"Health" in resp.data
+        assert b"system/facts" in resp.data
+        assert b"Hostname" not in resp.data
+
+    def test_facts_render(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/system/facts")
+        assert resp.status_code == 200
+        assert b"Hostname" in resp.data
+        assert b"Core" in resp.data
+
+    def test_debug_is_gone(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        assert client.get("/debug").status_code == 404
 
 
 class TestThemeCookie:

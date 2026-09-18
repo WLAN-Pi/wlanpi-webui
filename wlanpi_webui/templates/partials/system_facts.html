@@ -1,0 +1,13 @@
+<div class="uk-card uk-card-default uk-card-body">
+  <h3 class="uk-card-title">System</h3>
+  <ul class="uk-list uk-list-divider sys-facts">
+    <li><span class="sys-label">Mode</span> {{ mode }}</li>
+    <li><span class="sys-label">Hostname</span> {{ hostname }}</li>
+    <li><span class="sys-label">IP</span> {{ ip }}</li>
+    <li><span class="sys-label">Hardware</span> {{ hardware_model }}</li>
+    <li><span class="sys-label">OS version</span> {{ wlanpi_version }}</li>
+    <li><span class="sys-label">Kernel</span> {{ kernel_version }}</li>
+    <li><span class="sys-label">WebUI</span> {{ webui_version }}</li>
+    <li><span class="sys-label">Core</span> {{ wlanpi_core_version }} ({{ wlanpi_core_status }})</li>
+  </ul>
+</div>

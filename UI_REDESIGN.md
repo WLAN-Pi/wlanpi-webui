@@ -169,13 +169,13 @@ sequentially after #99 and #101.
   toast, and the expiry redirect.
 - Build the `.deb` and install on the test VM before any push.
 
-## Deliberate simplifications (ponytail)
+## Deliberate simplifications (shortcut)
 
-- `ponytail:` key persisted on disk; ceiling: any wlanpi-level code exec can
+- `shortcut:` key persisted on disk; ceiling: any wlanpi-level code exec can
   forge sessions until reboot; upgrade: scheduled key rotation.
-- `ponytail:` idle detection is coarse and fail-open when `/proc` is
+- `shortcut:` idle detection is coarse and fail-open when `/proc` is
   unreadable; upgrade: fail-closed.
-- `ponytail:` dark theme covers shell/cards/forms only; ceiling: exotic
+- `shortcut:` dark theme covers shell/cards/forms only; ceiling: exotic
   UIKit widgets unstyled; upgrade: full component audit.
-- `ponytail:` no heartbeat — reading-only sessions idle out after 4h;
+- `shortcut:` no heartbeat — reading-only sessions idle out after 4h;
   upgrade: add a throttled activity heartbeat if users complain.

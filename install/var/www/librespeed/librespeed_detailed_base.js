@@ -105,6 +105,11 @@ var chart1,
     min_download = 0,
     total_upload = 0,
     total_download = 0,
+    dl_samples = [],
+    ul_samples = [],
+    last_loaded_ping = null,
+    last_loaded_jitter = null,
+    unloaded_jitter = null,
     ping_sum = 0,
     ping_cnt = 0.001;
 
@@ -158,7 +163,6 @@ function initUI() {
     I("ul_text").textContent = "";
     I("ping_text").textContent = "";
     I("jitter_text").textContent = "";
-    I("ip").textContent = "?";
 
 
     var chart1ctx = document.getElementById('chart_du_area').getContext('2d');
@@ -335,13 +339,20 @@ function initUI() {
 
     $('#results_table_download').html("<tr><th>" + tr("time") + " (s)</th><th>" + tr("speed") + " (Mbps)</th></tr>");
     $('#results_table_upload').html("<tr><th>" + tr("time") + " (s)</th><th>" + tr("speed") + " (Mbps)</th></tr>");
-    $('#stats_table').html("");
+    $('#stats_table').html("<tr><td>No results yet. Run the test to populate statistics.</td></tr>");
     max_download = 0;
     min_download = 0;
     max_upload = 0;
     min_upload = 0;
     total_download = 0;
     total_upload = 0;
+    dl_samples = [];
+    ul_samples = [];
+    last_loaded_ping = null;
+    last_loaded_jitter = null;
+    unloaded_jitter = null;
+    ping_sum = 0;
+    ping_cnt = 0.001;
     $("#length").val(parameters.time_dl_max);
 }
 
@@ -359,7 +370,6 @@ $(document).ready(function() {
 function updateUI(forced) {
     if (!forced && (!data || !w)) return;
     var status = Number(data[0]);
-    I("ip").textContent = data[4];
     I("dl_text").textContent = (status == 1 && data[1] == 0) ? "..." : data[1];
     drawMeter(I("dl_meter"), mbpsToAmount(Number(data[1] * (status == 1 ? oscillate() : 1))), meterBk, dlColor, Number(data[6]), progColor);
     I("ul_text").textContent = (status == 3 && data[2] == 0) ? "..." : data[2];
@@ -367,11 +377,16 @@ function updateUI(forced) {
     if (status === 2 && Number(data[3]) > 0) {
         ping_sum += Number(data[3]);
         ping_cnt++;
+        unloaded_jitter = data[5];
     }
-    I("ping_text").textContent = (ping_sum / ping_cnt).toFixed(2);
-    drawMeter(I("ping_meter"), msToAmount(Number((ping_sum / ping_cnt) * (status == 2 ? oscillate() : 1))), meterBk, pingColor, Number(data[8]), progColor);
-    I("jitter_text").textContent = data[5];
-    drawMeter(I("jitter_meter"), msToAmount(Number(data[5] * (status == 2 ? oscillate() : 1))), meterBk, jitColor, Number(data[8]), progColor);
+    // Once under-load samples exist the loaded loop owns the gauges;
+    // otherwise the worker's 50ms updates and the 200ms loop visibly fight.
+    if (!loadPing || !loadPing.samples.length) {
+        I("ping_text").textContent = (ping_sum / ping_cnt).toFixed(2);
+        drawMeter(I("ping_meter"), msToAmount(Number((ping_sum / ping_cnt) * (status == 2 ? oscillate() : 1))), meterBk, pingColor, Number(data[8]), progColor);
+        I("jitter_text").textContent = data[5];
+        drawMeter(I("jitter_meter"), msToAmount(Number(data[5] * (status == 2 ? oscillate() : 1))), meterBk, jitColor, Number(data[8]), progColor);
+    }
     if (status === 1 && Number(data[1]) > 0) {
         // Chart update
         let chart_pos = ~~(parameters.time_dl_max * Number(data[6]));
@@ -381,6 +396,7 @@ function updateUI(forced) {
         // Table update
         if (last_chart_pos != chart_pos && chart_pos != 0) {
             $('#results_table_download').append("<tr><td>" + chart_pos + "</td><td>" + Number(data[1]) + "</td></tr>");
+            dl_samples.push(Number(data[1]));
             if (Number(data[1]) > max_download || max_download <= 0) max_download = Number(data[1]);
             if (Number(data[1]) < min_download || min_download <= 0) min_download = Number(data[1]);
             total_download = data[9];
@@ -389,7 +405,9 @@ function updateUI(forced) {
         }
 
     }
-    if (status === 3 && Number(data[2]) > 0) {
+    // Note: the final upload sample arrives tagged complete (status >= 4),
+    // so the branch must accept it or the last second never records.
+    if ((status === 3 || status >= 4) && Number(data[2]) > 0) {
         // Chart update
         let chart_pos = ~~(parameters.time_ul_max * Number(data[7]));
         chart1.data.datasets[1].data[chart_pos] = (Number(data[2]));
@@ -398,9 +416,19 @@ function updateUI(forced) {
         // Table update
         if (last_chart_pos != chart_pos && chart_pos != 0) {
             $('#results_table_upload').append("<tr><td>" + chart_pos + "</td><td>" + Number(data[2]) + "</td></tr>");
+            ul_samples.push(Number(data[2]));
             last_chart_pos = chart_pos;
             if (Number(data[2]) > max_upload || max_upload <= 0) max_upload = Number(data[2]);
             if (Number(data[2]) < min_upload || min_upload <= 0) min_upload = Number(data[2]);
+            total_upload = data[10];
+            updateStats();
+        }
+        if (status >= 4) {
+            // The worker only fills dlAmount/ulAmount at phase end, so
+            // mid-run samples report 0 and a pre-completion second-15 row
+            // freezes the totals at 0. Refresh them from the completion
+            // sample unconditionally.
+            total_download = data[9];
             total_upload = data[10];
             updateStats();
         }
@@ -414,15 +442,40 @@ function updateUI(forced) {
     }
 }
 
+function avg(a) {
+    return a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
+}
+
+function fmtStat(v, unit) {
+    return isNaN(v) ? "n/a" : Number(v).toFixed(2) + " " + unit;
+}
+
+function stddev(a) {
+    if (a.length < 2) return NaN;
+    var m = avg(a);
+    return Math.sqrt(a.reduce((x, y) => x + (y - m) * (y - m), 0) / (a.length - 1));
+}
+
 function updateStats() {
-    $('#stats_table').html("\
-        <tr><th>" + tr("minimal_download") + "</th><td>" + min_download + " Mbps</td></tr>\
-        <tr><th>" + tr("maximal_download") + "</th><td>" + max_download + " Mbps</td></tr>\
-        <tr><th>" + tr("minimal_upload") + "</th><td>" + min_upload + " Mbps</td></tr>\
-        <tr><th>" + tr("maximal_upload") + "</th><td>" + max_upload + " Mbps</td></tr>\
-        <tr><th>" + tr("total_download") + "</th><td>" + Math.round(total_download / 1024 / 1024) + " MB</td></tr>\
-        <tr><th>" + tr("total_upload") + "</th><td>" + Math.round(total_upload / 1024 / 1024) + " MB</td></tr>\
-        ");
+    var rows = [
+        [tr("minimal_download"), min_download + " Mbps"],
+        [tr("maximal_download"), max_download + " Mbps"],
+        ["Average download:", fmtStat(avg(dl_samples), "Mbps")],
+        [tr("minimal_upload"), min_upload + " Mbps"],
+        [tr("maximal_upload"), max_upload + " Mbps"],
+        ["Average upload:", fmtStat(avg(ul_samples), "Mbps")],
+        [tr("total_download"), Math.round(total_download / 1024 / 1024) + " MB"],
+        [tr("total_upload"), Math.round(total_upload / 1024 / 1024) + " MB"],
+        ["Unloaded ping:", fmtStat(ping_sum / ping_cnt, "ms")],
+        ["Unloaded jitter:", unloaded_jitter === null ? "n/a" : Number(unloaded_jitter).toFixed(2) + " ms"]
+    ];
+    if (last_loaded_ping !== null) {
+        rows.push(["Loaded ping:", fmtStat(last_loaded_ping, "ms")]);
+        rows.push(["Loaded jitter:", fmtStat(last_loaded_jitter, "ms")]);
+    }
+    $('#stats_table').html(
+        rows.map(function (r) { return "<tr><th>" + r[0] + "</th><td>" + r[1] + "</td></tr>"; }).join("")
+    );
 }
 
 
@@ -445,6 +498,7 @@ function startStop() {
         //test is not running, begin
         w = new Worker("speedtest_worker.js?r=" + Math.random());
         w.postMessage('start ' + JSON.stringify(parameters)); //run the test with custom parameters
+        loadPingStart();
         I("startStopBtn").className = "btn disabled";
         I("startStopBtn").innerHTML = tr("abort");
         setTimeout(function() {
@@ -472,7 +526,11 @@ function startStop() {
             if (timers[3] == undefined && status == 3)
                 timers[3] = performance.now();
             if (status >= 4) {
-                //test completed
+                //test completed: keep under-load samples, then restore UI
+                if (loadPing && loadPing.samples.length) {
+                    last_loaded_ping = avg(loadPing.samples);
+                    last_loaded_jitter = loadPing.samples.length > 1 ? stddev(loadPing.samples) : 0;
+                }
                 resetUI();
                 updateUI(true);
             } else {
@@ -492,11 +550,54 @@ function resetUI() {
     I("startStopBtn").innerHTML = tr("start");
     w = null;
     sampling = false;
+    loadPingStop();
     delete timers[1];
     delete timers[2];
     delete timers[3];
 }
 
+// Under-load ping: while the worker's own download/upload streams saturate
+// the link (status 1/3), fire paced ping requests and show them live in the
+// gauges. At completion the gauges revert to the unloaded finals and the
+// loaded figures persist in the statistics table.
+var loadPing = null;
+
+function loadPingStart() {
+    loadPingStop();
+    loadPing = { samples: [], timer: setInterval(loadPingFire, 200) };
+}
+
+function loadPingStop() {
+    if (!loadPing) return;
+    clearInterval(loadPing.timer);
+    loadPing = null;
+}
+
+function loadPingFire() {
+    var st = data && Number(data[0]);
+    if (st !== 1 && st !== 3) return;
+    var xhr = new XMLHttpRequest();
+    var t0 = performance.now();
+    xhr.onload = function () {
+        if (!loadPing) return;
+        loadPing.samples.push(performance.now() - t0);
+        // Paint only once the current phase is producing numbers itself,
+        // so the loaded gauges never fill before download/upload do.
+        var stNow = data && Number(data[0]);
+        var phased = (stNow === 1 && Number(data[1]) > 0) || (stNow === 3 && Number(data[2]) > 0);
+        if (!phased) return;
+        var m = avg(loadPing.samples);
+        I("ping_text").textContent = m.toFixed(2);
+        drawMeter(I("ping_meter"), msToAmount(m), meterBk, pingColor, 1, progColor);
+        if (loadPing.samples.length > 1) {
+            var j = stddev(loadPing.samples);
+            I("jitter_text").textContent = j.toFixed(2);
+            drawMeter(I("jitter_meter"), msToAmount(j), meterBk, jitColor, 1, progColor);
+        }
+    };
+    xhr.open("GET", parameters.url_ping + "?r=" + Math.random(), true);
+    xhr.send();
+}
 
 window.addEventListener("focus", function(event) {
     if (!data) data = ["0", "", "", "", "", "", "0", "0", "0", 0];

@@ -1,67 +1,157 @@
-<script>
-  function copyCardToClipboard(card) {
-    const text = document.getElementById(card).innerText;
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head-row">
+    <div class="page-head">
+      <h2 class="page-title">Network</h2>
+      <p class="page-lede">Uplink, reachability, and neighbour data.</p>
+    </div>
+    <div class="page-head-controls">
+      <label class="visually-hidden" for="net-interval">Refresh interval</label>
+      <select id="net-interval" class="uk-select uk-form-small" data-poll-select="network-cards"
+        onchange="wlanpiStartPoll('network-cards', 'refresh-network', parseInt(this.value, 10))">
+        <option value="5">5s</option>
+        <option value="15" selected>15s</option>
+        <option value="30">30s</option>
+        <option value="60">60s</option>
+      </select>
+      <button class="uk-button uk-button-small uk-button-default" type="button" data-poll-toggle="network-cards"
+        onclick="wlanpiTogglePoll('network-cards', 'refresh-network', this)" aria-pressed="false">Pause refresh</button>
+      <button class="uk-button uk-button-small uk-button-default" type="button"
+        onclick="wlanpiFirePoll('network-cards', 'refresh-network')">Refresh now</button>
+    </div>
+  </div>
+  <script>wlanpiInitPoll('network-cards', 'refresh-network', 15)</script>
+  <script src="{{ url_for('static', filename='js/Chart.bundle.min.js') }}"></script>
+  <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+    <h3 class="uk-card-title">Latency</h3>
+    <div class="latency-wrap"><canvas id="latency-chart"></canvas></div>
+  </div>
+  <script>
+  // Latency history: samples the Reachability card after every cards refresh
+  // and draws ping google / ping gateway / arping on one graph. No new
+  // endpoints: the data already flows through /network/cards.
+  (function () {
+    if (window.wlanpiLatencyInit) return;
+    window.wlanpiLatencyInit = true;
 
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-      return true;
+    var KEY = "wlanpi-latency";
+    var MAX = 120;
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(KEY)) || [];
+      } catch (e) {
+        return [];
+      }
     }
 
-    return fallbackCopy(text);
-  }
-
-  function fallbackCopy(text) {
-    if (!document.queryCommandSupported?.("copy")) return false;
-
-    const input = document.createElement("textarea");
-    input.textContent = text;
-    input.style.position = "fixed";
-    document.body.appendChild(input);
-    input.select();
-    try {
-      document.execCommand("copy");
-      return true;
-    } catch (ex) {
-      console.warn("Copy to clipboard failed.", ex);
-      return false;
-    } finally {
-      document.body.removeChild(input);
+    function save(hist) {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(hist.slice(-MAX)));
+      } catch (e) {
+        /* ignore */
+      }
     }
-  }
-</script>
-{% macro card(id, title, lines) %}
-<div>
-  <div class="uk-card uk-card-default uk-card-hover uk-card-body">
-    <div class="uk-card-header uk-padding-remove-left uk-padding-remove-right uk-padding-remove-top">
-      <div class="uk-grid-small uk-flex-middle" uk-grid>
-        <div class="uk-width-auto">
-          <h3 class="uk-card-title uk-margin-remove-bottom uk-align-left">{{ title }}</h3>
-        </div>
-        <div class="uk-width-expand">
-          <p class="uk-text-meta uk-margin-remove-top uk-align-right"><span class="uk-icon-button"
-              uk-tooltip="Copy to Clipboard" onclick="copyCardToClipboard('{{ id }}')"><img
-                src="{{ url_for('static', filename='icon/clip.svg') }}" /></span></p>
+
+    function parseVal(text, label) {
+      var m = text.match(new RegExp(label + ":\\s*([0-9.]+)\\s*ms"));
+      return m ? parseFloat(m[1]) : null;
+    }
+
+    function dataset(hist, key, label, color) {
+      return {
+        label: label,
+        data: hist.map(function (p) { return p[key]; }),
+        fill: false,
+        lineTension: 0.1,
+        borderColor: color,
+        backgroundColor: color,
+        pointRadius: 0,
+        spanGaps: false
+      };
+    }
+
+    function render() {
+      if (!window.Chart) return;
+      var canvas = document.getElementById("latency-chart");
+      if (!canvas) return;
+      if (window.wlanpiLatencyChart && !canvas.dataset.live) {
+        window.wlanpiLatencyChart.destroy();
+        window.wlanpiLatencyChart = null;
+      }
+      // Rolling 5-minute window; older points age out of view (history
+      // itself stays capped at MAX in storage).
+      var cutoff = Date.now() - 5 * 60 * 1000;
+      var hist = load().filter(function (p) { return p.t >= cutoff; });
+      var opts = {
+        type: "line",
+        data: {
+          labels: hist.map(function (p) {
+            return new Date(p.t).toLocaleTimeString();
+          }),
+          datasets: [
+            dataset(hist, "g", "Ping Google", "#f45625"),
+            dataset(hist, "gw", "Ping Gateway", "#0277bd"),
+            dataset(hist, "arp", "Arping Gateway", "#2e7d32")
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { position: "top", labels: { fontColor: "#888" } },
+          scales: {
+            xAxes: [{ ticks: { fontColor: "#888", maxTicksLimit: 8 } }],
+            yAxes: [{
+              ticks: { fontColor: "#888", beginAtZero: true },
+              scaleLabel: { display: true, labelString: "ms", fontColor: "#888" }
+            }]
+          }
+        }
+      };
+      if (!window.wlanpiLatencyChart) {
+        window.wlanpiLatencyChart = new Chart(canvas.getContext("2d"), opts);
+        canvas.dataset.live = "1";
+      } else {
+        window.wlanpiLatencyChart.data.labels = opts.data.labels;
+        window.wlanpiLatencyChart.data.datasets = opts.data.datasets;
+        window.wlanpiLatencyChart.update();
+      }
+    }
+
+    function sample() {
+      var card = document.getElementById("reachability");
+      if (!card) return;
+      var text = card.innerText;
+      var hist = load();
+      hist.push({
+        t: Date.now(),
+        g: parseVal(text, "Ping Google"),
+        gw: parseVal(text, "Ping Gateway"),
+        arp: parseVal(text, "Arping Gateway")
+      });
+      save(hist);
+      render();
+    }
+
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      if (evt.detail && evt.detail.target && evt.detail.target.id === "network-cards") {
+        sample();
+      }
+    });
+    render();
+  })();
+  </script>
+  <div id="network-cards" hx-get="/network/cards" hx-trigger="load, refresh-network" hx-swap="innerHTML">
+    <div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid>
+      {% for _ in range(6) %}
+      <div>
+        <div class="uk-card uk-card-default uk-card-body" aria-busy="true" aria-label="Loading">
+          <p class="skel" style="height: 1.1em; width: 55%;"></p>
+          <p class="skel" style="height: 0.85em;"></p>
+          <p class="skel" style="height: 0.85em; width: 75%;"></p>
+          <p class="skel" style="height: 0.85em; width: 60%;"></p>
         </div>
       </div>
+      {% endfor %}
     </div>
-    <ul id="{{ id }}" class="uk-list uk-margin-remove uk-text-break">
-      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">Unavailable.</li>{% endfor %}
-    </ul>
-  </div>
-</div>
-{% endmacro %}
-<div class="uk-flex uk-flex-1 uk-flex-column uk-padding">
-  <div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid
-    uk-height-match="target: > div > .uk-card">
-    {{ card("reachability", "Reachability", reachability) }}
-    {{ card("publicip", "Public IP", publicip) }}
-    {{ card("ipconfig", "Eth0 IP Config", ipconfig) }}
-    {{ card("lldp", "LLDP Neighbour", lldp) }}
-    {{ card("cdp", "CDP Neighbour", cdp) }}
-  </div>
-  <br />
-  <div class="uk-flex uk-flex-center">
-    <a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-      hx-swap="innerHTML" uk-icon="icon: refresh; ratio: 2" uk-tooltip="Refresh page" class="uk-icon-button"></a>
   </div>
 </div>

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import socket
+from functools import lru_cache
 
 import psutil
 
@@ -36,6 +37,9 @@ def get_interfaces() -> list[str]:
     return list(psutil.net_if_addrs().keys())
 
 
+# shortcut: cached for the life of the process; a hostname change needs a
+# service restart, which is also how every other config value behaves.
+@lru_cache(maxsize=1)
 def get_hostname() -> str:
     """Retrieve system hostname for web interface"""
     hostname = socket.gethostname()

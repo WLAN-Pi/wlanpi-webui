@@ -20,6 +20,7 @@ import requests
 from flask import abort, redirect, render_template, request, session, url_for
 
 from wlanpi_webui.auth import bp
+from wlanpi_webui.config import get_hostname
 from wlanpi_webui.utils import make_api_request, read_boot_id
 
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
@@ -54,12 +55,15 @@ def csrf_required(f):
     return wrapper
 
 
-def hx_post_anchor(url: str, inner: str, target: str | None = None) -> str:
+def hx_post_anchor(
+    url: str, inner: str, target: str | None = None, css: str = ""
+) -> str:
     """Build an htmx POST anchor carrying the CSRF token for ``url``."""
     token = get_csrf_token()
     swap = f' hx-target="{target}" hx-swap="innerHTML"' if target else ""
+    cls = f' class="{css}"' if css else ""
     return (
-        f'<a hx-post="{url}" hx-indicator=".progress"{swap} '
+        f'<a hx-post="{url}" hx-indicator=".progress"{swap}{cls} '
         f'hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</a>'
     )
 
@@ -117,16 +121,16 @@ def login():
             _login_session(username)
             return redirect("/")
         if status == "password_change_required":
-            return redirect(url_for("auth.change_password"))
+            return redirect(url_for("auth.change_password", username=username))
         if status is None:
             error = "Unable to reach wlanpi-core. Is the service running?"
         else:
             error = "Incorrect username or password."
-        return render_template("login.html", error=error), 401
+        return render_template("login.html", error=error, hostname=get_hostname()), 401
     if session.get("user"):
         return redirect("/")
     expired = request.args.get("reason") == "expired"
-    return render_template("login.html", expired=expired)
+    return render_template("login.html", expired=expired, hostname=get_hostname())
 
 
 @bp.route("/change_password", methods=["GET", "POST"])
@@ -137,18 +141,27 @@ def change_password():
         username = request.form.get("username", "").strip()
         current_password = request.form.get("current_password", "")
         new_password = request.form.get("new_password", "")
-        status = pam_change_password(username, current_password, new_password)
-        if status == "success":
-            _login_session(username)
-            return redirect("/")
-        if status is None:
-            error = "Unable to reach wlanpi-core. Is the service running?"
+        confirm_password = request.form.get("new_password_confirm", "")
+        if new_password != confirm_password:
+            error = "New passwords do not match."
+        elif new_password == current_password:
+            error = "New password must be different from the current password."
         else:
-            error = (
-                "Unable to change password. Check your current password and try again."
-            )
-        return render_template("change_password.html", error=error), 400
-    return render_template("change_password.html")
+            status = pam_change_password(username, current_password, new_password)
+            if status == "success":
+                _login_session(username)
+                return redirect("/")
+            if status is None:
+                error = "Unable to reach wlanpi-core. Is the service running?"
+            else:
+                error = "Unable to change password. Check your current password and try again."
+        return (
+            render_template("change_password.html", error=error, username=username),
+            400,
+        )
+    return render_template(
+        "change_password.html", username=request.args.get("username", "")
+    )
 
 
 @bp.route("/logout", methods=["POST"])

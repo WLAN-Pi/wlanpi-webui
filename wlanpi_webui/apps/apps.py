@@ -11,16 +11,27 @@ from wlanpi_webui.utils import (
 
 
 def _toggle(running: bool, start: str, stop: str) -> str:
-    """Start/Stop anchor that re-renders the apps page in place."""
+    """Start/Stop button that re-renders the apps page in place."""
+    if running:
+        return hx_post_anchor(
+            stop, "Stop", target="#content", css="uk-button uk-button-default"
+        )
     return hx_post_anchor(
-        stop if running else start,
-        "Stop" if running else "Start",
-        target="#content",
+        start, "Start", target="#content", css="uk-button uk-button-primary"
     )
 
 
 @bp.route("/apps")
 def apps():
+    """Render the apps shell; cards lazy-load from ``/apps/cards``."""
+    if is_htmx(request):
+        return render_template("/partials/apps.html")
+    return render_template("/extends/apps.html")
+
+
+@bp.route("/apps/cards")
+def apps_cards():
+    """Render the app cards (service checks, may be slow)."""
     profiler_running = system_service_running_state("wlanpi-profiler")
     kismet_running = system_service_running_state("kismet")
     grafana_running = system_service_running_state("grafana-server")
@@ -42,6 +53,4 @@ def apps():
         "grafana_data_streams": get_data_streams(),
     }
 
-    if is_htmx(request):
-        return render_template("/partials/apps.html", **resp_data)
-    return render_template("/extends/apps.html", **resp_data)
+    return render_template("/partials/apps_cards.html", **resp_data)

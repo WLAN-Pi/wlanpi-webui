@@ -51,14 +51,19 @@ class TestDashboard:
         assert client.get("/").status_code == 302
 
     def test_renders_tile_launcher(self, client, monkeypatch):
+        from wlanpi_webui.dashboard import dashboard as d
+
+        monkeypatch.setattr(d, "get_hostname", lambda: "testpi")
+        monkeypatch.setattr(d, "get_mode", lambda: "classic")
         _login(client, monkeypatch)
         resp = client.get("/")
         assert resp.status_code == 200
         assert b"flipper-screen" in resp.data
         assert resp.data.count(b'class="flipper-tile"') >= 2
-        assert b"Speed Test" in resp.data
-        assert b"Hostname:" in resp.data
-        assert b"Mode:" in resp.data
+        assert b"Speedtest" in resp.data
+        assert b"flipper-foot" in resp.data
+        assert b"testpi" in resp.data
+        assert b"classic" in resp.data
 
     def test_htmx_returns_partial(self, client, monkeypatch):
         _login(client, monkeypatch)
@@ -73,16 +78,14 @@ class TestRedirects:
         resp = client.get("/speedtest/librespeed")
         assert resp.status_code == 302
         assert resp.headers["Location"].endswith(
-            "/app/librespeed/librespeed_simple.html"
+            "/app/librespeed/librespeed_detailed.html"
         )
 
     def test_speedtest_details_redirects_to_app(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/speedtest/librespeed/details")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith(
-            "/app/librespeed/librespeed_detailed.html"
-        )
+        assert resp.headers["Location"].endswith("/speedtest/librespeed")
 
     def test_cockpit_redirects_to_app(self, client, monkeypatch):
         _login(client, monkeypatch)
@@ -104,7 +107,9 @@ class TestRedirects:
 
 
 class TestNoIframes:
-    @pytest.mark.parametrize("path", ["/", "/apps", "/settings", "/about", "/network"])
+    @pytest.mark.parametrize(
+        "path", ["/", "/apps", "/settings", "/about", "/network", "/system"]
+    )
     def test_pages_have_no_iframe(self, client, monkeypatch, path):
         _login(client, monkeypatch)
         assert b"<iframe" not in client.get(path).data
@@ -116,5 +121,6 @@ class TestAboutPage:
         resp = client.get("/about")
         assert resp.status_code == 200
         assert b"open-source Wi-Fi analysis tool" in resp.data
-        assert b"Resources" in resp.data
+        assert b"Resources" not in resp.data
+        assert b"ko-fi.com/wlanpi" in resp.data
         assert b">System</h3>" not in resp.data

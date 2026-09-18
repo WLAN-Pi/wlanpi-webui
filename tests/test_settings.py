@@ -56,6 +56,7 @@ class TestSettings:
         assert resp.status_code == 200
         assert b"Signed in as" in resp.data
         assert b"Toggle dark mode" in resp.data
-        assert b'hx-get="/about"' in resp.data
-        assert b'hx-get="/debug"' in resp.data
+        assert b"Diagnostics" in resp.data
+        assert b"wlanpiToast" in resp.data
         assert b"Log out" in resp.data
+        assert b"/debug" not in resp.data

@@ -12,18 +12,14 @@
 </a>
 {% endmacro %}
 <div class="flipper-screen">
-  <div class="flipper-status">
-    <span class="flipper-meta">Hostname: <span class="flipper-value">{{ hostname }}</span></span>
-    <span class="flipper-spacer"></span>
-    <span class="flipper-meta">Mode: <span class="flipper-value">{{ mode }}</span></span>
-  </div>
+  <h1 class="visually-hidden">WLAN Pi</h1>
   <div class="flipper-grid">
-    {{ launch("/speedtest/librespeed", "download", "Speed Test") }}
+    {{ launch("/speedtest/librespeed", "download", "Speedtest") }}
     {{ tile("/network", "server", "Network") }}
     {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
     {% if kismet_installed %}{{ launch("/kismet", "receiver", "Kismet", new_tab=True) }}{% endif %}
     {% if grafana_installed %}{{ launch("/grafana_url", "database", "Grafana", new_tab=True) }}{% endif %}
     {% if cockpit_installed %}{{ launch("/app/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
   </div>
-  <div class="flipper-foot">WebUI {{ webui_version }}{% if wlanpi_core_version %} &middot; Core {{ wlanpi_core_version }}{% endif %}{% if wlanpi_version %} &middot; {{ wlanpi_version }}{% endif %}</div>
+  <div class="flipper-foot">{{ hostname }} &middot; {{ mode }}</div>
 </div>

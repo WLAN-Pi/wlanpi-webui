@@ -7,21 +7,20 @@ from wlanpi_webui.stream import bp
 from wlanpi_webui.utils import is_htmx, run_pipeline
 
 
-def get_stats():
+def get_local_ip() -> str:
     # figure out our IP
-    IP = ""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
         s.connect(("10.255.255.255", 1))
-        IP = s.getsockname()[0]
+        return str(s.getsockname()[0])
     except Exception:
-        IP = "127.0.0.1"
+        return "127.0.0.1"
     finally:
         s.close()
 
-    ipStr = f"{IP}"
 
+def get_stats():
     # determine CPU load
     try:
         CPU_USAGE = run_pipeline(
@@ -78,7 +77,6 @@ def get_stats():
     uptimeStr = f"{uptime}"
 
     results = {
-        "IP": ipStr,
         "CPU": str(CPU),
         "RAM": str(MemUsage),
         "DISK": str(Disk),
@@ -95,25 +93,25 @@ def stream_stats():
     if is_htmx(request):
         html = """
 <div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/globe.svg"></div>
-<div class="stat-text">{IP}</div>
-</div>
-<div class="stat-container" style="align-items: center;">
-<div class="stat-icon"><img src="/static/icon/cpu.svg"></div>
+<div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
+<div class="stat-label">CPU</div>
 <div class="stat-text">
 <span class="stat-text">{CPU} {CPU_TEMP}</span>
 </div>
 </div>
 <div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/ram.svg"></div>
+<div class="stat-icon"><img src="/static/icon/ram.svg" alt=""></div>
+<div class="stat-label">RAM</div>
 <div class="stat-text">{RAM}</div>
 </div>
 <div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/storage.svg"></div>
+<div class="stat-icon"><img src="/static/icon/storage.svg" alt=""></div>
+<div class="stat-label">Disk</div>
 <div class="stat-text">{DISK}</div>
 </div>
 <div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/uptime.svg"></div>
+<div class="stat-icon"><img src="/static/icon/uptime.svg" alt=""></div>
+<div class="stat-label">Uptime</div>
 <div class="stat-text">{UPTIME}</div>
 </div>
 """.format(**stats)

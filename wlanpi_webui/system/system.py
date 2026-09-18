@@ -1,15 +1,13 @@
-"""Debug page: toast tests, theme toggle, session and system details."""
+"""System page: live stats plus device facts (moved out of the old debug page)."""
 
 import subprocess
-from time import time
 
-from flask import render_template, request, session
+from flask import render_template, request
 
 from wlanpi_webui.config import Config, get_apt_package_version, get_hostname
-from wlanpi_webui.debug import bp
+from wlanpi_webui.stream.stream import get_local_ip
+from wlanpi_webui.system import bp
 from wlanpi_webui.utils import is_htmx, run_pipeline, system_service_running_state
-
-TOAST_STATUSES = ["primary", "success", "warning", "danger"]
 
 
 def get_system_info() -> dict:
@@ -32,6 +30,7 @@ def get_system_info() -> dict:
     return {
         "mode": mode,
         "hostname": get_hostname(),
+        "ip": get_local_ip(),
         "kernel_version": kernel_version,
         "hardware_model": hardware_model,
         "wlanpi_version": Config.WLANPI_VERSION,
@@ -43,17 +42,15 @@ def get_system_info() -> dict:
     }
 
 
-@bp.route("/debug")
-def debug():
-    """Render the debug page (toast tests, theme toggle, session and system)."""
-    last_seen = session.get("last_seen")
-    resp_data = {
-        "toast_statuses": TOAST_STATUSES,
-        "idle_timeout": Config.IDLE_TIMEOUT,
-        "boot_id": session.get("boot_id"),
-        "last_seen_age": (int(time() - last_seen) if last_seen else None),
-        **get_system_info(),
-    }
+@bp.route("/system")
+def system():
+    """Render the system shell; facts lazy-load from ``/system/facts``."""
     if is_htmx(request):
-        return render_template("/partials/debug.html", **resp_data)
-    return render_template("/extends/debug.html", **resp_data)
+        return render_template("/partials/system.html")
+    return render_template("/extends/system.html")
+
+
+@bp.route("/system/facts")
+def system_facts():
+    """Render the system facts card (device facts, may be slow)."""
+    return render_template("/partials/system_facts.html", **get_system_info())

@@ -112,6 +112,43 @@ class TestLogin:
         resp = _login(client, monkeypatch, status="password_change_required")
         assert resp.status_code == 302
         assert "/change_password" in resp.headers["Location"]
+        assert "username=wlanpi" in resp.headers["Location"]
+
+    def test_change_page_prefills_username(self, client):
+        resp = client.get("/change_password?username=wlanpi")
+        assert resp.status_code == 200
+        assert b'value="wlanpi"' in resp.data
+        assert b"new_password_confirm" in resp.data
+
+    def test_change_rejects_mismatched_confirm(self, client):
+        csrf = _get_csrf(client)
+        resp = client.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "old",
+                "new_password": "new1",
+                "new_password_confirm": "new2",
+                "csrf_token": csrf,
+            },
+        )
+        assert resp.status_code == 400
+        assert b"do not match" in resp.data
+
+    def test_change_rejects_same_password(self, client):
+        csrf = _get_csrf(client)
+        resp = client.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "same",
+                "new_password": "same",
+                "new_password_confirm": "same",
+                "csrf_token": csrf,
+            },
+        )
+        assert resp.status_code == 400
+        assert b"different" in resp.data
 
     def test_core_unreachable_shows_error(self, client, monkeypatch):
         import requests

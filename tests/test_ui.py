@@ -50,3 +50,71 @@ class TestManifest:
         for icon in manifest["icons"]:
             assert icon["src"].startswith("/static/")
             assert (static / icon["src"].removeprefix("/static/")).exists()
+
+
+class TestModernization:
+    def test_login_has_fixed_icon_path(self, client):
+        resp = client.get("/login")
+        assert b"apple-icon-touch" not in resp.data
+        assert b"apple-touch-icon.png" in resp.data
+
+    def test_dashboard_has_heading(self, client, monkeypatch):
+        import re
+
+        from wlanpi_webui.auth import auth
+
+        class _FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"status": "success"}
+
+        monkeypatch.setattr(auth, "make_api_request", lambda *a, **k: _FakeResp())
+        page = client.get("/login")
+        csrf = (
+            re.search(rb'name="csrf_token" value="([^"]+)"', page.data)
+            .group(1)
+            .decode()
+        )
+        assert (
+            client.post(
+                "/login",
+                data={"username": "wlanpi", "password": "x", "csrf_token": csrf},
+            ).status_code
+            == 302
+        )
+        resp = client.get("/")
+        assert b"<h1" in resp.data
+        assert b"skip-link" in resp.data
+        assert b"Portable testing, troubleshooting" in resp.data
+        assert b"uk-active" in resp.data
+        assert b'aria-current="page"' in resp.data
+
+    def test_full_pages_have_header_and_footer(self, client, monkeypatch):
+        import re
+
+        from wlanpi_webui.auth import auth
+
+        class _FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"status": "success"}
+
+        monkeypatch.setattr(auth, "make_api_request", lambda *a, **k: _FakeResp())
+        page = client.get("/login")
+        csrf = (
+            re.search(rb'name="csrf_token" value="([^"]+)"', page.data)
+            .group(1)
+            .decode()
+        )
+        client.post(
+            "/login",
+            data={"username": "wlanpi", "password": "x", "csrf_token": csrf},
+        )
+        resp = client.get("/apps")
+        assert b"page-head" in resp.data
+        assert b"Applications" in resp.data
+        assert b"app-footer" in resp.data
