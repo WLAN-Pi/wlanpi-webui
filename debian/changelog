@@ -10,6 +10,9 @@ wlanpi-webui (1.5.2-1) unstable; urgency=medium
     the pyright/mypy config.
   * Refresh the dev dependency lockfile (extras.txt) without the removed
     lint/format tools.
+  * Bump pinned runtime dependencies (pip-compile, Python 3.13): certifi,
+    charset-normalizer, click, gunicorn, idna, urllib3; packaging is no
+    longer a gunicorn dependency.
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 23:08:00 -0400
 
