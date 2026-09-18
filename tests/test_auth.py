@@ -2,9 +2,7 @@
 
 import hashlib
 import hmac
-import json
 import re
-from unittest.mock import patch
 
 import pytest
 
@@ -166,7 +164,9 @@ class TestMutatingRoutes:
         from wlanpi_webui.auth import auth
 
         monkeypatch.setattr(
-            auth, "make_api_request", lambda *a, **k: FakeResponse({"status": "success"})
+            auth,
+            "make_api_request",
+            lambda *a, **k: FakeResponse({"status": "success"}),
         )
         _login(client, monkeypatch)
         assert client.post("/startprofiler").status_code == 400
@@ -176,7 +176,9 @@ class TestMutatingRoutes:
         from wlanpi_webui.auth import auth
 
         monkeypatch.setattr(
-            auth, "make_api_request", lambda *a, **k: FakeResponse({"status": "success"})
+            auth,
+            "make_api_request",
+            lambda *a, **k: FakeResponse({"status": "success"}),
         )
         _login(client, monkeypatch)
         profiler = __import__("wlanpi_webui.profiler.profiler", fromlist=["x"])
@@ -198,7 +200,9 @@ class TestHmacSignature:
 
         captured = {}
 
-        def fake_post(url, headers=None, params=None, data=None, verify=None, timeout=None):
+        def fake_post(
+            url, headers=None, params=None, data=None, verify=None, timeout=None
+        ):
             captured.update(url=url, headers=headers, data=data)
 
             class R:

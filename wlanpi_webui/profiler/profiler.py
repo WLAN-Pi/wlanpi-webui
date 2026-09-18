@@ -98,11 +98,8 @@ def get_profiler_file_listing_html(target) -> str | None:
         for profile in files:
             client = profile.filepath.replace(current_app.config["FILES_ROOT_DIR"], "")
             friendly = client.replace("profiler/clients/", "")
-            friendly.rsplit(".", 1)[0]
-            profile.modifytime
             if len(friendly.split("/")) == 2:
-                defolder, friendly = friendly.split("/")
-                friendly.rsplit(".", 1)[0]
+                _, friendly = friendly.split("/")
                 if profile.profiletype == ProfileResultType.TEXT:
                     profile_stub = f"{friendly.split('/')[-1].replace('.txt', '').replace('.', '')}"
                     div_id = f"profile_{profile_stub}"
@@ -114,10 +111,10 @@ def get_profiler_file_listing_html(target) -> str | None:
 <pre>{profile_content}</pre>
 <div class='uk-modal-footer uk-text-right'>
 <form _="on submit take .uk-open from #{profile_div_id}">
-<button 
+<button
 id="cancelButton"
-type="button" 
-class="uk-button uk-button-default" 
+type="button"
+class="uk-button uk-button-default"
 _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profile_div_id}">Close</button>
 <a href='{content_url}'><button class='uk-button uk-button-secondary' type='button'>Save</button></a>
 </form>
@@ -133,7 +130,7 @@ _="on click take .uk-open from #{profile_div_id} wait 200ms then remove #{profil
     except Exception as error:
         raise Exception(
             f"ERROR: problem building profile html results for {profile}\n{error}"
-        )
+        ) from error
     return html
 
 
@@ -152,17 +149,17 @@ def get_profiler_files_listing_html() -> list[str] | None:
             _key = friendly.rsplit(".", 1)[0]
             modifytime = profile.modifytime
             if len(friendly.split("/")) == 2:
-                defolder, friendly = friendly.split("/")
+                _, friendly = friendly.split("/")
                 _key = friendly.rsplit(".", 1)[0]
                 text = ""
                 if profile.profiletype == ProfileResultType.TEXT:
                     profile_stub = f"{friendly.split('/')[-1].replace('.txt', '').replace('.', '')}"
                     div_id = f"profile_{profile_stub}"
                     tooltip = f"View text report for {client.split('/')[-1]}"
-                    text = f"""<button 
-class="uk-button uk-button-default uk-button-small" 
-hx-get="/profiler/profile?profile={profile_stub}" 
-hx-trigger="click" 
+                    text = f"""<button
+class="uk-button uk-button-default uk-button-small"
+hx-get="/profiler/profile?profile={profile_stub}"
+hx-trigger="click"
 hx-target="#profiler-modals"
 uk-tooltip="{tooltip}"
 hx-indicator=".progress"
@@ -170,8 +167,8 @@ _="on htmx:afterOnLoad wait 10ms then add .uk-open to #{div_id}">profile</button
 
                 pcap = ""
                 if profile.profiletype == ProfileResultType.PCAP:
-                    pcap = """<a href='{0}{1}'>
-<button class='uk-button uk-button-default uk-button-small' uk-tooltip='{2}'>pcap</button>
+                    pcap = """<a href='{}{}'>
+<button class='uk-button uk-button-default uk-button-small' uk-tooltip='{}'>pcap</button>
 </a>""".format(
                         request.url_root,
                         client,

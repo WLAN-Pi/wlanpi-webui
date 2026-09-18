@@ -1,7 +1,10 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from wlanpi_webui.utils import get_safe_redirect_target
+from wlanpi_webui.utils import (
+    get_safe_redirect_target,
+    service_not_installed_warning,
+    start_stop_service,
+)
 
 
 class TestGetSafeRedirectTarget:
@@ -48,8 +51,6 @@ class TestGetSafeRedirectTargetWithRequestContext:
         result = get_safe_redirect_target("http://evil.com/services")
         assert result == "/"
 
-
-from wlanpi_webui.utils import start_stop_service, service_not_installed_warning
 
 class TestServiceNotInstalled:
     @patch("wlanpi_webui.utils.system_service_exists")

@@ -60,7 +60,7 @@ def get_stats():
 
     if tempI > 1000:
         tempI = tempI / 1000
-    tempStr = "%sC" % str(round(tempI, 1))
+    tempStr = f"{round(tempI, 1)}C"
 
     # determine uptime
     try:
