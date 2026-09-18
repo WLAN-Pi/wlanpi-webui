@@ -1,3 +1,19 @@
+wlanpi-webui (1.9.0-1) unstable; urgency=medium
+
+  * Add Packet Storm, a hidden Wi-Fi themed Asteroids game at /packetstorm,
+    reachable from a dashboard tile and the Konami code from any page. Canvas
+    2D only, no new dependencies, loaded only on the game page.
+  * Make page headers consistent across the app: every page now has an
+    eyebrow, title and lede, with data values set in mono.
+  * Stack the Network and System refresh controls on narrow screens instead
+    of overflowing the viewport, and unify button and select sizing.
+  * Rework the latency graph: lazy-load Chart.js, follow the light/dark
+    theme, tune the legend and ticks for mobile, and draw the first sample
+    immediately instead of waiting for the next poll.
+  * Move the error pages onto the design system.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 18:00:00 -0400
+
 wlanpi-webui (1.8.0-1) unstable; urgency=medium
 
   * Add a Flipper Zero-style tile launcher at / (dark "device screen", app
