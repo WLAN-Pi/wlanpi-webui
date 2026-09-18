@@ -1,3 +1,17 @@
+wlanpi-webui (1.6.0-1) unstable; urgency=medium
+
+  * UI redesign phase 1: add a design-token layer to app.css (colors,
+    spacing, radius, shadow, small utility set) and drive the shell from it
+    instead of hardcoded colors. Dark-theme token values are defined for the
+    phase 2 toggle.
+  * Add a shared branded `templates/auth/base.html` shell and rebrand the
+    login and change-password pages with it; show a "session expired" notice
+    when redirected to /login?reason=expired.
+  * Fix the PWA manifest (correct name and icon paths) and remove the
+    unused duplicate static/manifest.json.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 17 Sep 2026 23:21:00 -0400
+
 wlanpi-webui (1.5.2-1) unstable; urgency=medium
 
   * Migrate lint/format to ruff (parity with wlanpi-core/wlanpi-mcp):

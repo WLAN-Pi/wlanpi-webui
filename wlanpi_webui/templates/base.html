@@ -44,20 +44,20 @@
       }
   });
   </script> 
-  <div class="progress" style="height: 5px; background-color: white;">
-    <div class="indeterminate" style="background-color: #f45625;"></div>
+  <div class="progress" style="height: 5px; background-color: var(--bg-surface);">
+    <div class="indeterminate" style="background-color: var(--brand);"></div>
   </div>
   <div id="thebiglebowski" class="uk-flex uk-flex-column">
     <!--HEADER-->
     <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
-      <nav class="uk-navbar-container" uk-navbar="dropbar: true;" id="navbar" data-uk-navbar style="background-color: #222222 !important;">
+      <nav class="uk-navbar-container" uk-navbar="dropbar: true;" id="navbar" data-uk-navbar>
         <div class="uk-navbar-left">
           <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
             href="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
               style="width:96px;"></a>
           <ul class="uk-navbar-nav uk-visible@m">
             <li>
-              <a href="#" style="color: white;">SPEED TEST <span uk-navbar-parent-icon></span></a>
+              <a href="#">SPEED TEST <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown">
                 <ul class="uk-nav uk-navbar-dropdown-nav uk-navbar-dropdown-width-1" >
                   <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
@@ -69,7 +69,7 @@
             </li>
             {% if profiler_installed %}
             <li>
-              <a href="#" style="color: white;">PROFILER <span uk-navbar-parent-icon></span></a>
+              <a href="#">PROFILER <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown"
                    hx-get="/profiler/main_menu"
                    hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('profiler_dropdown').classList.contains('uk-open')]"
@@ -83,10 +83,10 @@
             </li>
             {% endif %}
             <li><a hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-                hx-swap="innerHTML" style="color: white;">NETWORK</a></li>
+                hx-swap="innerHTML">NETWORK</a></li>
             {% if kismet_installed %}
             <li>
-              <a href="#" style="color: white;">KISMET <span uk-navbar-parent-icon></span></a>
+              <a href="#">KISMET <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown"
                       hx-get="/kismet/main_menu"
                       hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('kismet_dropdown').classList.contains('uk-open')]"
@@ -100,7 +100,7 @@
             </li>
             {% endif %}
             {% if grafana_installed %}
-            <li><a href="#" style="color: white;">GRAFANA <span uk-navbar-parent-icon></span></a>
+            <li><a href="#">GRAFANA <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown"
                    hx-get="/grafana/main_menu"
                    hx-trigger="load, click delay:0.2s, every 2s [document.getElementById('grafana_dropdown').classList.contains('uk-open')]"
@@ -115,7 +115,7 @@
             {% endif %}
             {% if cockpit_installed %}
             <li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
-                hx-push-url="true" style="color: white;">COCKPIT</a></li>
+                hx-push-url="true">COCKPIT</a></li>
             {% endif %}
           </ul>
         </div>
@@ -150,8 +150,8 @@
       </nav>
       <!--STATS BAR-->
       <div
-        style="background-color: #f45625; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
-        class="uk-visible@m"
+        style="display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-evenly; align-items: center; font-size: smaller;"
+        class="uk-visible@m app-stats"
         hx-get="/stream/stats"
         hx-swap="innerHTML"
         hx-target="this"
