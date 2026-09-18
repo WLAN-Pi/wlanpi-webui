@@ -130,14 +130,20 @@ sequentially after #99 and #101.
 - Tests: idle expiry, boot_id mismatch, persisted key across app
   instances, and that a background poll does not re-issue the cookie.
 
-### Phase 3 — dashboard at `/`
+### Phase 3 — dashboard at `/` (done; #108 folded in)
 - Reclaim `/`: remove `@bp.route("/")` from the librespeed blueprint.
-- New dashboard blueprint at `/` reusing existing `about` data (hostname,
-  OS/kernel/hardware/mode, webui/core versions, core status) plus a network
-  summary and quick links to installed apps. Reuse the cached helpers;
-  keep it light (no heavy `network.py` view, no new widgets).
-- `partials/dashboard.html` + `extends/dashboard.html`; add a HOME nav
-  entry.
+- New dashboard blueprint at `/`: a Flipper Zero-style tile launcher
+  (hostname/mode status strip, app tiles, version footer). Tiles are
+  launchers — Speed Test same-tab, Kismet/Grafana/Cockpit new tab,
+  Profiler/Network in-app.
+- New Apps page (`/apps`) consolidating control for Speed Test, Profiler,
+  Kismet, Grafana and Cockpit, and a Settings page (`/settings`) for About,
+  the dark-mode toggle, Debug and logout. The per-app navbar dropdowns are
+  gone; the navbar is HOME / APPS / NETWORK plus a settings gear.
+- No iframes: Cockpit and the Kismet/Grafana UIs open in a new tab; Speed
+  Test navigates in the same tab and links back home.
+- Migrate the `/network` cards from the bash scripts to the same core API
+  (reachability, public IP, eth0 IP config, LLDP/CDP neighbours).
 
 ### Phase 4 — dark sweep (timeboxed, skippable)
 - Apply the dark token values across the remaining views (cards, forms,
@@ -163,13 +169,13 @@ sequentially after #99 and #101.
   toast, and the expiry redirect.
 - Build the `.deb` and install on the test VM before any push.
 
-## Deliberate simplifications (ponytail)
+## Deliberate simplifications (shortcut)
 
-- `ponytail:` key persisted on disk; ceiling: any wlanpi-level code exec can
+- `shortcut:` key persisted on disk; ceiling: any wlanpi-level code exec can
   forge sessions until reboot; upgrade: scheduled key rotation.
-- `ponytail:` idle detection is coarse and fail-open when `/proc` is
+- `shortcut:` idle detection is coarse and fail-open when `/proc` is
   unreadable; upgrade: fail-closed.
-- `ponytail:` dark theme covers shell/cards/forms only; ceiling: exotic
+- `shortcut:` dark theme covers shell/cards/forms only; ceiling: exotic
   UIKit widgets unstyled; upgrade: full component audit.
-- `ponytail:` no heartbeat — reading-only sessions idle out after 4h;
+- `shortcut:` no heartbeat — reading-only sessions idle out after 4h;
   upgrade: add a throttled activity heartbeat if users complain.

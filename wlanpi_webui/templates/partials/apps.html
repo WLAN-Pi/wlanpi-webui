@@ -1,0 +1,19 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <h2 class="page-title">Applications</h2>
+    <p class="page-lede">Launch and manage installed applications.</p>
+  </div>
+  <div id="apps-cards" hx-get="/apps/cards" hx-trigger="load" hx-swap="innerHTML">
+    <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
+      {% for _ in range(4) %}
+      <div>
+        <div class="uk-card uk-card-default uk-card-body" aria-busy="true" aria-label="Loading">
+          <p class="skel" style="height: 1.1em; width: 45%;"></p>
+          <p class="skel" style="height: 0.85em;"></p>
+          <p class="skel" style="height: 0.85em; width: 70%;"></p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

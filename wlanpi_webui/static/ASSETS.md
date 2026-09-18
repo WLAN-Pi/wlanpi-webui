@@ -10,6 +10,7 @@ update them deliberately and record the new version + checksum here.
 | `js/_hyperscript.min.js` | 0.9.93 | `hyperscript.org@0.9.93` (`dist/_hyperscript.min.js`) | |
 | `js/qrcode.min.js` | 1.0.0 | `qrcodejs@1.0.0` | Upstream is unmaintained; 1.0.0 is the latest release. |
 | `js/uikit.js`, `js/uikit.min.js`, `js/uikit-icons.js`, `js/uikit-icons.min.js` | 3.25.23 | `uikit@3.25.23` (`dist/js/*`) | |
+| `js/Chart.bundle.min.js` | 2.7.1 | copied from `install/var/www/librespeed/` (same file the speedtest page uses) | Shared by the speedtest page and the network latency graph. |
 | `css/uikit.css`, `css/uikit.min.css`, `css/uikit-rtl.css`, `css/uikit-rtl.min.css` | 3.25.23 | `uikit@3.25.23` (`dist/css/*`) | |
 
 `css/app.css`, `img/*` and `icon/*` are first-party assets, not vendored.
@@ -33,6 +34,7 @@ UI (nav dropdowns, htmx navigation, start/stop buttons) on a device.
 71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de  js/htmx.min.js
 e3591784abefb7491957cc93a395a063d04a0421822cf3cb22554faf474df78f  js/_hyperscript.min.js
 c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36  js/qrcode.min.js
+378bb90634cb370986ba5e9180ba0448f36a0c555489b56e39884fe20260adec  js/Chart.bundle.min.js
 e573efef13c1bb09309c2e7baed3b186ebd741470d3068e7c09b192b0e9c0c79  js/uikit.js
 ebd08b429283fd1fcf59face8edfe76108379c18b4f753893ccfb94a505afc27  js/uikit.min.js
 e97c9411e574d1a9b17de0b8637cff4ffbac34a55ec0ea7b2239273e9fd906ba  js/uikit-icons.js

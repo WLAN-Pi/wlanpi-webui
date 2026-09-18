@@ -1,0 +1,37 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <h2 class="page-title">Settings</h2>
+  </div>
+  <h4>User Interface</h4>
+  <p>
+    <button class="uk-button uk-button-default" onclick="wlanpiToggleTheme()">Toggle dark mode</button>
+  </p>
+
+  <h4>Session</h4>
+  <ul class="uk-list">
+    <li>Signed in as <strong>{{ current_user }}</strong></li>
+  </ul>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="uk-margin-remove">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="uk-button logout-button" type="submit">Log out</button>
+  </form>
+
+  <h4>Diagnostics</h4>
+
+  <h5>Toasts</h5>
+  <div class="uk-margin-small-bottom">
+    {% for status in toast_statuses %}
+    <button class="uk-button uk-button-default uk-margin-small-right uk-margin-small-bottom"
+      onclick="wlanpiToast('Test {{ status }} toast', '{{ status }}')">{{ status }}</button>
+    {% endfor %}
+    <button class="uk-button uk-button-default uk-margin-small-bottom"
+      onclick="wlanpiToast('Test default toast')">default</button>
+  </div>
+
+  <h5>Session state</h5>
+  <ul class="uk-list">
+    <li>User: {{ current_user }}</li>
+    <li>Boot id: {{ boot_id }}</li>
+    <li>Idle timeout: {{ idle_timeout }}s</li>
+  </ul>
+</div>

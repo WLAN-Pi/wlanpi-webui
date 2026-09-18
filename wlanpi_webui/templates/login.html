@@ -1,6 +1,6 @@
 {% extends "auth/base.html" %}
 {% block title %}WLAN Pi: Login{% endblock %}
-{% block subtitle %}Sign in to continue{% endblock %}
+{% block subtitle %}Sign in to {{ hostname }}{% endblock %}
 {% block content %}
 {% if expired %}
 <div class="uk-alert-warning" uk-alert><p>Your session expired. Please sign in again.</p></div>

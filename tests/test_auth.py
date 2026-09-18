@@ -112,6 +112,43 @@ class TestLogin:
         resp = _login(client, monkeypatch, status="password_change_required")
         assert resp.status_code == 302
         assert "/change_password" in resp.headers["Location"]
+        assert "username=wlanpi" in resp.headers["Location"]
+
+    def test_change_page_prefills_username(self, client):
+        resp = client.get("/change_password?username=wlanpi")
+        assert resp.status_code == 200
+        assert b'value="wlanpi"' in resp.data
+        assert b"new_password_confirm" in resp.data
+
+    def test_change_rejects_mismatched_confirm(self, client):
+        csrf = _get_csrf(client)
+        resp = client.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "old",
+                "new_password": "new1",
+                "new_password_confirm": "new2",
+                "csrf_token": csrf,
+            },
+        )
+        assert resp.status_code == 400
+        assert b"do not match" in resp.data
+
+    def test_change_rejects_same_password(self, client):
+        csrf = _get_csrf(client)
+        resp = client.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "same",
+                "new_password": "same",
+                "new_password_confirm": "same",
+                "csrf_token": csrf,
+            },
+        )
+        assert resp.status_code == 400
+        assert b"different" in resp.data
 
     def test_core_unreachable_shows_error(self, client, monkeypatch):
         import requests
@@ -183,7 +220,9 @@ class TestMutatingRoutes:
         _login(client, monkeypatch)
         profiler = __import__("wlanpi_webui.profiler.profiler", fromlist=["x"])
         monkeypatch.setattr(profiler, "system_service_running_state", lambda s: True)
-        monkeypatch.setattr(profiler, "start_stop_service", lambda task, service: None)
+        monkeypatch.setattr(
+            profiler, "start_stop_service", lambda task, service: ("", 204)
+        )
         with client.session_transaction() as sess:
             csrf = sess["csrf_token"]
         resp = client.post(
@@ -200,10 +239,10 @@ class TestHmacSignature:
 
         captured = {}
 
-        def fake_post(
-            url, headers=None, params=None, data=None, verify=None, timeout=None
+        def fake_request(
+            method, url, headers=None, params=None, data=None, verify=None, timeout=None
         ):
-            captured.update(url=url, headers=headers, data=data)
+            captured.update(method=method, url=url, headers=headers, data=data)
 
             class R:
                 def raise_for_status(self):
@@ -211,13 +250,14 @@ class TestHmacSignature:
 
             return R()
 
-        monkeypatch.setattr(requests_module, "post", fake_post)
+        monkeypatch.setattr(requests_module, "request", fake_request)
         monkeypatch.setattr(utils, "get_shared_secret", lambda *a, **k: b"test-secret")
         utils.make_api_request(
             "POST",
             "https://127.0.0.1:31415/api/v1/auth/pam",
             json_body={"username": "u", "password": "p"},
         )
+        assert captured["method"] == "POST"
         assert captured["data"] == '{"username": "u", "password": "p"}'
         expected = hmac.new(
             b"test-secret",

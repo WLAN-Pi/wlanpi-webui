@@ -10,14 +10,12 @@ from pathlib import Path
 from flask import abort, current_app, render_template, request, send_file
 from werkzeug.utils import safe_join
 
-from wlanpi_webui.auth.auth import csrf_required, hx_post_anchor
+from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.profiler import bp
 from wlanpi_webui.utils import (
     is_htmx,
-    run_command,
     start_stop_service,
     system_service_running_state,
-    systemd_service_message,
     wlanpi_core_warning,
 )
 
@@ -372,92 +370,7 @@ def start_stop_profiler(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
         if core_status:
-            res = start_stop_service(task, "wlanpi-profiler")
-            if isinstance(res, str):
-                return res
+            return start_stop_service(task, "wlanpi-profiler")
         else:
             return wlanpi_core_warning
     return "", 204
-
-
-@bp.route("/profiler/side_menu")
-def profiler_side_menu():
-    if is_htmx(request):
-        profiler_message = systemd_service_message("wlanpi-profiler")
-        profiler_status = system_service_running_state("wlanpi-profiler")
-        if profiler_status:
-            # active
-            profiler_task_url = "/stopprofiler"
-            profiler_task_anchor_text = "STOP"
-        else:
-            # not active
-            profiler_task_url = "/startprofiler"
-            profiler_task_anchor_text = "START"
-        args = {
-            "profiler_message": profiler_message.replace("wlanpi-", ""),
-            "profiler_task_anchor": hx_post_anchor(
-                profiler_task_url, profiler_task_anchor_text
-            ),
-        }
-        html = """<li class="uk-nav-header">{profiler_message}</li>
-<li>{profiler_task_anchor}</li>
-<li class="uk-nav-divider"></li>
-<li><a hx-get="/profiler/profiles"
-    hx-target="#content"
-    hx-swap="innerHTML"
-    hx-push-url="true"
-    hx-indicator=".progress">PROFILES</a></li>
-<li><a hx-get="/profiler/purge"
-    hx-target="#content"
-    hx-swap="innerHTML"
-    hx-push-url="true"
-    hx-indicator=".progress">PURGE DATA</a></li>""".format(**args)
-        return html
-
-
-@bp.route("/profiler/main_menu")
-def profiler_main_menu():
-    if is_htmx(request):
-        profiler_message = systemd_service_message("wlanpi-profiler")
-        profiler_status = system_service_running_state("wlanpi-profiler")
-        profiler_ssid = run_command(["cat", "/run/wlanpi-profiler.ssid"])
-        if "No such file" not in profiler_ssid and profiler_status:
-            # qrcode_spec = "WIFI:S:{0};T:WPA;P:{1};;".format(profiler_ssid, "0123456789")
-            profiler_ssid = f"""<li>SSID: {profiler_ssid}</li>"""
-        # qrcode_spec=qrcode_spec
-        # <div id="qrcode" style="width:200px; height:200px;"></div>
-        # <script type="text/javascript">
-        #     new QRCode(document.getElementById("qrcode"), "{qrcode_spec}");
-        # </script>
-        else:
-            profiler_ssid = ""
-        if profiler_status:
-            # active
-            profiler_task_url = "/stopprofiler"
-            profiler_task_anchor_text = "STOP"
-        else:
-            # not active
-            profiler_task_url = "/startprofiler"
-            profiler_task_anchor_text = "START"
-        args = {
-            "profiler_message": profiler_message.replace("wlanpi-", ""),
-            "profiler_task_anchor": hx_post_anchor(
-                profiler_task_url, profiler_task_anchor_text
-            ),
-            "profiler_ssid": profiler_ssid,
-        }
-        html = """<li class="uk-nav-header">{profiler_message}</li>
-{profiler_ssid}
-<li>{profiler_task_anchor}</li>
-<li class="uk-nav-divider"></li>
-<li><a hx-get="/profiler/profiles"
-    hx-target="#content"
-    hx-swap="innerHTML"
-    hx-push-url="true"
-    hx-indicator=".progress">PROFILES</a></li>
-<li><a hx-get="/profiler/purge"
-    hx-target="#content"
-    hx-swap="innerHTML"
-    hx-push-url="true"
-    hx-indicator=".progress">PURGE DATA</a></li>""".format(**args)
-        return html

@@ -6,38 +6,64 @@
 
 :root {
     color-scheme: light;
-    /* Brand */
+    /* Brand: --brand is the accent for fills/graphics/large text;
+       --brand-ink is the text-safe variant (6.4 on #fff). */
     --brand: #f45625;
     --brand-hover: #da3e15;
     --brand-contrast: #ffffff;
+    --brand-ink: #a83a12;
+    --brand-ink-hover: #7e2c0d;
+
+    /* Type: system sans (UIKit) + one mono; 1.25 ratio */
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+        "Liberation Mono", monospace;
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.875rem;
+    --fs-base: 1rem;
+    --fs-lg: 1.125rem;
+    --fs-xl: 1.375rem;
+    --fs-2xl: 1.75rem;
+    --lh-tight: 1.25;
+    --lh-normal: 1.5;
+    --lh-relaxed: 1.55;
 
     /* Surfaces */
     --bg-page: #f8f8f8;
     --bg-surface: #ffffff;
     --bg-surface-hover: #ffffff;
+    --surface-2: #f0f0f0;
     --navbar-bg: #222222;
     --navbar-text: #ffffff;
 
-    /* Text and lines */
+    /* Text and lines (--text-muted 7.0 on #fff, 6.6 on #f8f8f8) */
     --text: #222222;
-    --text-muted: #777777;
+    --text-muted: #595959;
     --border: #e5e5e5;
+    --line-strong: #d4d4d4;
 
     /* Status */
     --danger: #d32f2f;
     --warning: #f9a825;
+    --warn-bg: #fef6e0;
+    --warn-fg: #7a5b00;
     --success: #2e7d32;
     --info: #0277bd;
-    --focus-ring: rgba(244, 86, 37, 0.4);
+    --focus-ring: rgba(168, 58, 18, 0.45);
 
-    /* Spacing */
+    /* Spacing: 4px base; --stack-* is the vertical rhythm */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
     --space-5: 24px;
     --space-6: 32px;
+    --space-7: 48px;
+    --stack-sm: var(--space-4);
+    --stack-md: var(--space-5);
+    --stack-lg: var(--space-6);
     --container: 980px;
+    --container-narrow: 640px;
 
     /* Shape and shadow */
     --radius-sm: 3px;
@@ -52,22 +78,91 @@
     --bg-page: #101417;
     --bg-surface: #1a2026;
     --bg-surface-hover: #232b33;
+    --surface-2: #232b33;
     --navbar-bg: #0b0f13;
+    --brand-ink: #ff8a5c;
+    --brand-ink-hover: #ffa07a;
     --text: #e6eaee;
     --text-muted: #9aa5b1;
     --border: #2a343d;
+    --line-strong: #3a4753;
+    --warn-bg: #3a3320;
+    --warn-fg: #f3e2b0;
+    --focus-ring: rgba(255, 138, 92, 0.5);
 }
 
 /* ==========================================================================
    Base elements
    ========================================================================== */
 
+body {
+    font-family: var(--font-sans);
+}
+
 a {
-    color: var(--brand);
+    color: var(--brand-ink);
 }
 
 a:hover {
     color: var(--text);
+}
+
+:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.skip-link {
+    position: absolute;
+    left: var(--space-4);
+    top: calc(-1 * var(--space-7));
+    z-index: 1001;
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.skip-link:focus-visible {
+    top: var(--space-2);
+}
+
+/* Data and terminal text: one mono face */
+code,
+kbd,
+samp,
+pre {
+    font-family: var(--font-mono);
+}
+
+:not(pre) > code,
+:not(pre) > kbd,
+:not(pre) > samp {
+    font-size: var(--fs-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
+}
+
+pre {
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+    overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 /* ==========================================================================
@@ -144,6 +239,14 @@ a:hover {
 .uk-card-default {
     background: var(--bg-surface);
     color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.uk-card-default .uk-card-title {
+    color: var(--text);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-tight);
 }
 
 .uk-card-title,
@@ -159,12 +262,6 @@ h3,
 h4,
 h5,
 h6 {
-    color: var(--text);
-}
-
-/* UIKit hardcodes #333 for default card titles and #fff on card hover; map
-   both to tokens so they follow the theme. */
-.uk-card-default .uk-card-title {
     color: var(--text);
 }
 
@@ -215,6 +312,17 @@ h6 {
     border-top-color: var(--border);
 }
 
+/* All card dividers share one rule: 1px --border */
+.uk-card-header {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+}
+
+.uk-list-divider > :nth-child(n + 2) {
+    border-top-color: var(--border);
+}
+
 .uk-button-text {
     color: var(--text);
 }
@@ -229,20 +337,39 @@ h6 {
     border-color: var(--border);
 }
 
+.uk-button-default:hover,
+.uk-button-default:focus {
+    background-color: var(--surface-2);
+    color: var(--text);
+    border-color: var(--line-strong);
+}
+
 .uk-button-primary {
-    background-color: var(--brand);
+    background-color: var(--brand-ink);
     color: var(--brand-contrast);
 }
 
 .uk-button-primary:hover,
 .uk-button-primary:focus {
-    background-color: var(--brand-hover);
+    background-color: var(--brand-ink-hover);
     color: var(--brand-contrast);
 }
 
 .uk-button-secondary {
-    background-color: var(--brand);
+    background-color: var(--brand-ink);
     color: var(--brand-contrast);
+}
+
+.uk-button-secondary:hover,
+.uk-button-secondary:focus {
+    background-color: var(--brand-ink-hover);
+    color: var(--brand-contrast);
+}
+
+.uk-button:disabled,
+.uk-button[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .uk-input,
@@ -251,6 +378,13 @@ h6 {
     background: var(--bg-surface);
     color: var(--text);
     border-color: var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.uk-input:focus,
+.uk-select:focus,
+.uk-textarea:focus {
+    border-color: var(--brand-ink);
 }
 
 .uk-input::placeholder,
@@ -260,6 +394,7 @@ h6 {
 
 .uk-table {
     color: var(--text);
+    font-size: var(--fs-sm);
 }
 
 .uk-table th,
@@ -269,12 +404,46 @@ h6 {
 
 .uk-table th {
     color: var(--text-muted);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.uk-table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+/* First columns of data tables are timestamps/MACs: set them in mono */
+.uk-table td:nth-child(-n + 2) {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+}
+
+.uk-alert {
+    border-radius: var(--radius-sm);
+}
+
+/* Light-theme warning callout: UIKit's default fails contrast here */
+.uk-alert-warning {
+    background: var(--warn-bg);
+    color: var(--warn-fg);
 }
 
 .uk-icon-button {
     background: var(--bg-surface);
     color: var(--text);
     border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.uk-icon-button:active {
+    transform: scale(0.92);
+}
+
+.uk-icon-button.copy-ok {
+    border-color: var(--success);
+    color: var(--success);
 }
 
 .uk-close {
@@ -316,6 +485,15 @@ h6 {
 /* clip.svg is a black stroke; invert it on the dark icon button */
 [data-theme="dark"] .uk-icon-button img {
     filter: invert(1);
+}
+
+/* sys-live icons are white artwork: darken them for light surfaces only */
+.sys-live img {
+    filter: invert(1);
+}
+
+[data-theme="dark"] .sys-live img {
+    filter: none;
 }
 
 /* UIKit gives inline <kbd>/<samp> a near-white background */
@@ -499,4 +677,409 @@ h6 {
         left: 107%;
         right: -8%;
     }
+}
+
+/* Skeleton placeholders while cards lazy-load */
+.skel {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--border) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: skel-pulse 1.2s infinite;
+}
+
+/* Health-card skeletons mimic the live stat rows (icon + label + value) */
+.sys-live-skel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.sys-live-skel:last-child {
+    border-bottom: 0;
+}
+
+.sys-live-skel-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+}
+
+.sys-live-skel-label {
+    flex: 1;
+    height: 0.85em;
+}
+
+.sys-live-skel-value {
+    flex: none;
+    width: 96px;
+    height: 0.85em;
+}
+
+@keyframes skel-pulse {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+/* ==========================================================================
+   Page system
+   Every page: constrained wrap, eyebrow + title + lede header, slim footer.
+   ========================================================================== */
+
+::selection {
+    background: var(--brand);
+    color: #fff;
+}
+
+.page {
+    width: 100%;
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: var(--stack-md) var(--space-4) var(--space-7);
+}
+
+.page-head {
+    margin: 0 0 var(--stack-md);
+    max-width: var(--container-narrow);
+}
+
+.page-head-center {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.page-head-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.page-head-row .page-head {
+    margin-bottom: var(--stack-sm);
+}
+
+.page-head-row .uk-button {
+    flex: none;
+    margin-top: var(--space-1);
+}
+
+.page-head-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    flex: none;
+    margin-top: var(--space-1);
+}
+
+.page-head-controls .uk-select {
+    width: auto;
+}
+
+.latency-wrap {
+    position: relative;
+    height: 220px;
+}
+
+.page-eyebrow {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand-ink);
+}
+
+.page-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-2xl);
+    line-height: var(--lh-tight);
+    color: var(--text);
+}
+
+.page-lede {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+/* Page sections: one consistent rhythm instead of UIKit's ad-hoc margins */
+.page h4 {
+    margin: var(--stack-md) 0 var(--space-3);
+    font-size: var(--fs-lg);
+    line-height: var(--lh-tight);
+}
+
+.page-head + h4 {
+    margin-top: 0;
+}
+
+/* Sub-sections (e.g. under Diagnostics): small muted labels, clearly below h4 */
+.page h5 {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Active nav item: orange rule on the dark navbar, ink text in offcanvas */
+.uk-navbar-nav > li.uk-active > a {
+    color: #fff;
+    box-shadow: inset 0 -3px 0 var(--brand);
+}
+
+.uk-nav > li.uk-active > a {
+    color: var(--brand-ink);
+}
+
+/* System live stats: labelled rows fed by /stream/stats */
+.sys-live .stat-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.sys-live .stat-container:last-child {
+    border-bottom: 0;
+}
+
+.sys-live .stat-icon img {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.sys-live .stat-label {
+    flex: 1;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sys-live .stat-text {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+}
+
+.sys-facts {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+}
+
+.sys-facts .sys-label {
+    display: inline-block;
+    min-width: 96px;
+    font-family: var(--font-sans);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.app-footer {
+    border-top: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+}
+
+.app-footer-inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.app-footer a {
+    color: var(--text-muted);
+}
+
+.app-footer a:hover {
+    color: var(--brand-ink);
+}
+
+/* Auth card: orange top rule ties it to the shell */
+.auth-shell {
+    border-top: 3px solid var(--brand);
+}
+
+/* App cards: icon header, status pill, action footer pinned to the bottom */
+.app-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-card-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.app-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--brand-ink);
+}
+
+.app-status {
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.app-status::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: var(--space-2);
+    border-radius: 50%;
+    background: var(--line-strong);
+    vertical-align: baseline;
+}
+
+.app-status.is-on::before {
+    background: var(--success);
+}
+
+.app-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-top: auto;
+    margin-bottom: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+}
+
+.app-card .uk-text-meta {
+    flex: none;
+}
+
+/* App actions use the signature brand orange */
+.app-card .uk-button-primary {
+    background-color: var(--brand);
+}
+
+.app-card .uk-button-primary:hover,
+.app-card .uk-button-primary:focus {
+    background-color: var(--brand-hover);
+}
+
+.logout-button {
+    background-color: var(--brand);
+    color: #fff;
+}
+
+.logout-button:hover,
+.logout-button:focus {
+    background-color: var(--brand-hover);
+    color: #fff;
+}
+
+/* ==========================================================================
+   Dashboard: Flipper Zero-style launcher
+   A deliberate always-dark "device screen" (orange on near-black, monospace,
+   chunky bordered tiles) so it reads as the WLAN Pi's home screen rather than
+   another info page. Colours are fixed on purpose, not tokenised.
+   ========================================================================== */
+
+.flipper-screen {
+    width: max-content;
+    max-width: 100%;
+    align-self: center;
+    margin: auto;
+    padding: var(--space-4);
+    background: #0b0f13;
+    border: 2px solid #2a343d;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    color: #e6eaee;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.flipper-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 140px);
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+    .flipper-screen {
+        width: 100%;
+    }
+
+    .flipper-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.flipper-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 108px;
+    padding: var(--space-4) var(--space-2);
+    background: #101417;
+    border: 2px solid #2a343d;
+    border-radius: var(--radius-sm);
+    color: #e6eaee !important;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease,
+        border-color 0.08s ease;
+}
+
+.flipper-tile:hover,
+.flipper-tile:focus {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #0b0f13 !important;
+    transform: translateY(-2px);
+}
+
+.flipper-tile-icon {
+    line-height: 1;
+}
+
+.flipper-foot {
+    margin-top: var(--space-4);
+    color: #9aa5b1;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
 }

@@ -1,96 +1,72 @@
-import os
-import queue
-import subprocess
-import threading
-
 from flask import render_template, request
 
+from wlanpi_webui.config import get_hostname
 from wlanpi_webui.network import bp
-from wlanpi_webui.utils import is_htmx
+from wlanpi_webui.utils import get_core_json, is_htmx
+
+
+def _lines(section) -> list[str]:
+    """Return the info lines from a core ``InfoLinesSection``."""
+    if isinstance(section, dict):
+        return section.get("info") or []
+    return []
+
+
+def _wlan_cards(wlan) -> list[dict]:
+    """One card per WLAN interface from core's ``wlan_interfaces`` mapping."""
+    if not isinstance(wlan, dict):
+        return []
+    cards = []
+    for name in sorted(wlan):
+        info = wlan[name] if isinstance(wlan[name], dict) else {}
+        mac = info.get("addr") or ""
+        mac = ":".join(mac[i : i + 2] for i in range(0, len(mac), 2)) or "n/a"
+        channel = f"Channel {info['channel']}" if info.get("channel") else "Channel n/a"
+        if info.get("freq"):
+            channel += f" ({info['freq']} MHz)"
+        cards.append(
+            {
+                "id": f"wlan-{name}",
+                "title": name,
+                "lines": [
+                    f"Mode: {info.get('mode') or 'n/a'}",
+                    f"SSID: {info.get('ssid') or 'n/a'}",
+                    channel,
+                    f"Driver: {info.get('driver') or 'n/a'}",
+                    f"MAC: {mac}",
+                ],
+            }
+        )
+    return cards
 
 
 @bp.route("/network")
 def network():
-    """fpms screen"""
-    FPMS_QUEUE = queue.Queue()
+    """Network shell; cards lazy-load from ``/network/cards``."""
+    if is_htmx(request):
+        return render_template("/partials/network.html")
+    else:
+        return render_template("/extends/network.html")
 
-    def storeInQueue(f):
-        def wrapper(*args):
-            FPMS_QUEUE.put(f(*args))
 
-        return wrapper
-
-    @storeInQueue
-    def get_script_results(script):
-        name = script.strip().split("/")[-1]
-        return name, run(script)
-
-    def run(script: str) -> str:
-        result = ""
-        if os.path.exists(script):
-            content = subprocess.run(script, capture_output=True)
-            result = str(content.stdout, "utf-8")
-            result = result.replace("\n", "<br />")
-        else:
-            result = f"Error: required {script.strip().split('/')[-1]} not found."
-        return result
-
-    def dumpQueue(queue):
-        results = []
-        while not queue.empty():
-            results.append(queue.get())
-        return results
-
-    reachability = "/opt/wlanpi-common/networkinfo/reachability.sh"
-    publicip = "/opt/wlanpi-common/networkinfo/publicip.sh"
-    ipconfig = "/opt/wlanpi-common/networkinfo/ipconfig.sh"
-
-    threads = []
-    for script in [reachability, publicip, ipconfig]:
-        thread = threading.Thread(target=get_script_results, args=(script,))
-        threads.append(thread)
-        thread.start()
-
-    for thread in threads:
-        thread.join()
-
-    def readlines(_file):
-        out = ""
-        if os.path.exists(_file):
-            with open(_file) as reader:
-                for line in reader.readlines():
-                    line = line.replace("\n", "<br />")
-                    out += line
-        else:
-            out += f"Error: required {_file} not found."
-        return out
-
-    cdpneigh = "/tmp/cdpneigh.txt"
-    lldpneigh = "/tmp/lldpneigh.txt"
-
-    cdp = readlines(cdpneigh)
-    lldp = readlines(lldpneigh)
-
-    script_results = dumpQueue(FPMS_QUEUE)
-    for result in script_results:
-        if "reachability" in str(result):
-            reachability = result[1]
-
-        if "publicip" in str(result):
-            publicip = result[1]
-
-        if "ipconfig" in str(result):
-            ipconfig = result[1]
+@bp.route("/network/cards")
+def network_cards():
+    """Network cards, sourced from the wlanpi-core API."""
+    reachability = get_core_json("/api/v1/utils/reachability") or {}
+    net = get_core_json("/api/v1/network/info/") or {}
 
     resp_data = {
-        "reachability": reachability,
-        "publicip": publicip,
-        "ipconfig": ipconfig,
-        "lldp": lldp,
-        "cdp": cdp,
+        "hostname": get_hostname(),
+        "reachability": [
+            f"{label}: {value}"
+            for label, value in reachability.items()
+            if label != "custom"
+        ],
+        "publicip": _lines(net.get("public_ip")),
+        "ipconfig": _lines(net.get("eth0_ipconfig_info")),
+        "lldp": _lines(net.get("lldp_neighbour_info")),
+        "cdp": _lines(net.get("cdp_neighbour_info")),
+        "wlan_cards": _wlan_cards(net.get("wlan_interfaces")),
     }
 
-    if is_htmx(request):
-        return render_template("/partials/network.html", **resp_data)
-    else:
-        return render_template("/extends/network.html", **resp_data)
+    return render_template("/partials/network_cards.html", **resp_data)

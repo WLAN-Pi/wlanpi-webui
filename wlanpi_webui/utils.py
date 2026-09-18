@@ -7,6 +7,7 @@ import os
 import secrets
 import subprocess
 import urllib.parse
+from functools import lru_cache
 from pathlib import Path
 from time import time
 
@@ -27,6 +28,9 @@ def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
     return b""
 
 
+# shortcut: cached for the life of the process; the boot id only changes on
+# reboot, which restarts this service.
+@lru_cache(maxsize=1)
 def read_boot_id() -> str | None:
     """Return the current kernel boot id, or None when it cannot be read."""
     try:
@@ -92,6 +96,19 @@ def get_safe_redirect_target(target: str | None) -> str:
     return safe
 
 
+def get_safe_referrer_target() -> str:
+    """Safe redirect target for the current page's path.
+
+    ``request.referrer`` is an absolute URL, which get_safe_redirect_target
+    rejects; reduce it to its path first so callers return to the page they
+    were on rather than the home page. htmx sends ``HX-Current-URL``, which is
+    preferred when present.
+    """
+    source = request.headers.get("HX-Current-URL") or request.referrer or ""
+    path = urllib.parse.urlparse(source).path
+    return get_safe_redirect_target(path)
+
+
 def generate_hmac_signature(
     method: str, endpoint: str, query: str = "", body: str = ""
 ) -> str | None:
@@ -126,7 +143,8 @@ def make_api_request(
         if json_body is not None:
             headers["Content-Type"] = "application/json"
 
-        response = requests.post(
+        response = requests.request(
+            method=method,
             url=url,
             headers=headers,
             params=params,
@@ -140,6 +158,18 @@ def make_api_request(
         if e.response is not None:
             print(f"Error response: {e.response.text}")
         raise
+
+
+CORE_API_BASE = f"https://{SERVER}:{PORT}"
+
+
+def get_core_json(path: str, params: dict | None = None) -> dict | None:
+    """GET a wlanpi-core API path, returning parsed JSON or None on failure."""
+    try:
+        data = make_api_request("GET", f"{CORE_API_BASE}{path}", params=params).json()
+    except (requests.RequestException, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
 
 
 wlanpi_core_warning = """
@@ -281,7 +311,7 @@ def start_stop_service(task, service):
             url = "https://127.0.0.1:31415/api/v1/system/service/stop"
         else:
             current_app.logger.error("Invalid task: %s", task)
-            return redirect(get_safe_redirect_target(request.referrer))
+            return redirect(get_safe_referrer_target())
 
         response = make_api_request(method="POST", url=url, params=params)
 
@@ -305,10 +335,10 @@ def start_stop_service(task, service):
                     "Authentication failed. Verify HMAC configuration and shared secret access."
                 )
             current_app.logger.info("%s generated %s response", url, response)
-        return redirect(get_safe_redirect_target(request.referrer))
+        return redirect(get_safe_referrer_target())
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
-        return redirect(get_safe_redirect_target(request.referrer))
+        return redirect(get_safe_referrer_target())
 
 
 def package_installed(package):

@@ -1,10 +1,22 @@
 from unittest.mock import patch
 
+import pytest
+
 from wlanpi_webui.utils import (
     get_safe_redirect_target,
     service_not_installed_warning,
     start_stop_service,
 )
+
+
+@pytest.fixture()
+def app(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "wlanpi_webui.config.Config.SESSION_KEY_PATH", str(tmp_path / "session_key")
+    )
+    from wlanpi_webui.app import create_app
+
+    return create_app()
 
 
 class TestGetSafeRedirectTarget:
@@ -52,6 +64,31 @@ class TestGetSafeRedirectTargetWithRequestContext:
         assert result == "/"
 
 
+class TestGetSafeReferrerTarget:
+    def test_uses_referrer_path(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context(headers={"Referer": "https://wlanpi.local/apps"}):
+            assert utils.get_safe_referrer_target() == "/apps"
+
+    def test_no_referrer_falls_back_to_root(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context():
+            assert utils.get_safe_referrer_target() == "/"
+
+    def test_prefers_hx_current_url(self, app):
+        from wlanpi_webui import utils
+
+        with app.test_request_context(
+            headers={
+                "Referer": "https://wlanpi.local/",
+                "HX-Current-URL": "https://wlanpi.local/apps",
+            }
+        ):
+            assert utils.get_safe_referrer_target() == "/apps"
+
+
 class TestServiceNotInstalled:
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_start_uninstalled_service_returns_warning(self, mock_exists):
@@ -69,3 +106,34 @@ class TestServiceNotInstalled:
     def test_service_not_installed_warning_formatting(self):
         res = service_not_installed_warning("wlanpi-profiler")
         assert "Profiler is not installed" in res
+
+
+class TestGetCoreJson:
+    def test_returns_dict(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        class R:
+            def json(self):
+                return {"a": 1}
+
+        monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: R())
+        assert utils.get_core_json("/x") == {"a": 1}
+
+    def test_returns_none_on_request_failure(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        def boom(*a, **k):
+            raise utils.requests.RequestException()
+
+        monkeypatch.setattr(utils, "make_api_request", boom)
+        assert utils.get_core_json("/x") is None
+
+    def test_returns_none_on_non_dict(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        class R:
+            def json(self):
+                return ["not", "a", "dict"]
+
+        monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: R())
+        assert utils.get_core_json("/x") is None

@@ -8,7 +8,7 @@
   <meta name="author" content="josh@joshschmelzle.com">
   <meta name="description" content="Tools for Wireless LAN Professionals">
   <meta name="theme-color" content="#fff">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-icon-touch.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="192x192"
     href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
@@ -28,9 +28,8 @@
   <div class="uk-flex uk-flex-center uk-flex-middle uk-height-viewport uk-padding">
     <div class="uk-card uk-card-default uk-card-body uk-width-large auth-shell">
       <div class="uk-text-center uk-margin-bottom">
-        <img class="auth-logo" src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo">
-        <h1 class="uk-h3 uk-margin-small-top uk-margin-remove-bottom">WLAN Pi</h1>
-        <p class="uk-text-meta uk-margin-remove-top">{% block subtitle %}{% endblock %}</p>
+        <img class="auth-logo" src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" width="128" height="50">
+        <p class="uk-text-meta uk-margin-small-top uk-margin-remove-bottom">{% block subtitle %}{% endblock %}</p>
       </div>
       {% block content %}{% endblock %}
     </div>
