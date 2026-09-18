@@ -50,70 +50,34 @@ class TestDashboard:
     def test_requires_login(self, client):
         assert client.get("/").status_code == 302
 
-    def test_renders_system_card(self, client, monkeypatch):
-        from wlanpi_webui.dashboard import dashboard as d
-
-        monkeypatch.setattr(
-            d,
-            "get_core_json",
-            lambda *a, **k: {
-                "model": "R4",
-                "name": "wlanpi-573",
-                "hostname": "wlanpi-573.local",
-                "mode": "classic",
-                "software_version": "3.2.0",
-            },
-        )
+    def test_renders_tile_launcher(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/")
         assert resp.status_code == 200
-        assert b"Quick links" in resp.data
-        assert b"R4" in resp.data
-        assert b"/dashboard/network" in resp.data
+        assert b"flipper-screen" in resp.data
+        assert resp.data.count(b'class="flipper-tile"') >= 2
+        assert b"Speed Test" in resp.data
+        assert b"Hostname:" in resp.data
+        assert b"Mode:" in resp.data
 
     def test_htmx_returns_partial(self, client, monkeypatch):
-        from wlanpi_webui.dashboard import dashboard as d
-
-        monkeypatch.setattr(d, "get_core_json", lambda *a, **k: {})
         _login(client, monkeypatch)
         resp = client.get("/", headers={"hx-request": "true"})
         assert resp.status_code == 200
         assert b"<html" not in resp.data
-
-    def test_network_fragment_renders_core_data(self, client, monkeypatch):
-        from wlanpi_webui.dashboard import dashboard as d
-
-        def fake(path, params=None):
-            if "reachability" in path:
-                return {
-                    "Ping Google": "5ms",
-                    "Browse Google": "OK",
-                    "Arping Gateway": "1ms",
-                    "custom": [],
-                }
-            return {
-                "interfaces": {"eth0": {"status": "UP", "ip": "192.168.6.63"}},
-                "public_ip": {"info": ["1.2.3.4"]},
-            }
-
-        monkeypatch.setattr(d, "get_core_json", fake)
-        _login(client, monkeypatch)
-        resp = client.get("/dashboard/network")
-        assert resp.status_code == 200
-        assert b"Ping Google: 5ms" in resp.data
-        assert b"eth0: UP 192.168.6.63" in resp.data
-        assert b"1.2.3.4" in resp.data
-
-    def test_network_fragment_fallback(self, client, monkeypatch):
-        from wlanpi_webui.dashboard import dashboard as d
-
-        monkeypatch.setattr(d, "get_core_json", lambda *a, **k: None)
-        _login(client, monkeypatch)
-        resp = client.get("/dashboard/network")
-        assert b"wlanpi-core is unavailable" in resp.data
 
 
 class TestLibrespeedMoved:
     def test_speedtest_still_available(self, client, monkeypatch):
         _login(client, monkeypatch)
         assert client.get("/speedtest/librespeed").status_code == 200
+
+
+class TestAboutPage:
+    def test_description_and_resources(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/about")
+        assert resp.status_code == 200
+        assert b"open-source Wi-Fi analysis tool" in resp.data
+        assert b"Resources" in resp.data
+        assert b">System</h3>" not in resp.data

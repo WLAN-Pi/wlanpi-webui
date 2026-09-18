@@ -1,7 +1,7 @@
 wlanpi-webui (1.8.0-1) unstable; urgency=medium
 
-  * Add a dashboard at / with system info, network status and quick links.
-    LibreSpeed moves to /speedtest/librespeed.
+  * Add a Flipper Zero-style tile launcher at / (dark "device screen", app
+    tiles, status strip). LibreSpeed moves to /speedtest/librespeed.
   * Source the /network cards (reachability, public IP, eth0 IP config,
     LLDP/CDP neighbours) from the wlanpi-core API instead of running shell
     scripts as the unprivileged webui user. This fixes the Reachability card

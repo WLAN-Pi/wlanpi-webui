@@ -500,3 +500,100 @@ h6 {
         right: -8%;
     }
 }
+
+/* ==========================================================================
+   Dashboard: Flipper Zero-style launcher
+   A deliberate always-dark "device screen" (orange on near-black, monospace,
+   chunky bordered tiles) so it reads as the WLAN Pi's home screen rather than
+   another info page. Colours are fixed on purpose, not tokenised.
+   ========================================================================== */
+
+.flipper-screen {
+    width: 100%;
+    max-width: var(--container);
+    align-self: flex-start;
+    margin: var(--space-5) auto;
+    padding: var(--space-4);
+    background: #0b0f13;
+    border: 2px solid #2a343d;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    color: #e6eaee;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.flipper-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
+    background: #101417;
+    border: 1px solid #2a343d;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.flipper-meta {
+    color: #9aa5b1;
+}
+
+.flipper-value {
+    color: #e6eaee;
+}
+
+.flipper-spacer {
+    flex: 1;
+}
+
+.flipper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 140px));
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+.flipper-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 108px;
+    padding: var(--space-4) var(--space-2);
+    background: #101417;
+    border: 2px solid #2a343d;
+    border-radius: var(--radius-sm);
+    color: #e6eaee !important;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+    transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease,
+        border-color 0.08s ease;
+}
+
+.flipper-tile:hover,
+.flipper-tile:focus {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #0b0f13 !important;
+    transform: translateY(-2px);
+}
+
+.flipper-tile-icon {
+    line-height: 1;
+}
+
+.flipper-foot {
+    margin-top: var(--space-4);
+    color: #9aa5b1;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+}

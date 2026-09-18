@@ -1,52 +1,23 @@
-<div class="uk-flex uk-flex-1 uk-flex-center">
-  <div class="uk-section uk-padding-remove-top uk-padding-remove-bottom uk-width-1-1">
-    <div class="uk-grid-small uk-child-width-1-2@m uk-flex-center" uk-grid
-      uk-height-match="target: > div > .uk-card">
-      <div>
-        <div class="uk-card uk-card-default uk-card-body">
-          <h3 class="uk-card-title">System</h3>
-          <ul class="uk-list">
-            {% if model %}<li>Model: {{ model }}</li>{% endif %}
-            {% if name %}<li>Name: {{ name }}</li>{% endif %}
-            {% if hostname %}<li>Hostname: {{ hostname }}</li>{% endif %}
-            {% if mode %}<li>Mode: {{ mode }}</li>{% endif %}
-            {% if wlanpi_version %}<li>OS version: {{ wlanpi_version }}</li>{% endif %}
-            {% if webui_version %}<li>WebUI version: {{ webui_version }}</li>{% endif %}
-            {% if wlanpi_core_version %}<li>wlanpi-core version: {{ wlanpi_core_version }}</li>{% endif %}
-          </ul>
-        </div>
-      </div>
-      <div>
-        <div class="uk-card uk-card-default uk-card-body">
-          <h3 class="uk-card-title">Network</h3>
-          <div hx-get="/dashboard/network" hx-trigger="load" hx-indicator=".progress" hx-swap="innerHTML">
-            <p class="uk-text-meta">Loading network status&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="uk-grid-small uk-child-width-1-1 uk-margin-top" uk-grid>
-      <div>
-        <div class="uk-card uk-card-default uk-card-body">
-          <h3 class="uk-card-title">Quick links</h3>
-          <ul class="uk-list uk-list-divider">
-            <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">Speed Test</a></li>
-            <li><a hx-get="/network" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">Network</a></li>
-            {% if profiler_installed %}<li><a hx-get="/profiler/profiles" hx-target="#content" hx-swap="innerHTML"
-                hx-push-url="true" hx-indicator=".progress">Profiler</a></li>{% endif %}
-            {% if kismet_installed %}<li><a hx-get="/kismet" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">Kismet</a></li>{% endif %}
-            {% if grafana_installed %}<li><a hx-get="/grafana" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">Grafana</a></li>{% endif %}
-            {% if cockpit_installed %}<li><a hx-get="/cockpit" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">Cockpit</a></li>{% endif %}
-            <li><a hx-get="/about" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-                hx-indicator=".progress">About</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
+{% macro tile(href, icon, label) %}
+<a class="flipper-tile" href="{{ href }}" hx-get="{{ href }}" hx-target="#content" hx-swap="innerHTML"
+  hx-push-url="true" hx-indicator=".progress">
+  <span class="flipper-tile-icon" uk-icon="icon: {{ icon }}; ratio: 1.8"></span>
+  <span class="flipper-tile-label">{{ label }}</span>
+</a>
+{% endmacro %}
+<div class="flipper-screen">
+  <div class="flipper-status">
+    <span class="flipper-meta">Hostname: <span class="flipper-value">{{ hostname }}</span></span>
+    <span class="flipper-spacer"></span>
+    <span class="flipper-meta">Mode: <span class="flipper-value">{{ mode }}</span></span>
   </div>
+  <div class="flipper-grid">
+    {{ tile("/speedtest/librespeed", "download", "Speed Test") }}
+    {{ tile("/network", "server", "Network") }}
+    {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
+    {% if kismet_installed %}{{ tile("/kismet", "receiver", "Kismet") }}{% endif %}
+    {% if grafana_installed %}{{ tile("/grafana", "database", "Grafana") }}{% endif %}
+    {% if cockpit_installed %}{{ tile("/cockpit", "desktop", "Cockpit") }}{% endif %}
+  </div>
+  <div class="flipper-foot">WebUI {{ webui_version }}{% if wlanpi_core_version %} &middot; Core {{ wlanpi_core_version }}{% endif %}{% if wlanpi_version %} &middot; {{ wlanpi_version }}{% endif %}</div>
 </div>

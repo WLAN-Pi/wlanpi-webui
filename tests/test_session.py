@@ -99,6 +99,7 @@ class TestDebugPage:
         assert resp.status_code == 200
         assert b"wlanpiToast" in resp.data
         assert b"Toggle theme" in resp.data
+        assert b"wlanpi-core version" in resp.data
 
 
 class TestThemeCookie:
