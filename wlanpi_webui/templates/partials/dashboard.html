@@ -11,6 +11,32 @@
   <span class="flipper-tile-label">{{ label }}</span>
 </a>
 {% endmacro %}
+{% macro packetstorm_tile() %}
+<a class="flipper-tile" href="/packetstorm" hx-get="/packetstorm" hx-target="#content"
+  hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">
+  <span class="flipper-tile-icon">
+    <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
+      <defs>
+        <mask id="ps-bolt-mask">
+          <rect x="0" y="0" width="24" height="24" fill="#fff" />
+          <path d="M13.5 2.5 L7.5 12.5 L11.5 12.5 L9.5 19.5 L16.5 9.5 L12.5 9.5 Z"
+            fill="#000" stroke="#000" stroke-width="2.6" stroke-linejoin="round" />
+        </mask>
+      </defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round" mask="url(#ps-bolt-mask)">
+        <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+        <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+        <path d="M8.53 16.11a6 6 0 0 1 2.4-1.5" />
+        <path d="M14.6 15.2a6 6 0 0 1 2.88.91" />
+        <line x1="12" y1="20" x2="12.01" y2="20" />
+      </g>
+      <path d="M13.5 2.5 L7.5 12.5 L11.5 12.5 L9.5 19.5 L16.5 9.5 L12.5 9.5 Z" fill="currentColor" />
+    </svg>
+  </span>
+  <span class="flipper-tile-label">&#9889;</span>
+</a>
+{% endmacro %}
 <div class="flipper-screen">
   <h1 class="visually-hidden">WLAN Pi</h1>
   <div class="flipper-grid">
@@ -20,6 +46,7 @@
     {% if kismet_installed %}{{ launch("/kismet", "receiver", "Kismet", new_tab=True) }}{% endif %}
     {% if grafana_installed %}{{ launch("/grafana_url", "database", "Grafana", new_tab=True) }}{% endif %}
     {% if cockpit_installed %}{{ launch("/app/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
+    {{ packetstorm_tile() }}
   </div>
   <div class="flipper-foot">{{ hostname }} &middot; {{ mode }}</div>
 </div>

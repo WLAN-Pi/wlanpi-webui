@@ -124,3 +124,36 @@ class TestAboutPage:
         assert b"Resources" not in resp.data
         assert b"ko-fi.com/wlanpi" in resp.data
         assert b">System</h3>" not in resp.data
+
+
+class TestPacketStorm:
+    def test_requires_login(self, client):
+        resp = client.get("/packetstorm")
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
+
+    def test_htmx_requires_login(self, client):
+        resp = client.get("/packetstorm", headers={"hx-request": "true"})
+        assert resp.status_code == 401
+
+    def test_full_page(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/packetstorm")
+        assert resp.status_code == 200
+        assert b"packetstorm-stage" in resp.data
+        assert b"<html" in resp.data
+
+    def test_htmx_returns_partial(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/packetstorm", headers={"hx-request": "true"})
+        assert resp.status_code == 200
+        assert b"packetstorm-stage" in resp.data
+        assert b"packetstorm.js" in resp.data
+        assert b"<html" not in resp.data
+
+    def test_dashboard_tile_uses_custom_svg(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert b"/packetstorm" in resp.data
+        assert b"<svg" in resp.data

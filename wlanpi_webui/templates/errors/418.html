@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="uk-flex uk-flex-1 uk-dark uk-background-muted">
-    <div class="uk-container uk-container-large">
-        <div class="uk-section">
-            <img width="300px" src="{{ url_for('static', filename='img/teapot.svg') }}" title="I'm a teapot." data-uk-tooltip>
-        </div>
-    </div>
+<div class="page">
+  <div class="page-head page-head-center">
+    <p class="page-eyebrow">Error 418</p>
+    <h2 class="page-title">I'm a teapot</h2>
+    <p class="page-lede">The device is short and stout.</p>
+  </div>
+  <p class="uk-text-center">
+    <img width="300" src="{{ url_for('static', filename='img/teapot.svg') }}" title="I'm a teapot." data-uk-tooltip>
+  </p>
 </div>
 {% endblock %}

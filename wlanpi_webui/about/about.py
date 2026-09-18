@@ -10,3 +10,11 @@ def about():
         return render_template("/partials/about.html")
     else:
         return render_template("/extends/about.html")
+
+
+@bp.route("/packetstorm")
+def packetstorm():
+    if is_htmx(request):
+        return render_template("/partials/packetstorm.html")
+    else:
+        return render_template("/extends/packetstorm.html")

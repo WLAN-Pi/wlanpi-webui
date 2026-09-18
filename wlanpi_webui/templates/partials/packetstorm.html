@@ -1,0 +1,36 @@
+<div class="packetstorm-stage" id="packetstorm-stage">
+  <canvas id="packetstorm-canvas" tabindex="0" role="img"
+    aria-label="Packet Storm: steer the client with arrows or WASD, space fires packets"></canvas>
+  <div class="packetstorm-hud" id="packetstorm-hud" aria-hidden="true"></div>
+  <div class="packetstorm-touch" id="packetstorm-touch" hidden>
+    <div class="packetstorm-pad">
+      <button type="button" data-ps="left" aria-label="Rotate left">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2 5v6h6" />
+          <path d="M3.6 15a9 9 0 1 0 2.1-9.4L2 10" />
+        </svg>
+      </button>
+      <button type="button" data-ps="right" aria-label="Rotate right">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M22 5v6h-6" />
+          <path d="M20.4 15a9 9 0 1 1-2.1-9.4L22 10" />
+        </svg>
+      </button>
+    </div>
+    <div class="packetstorm-pad">
+      <button type="button" data-ps="thrust" aria-label="Thrust">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </button>
+      <button type="button" data-ps="fire" aria-label="Fire">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="2.4" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/packetstorm.js') }}" defer></script>
+</div>
