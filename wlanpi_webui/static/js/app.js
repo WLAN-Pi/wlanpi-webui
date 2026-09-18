@@ -43,6 +43,21 @@
     }
   };
 
+  // Debug aid: fire a test toast from the query string, e.g.
+  //   /about?toast=Hello&status=warning
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var toastMessage = params.get("toast");
+    if (toastMessage) {
+      var toastStatus = params.get("status") || "primary";
+      window.addEventListener("load", function () {
+        window.wlanpiToast(toastMessage, toastStatus);
+      });
+    }
+  } catch (e) {
+    /* ignore */
+  }
+
   // ---- Session expiry -------------------------------------------------
   // nginx rewrites an expired session to a redirect to /login, which htmx
   // would otherwise swap into the page. Detect it and do a full navigation.

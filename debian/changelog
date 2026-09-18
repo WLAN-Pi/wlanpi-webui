@@ -12,6 +12,8 @@ wlanpi-webui (1.7.1-1) unstable; urgency=medium
     disclosure so it is clearly expandable.
   * Fix remaining dark-mode contrast: dropdown menu headers and links, the
     logout button, and inline <kbd>/<samp> (no near-white background).
+  * Add a debug toast trigger via the query string
+    (e.g. /about?toast=Hello&status=warning) for testing toast messages.
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 00:01:00 -0400
 
