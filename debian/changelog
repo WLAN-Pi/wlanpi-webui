@@ -1,3 +1,20 @@
+wlanpi-webui (1.7.1-1) unstable; urgency=medium
+
+  * Map the UIKit components used by the WebUI onto the design tokens so the
+    dark theme is coherent across pages: page background, cards, headings,
+    tables, forms, buttons, alerts, modals, offcanvas and icon buttons.
+  * Use the brand colour for primary buttons instead of UIKit blue.
+  * Invert the black clip icon on the dark icon button.
+  * Stop the navbar dropdowns spanning the full width (drop dropbar mode).
+  * Map default card titles and card hover to tokens so they follow the
+    theme (no white hover on dark).
+  * Replace the profiler "Getting started" accordion with a native <details>
+    disclosure so it is clearly expandable.
+  * Fix remaining dark-mode contrast: dropdown menu headers and links, the
+    logout button, and inline <kbd>/<samp> (no near-white background).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 00:01:00 -0400
+
 wlanpi-webui (1.7.0-1) unstable; urgency=medium
 
   * UI redesign phase 2: session UX.

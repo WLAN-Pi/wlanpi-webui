@@ -5,6 +5,7 @@
    ========================================================================== */
 
 :root {
+    color-scheme: light;
     /* Brand */
     --brand: #f45625;
     --brand-hover: #da3e15;
@@ -13,6 +14,7 @@
     /* Surfaces */
     --bg-page: #f8f8f8;
     --bg-surface: #ffffff;
+    --bg-surface-hover: #ffffff;
     --navbar-bg: #222222;
     --navbar-text: #ffffff;
 
@@ -44,10 +46,12 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-/* Dark theme values are defined here for the toggle that ships in phase 2. */
+/* Dark theme values, applied by the toggle in the user menu. */
 [data-theme="dark"] {
+    color-scheme: dark;
     --bg-page: #101417;
     --bg-surface: #1a2026;
+    --bg-surface-hover: #232b33;
     --navbar-bg: #0b0f13;
     --text: #e6eaee;
     --text-muted: #9aa5b1;
@@ -122,17 +126,56 @@ a:hover {
 }
 
 /* ==========================================================================
-   UIKit component mappings (bounded set)
+   UIKit component mappings
+   UIKit 3 has no dark theme and no colour custom properties, so the
+   components this app uses are mapped onto the tokens here. These apply in
+   both themes; the token values change with data-theme.
    ========================================================================== */
 
-.uk-button-secondary {
-    background-color: var(--brand);
+.uk-background-muted {
+    background-color: var(--bg-page);
+}
+
+.uk-dark {
+    color: var(--text);
 }
 
 .uk-card,
 .uk-card-default {
     background: var(--bg-surface);
     color: var(--text);
+}
+
+.uk-card-title,
+.uk-h1,
+.uk-h2,
+.uk-h3,
+.uk-h4,
+.uk-h5,
+.uk-h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text);
+}
+
+/* UIKit hardcodes #333 for default card titles and #fff on card hover; map
+   both to tokens so they follow the theme. */
+.uk-card-default .uk-card-title {
+    color: var(--text);
+}
+
+.uk-card-hover:hover,
+.uk-card-default.uk-card-hover:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+.uk-text-meta,
+.uk-text-muted {
+    color: var(--text-muted);
 }
 
 .uk-navbar-container {
@@ -149,10 +192,57 @@ a:hover {
     color: var(--text);
 }
 
+.uk-nav > li > a,
+.uk-nav-header {
+    color: var(--text);
+}
+
+.uk-navbar-dropdown-nav > li > a {
+    color: var(--text);
+}
+
+.uk-navbar-dropdown-nav > li > a:hover,
+.uk-navbar-dropdown-nav > li.uk-active > a {
+    color: var(--brand);
+}
+
+.uk-navbar-dropdown-nav .uk-nav-header {
+    color: var(--text);
+}
+
+.uk-nav-divider,
+.uk-navbar-dropdown-nav .uk-nav-divider {
+    border-top-color: var(--border);
+}
+
+.uk-button-text {
+    color: var(--text);
+}
+
+.uk-button-text:hover {
+    color: var(--text);
+}
+
 .uk-button-default {
     background: var(--bg-surface);
     color: var(--text);
     border-color: var(--border);
+}
+
+.uk-button-primary {
+    background-color: var(--brand);
+    color: var(--brand-contrast);
+}
+
+.uk-button-primary:hover,
+.uk-button-primary:focus {
+    background-color: var(--brand-hover);
+    color: var(--brand-contrast);
+}
+
+.uk-button-secondary {
+    background-color: var(--brand);
+    color: var(--brand-contrast);
 }
 
 .uk-input,
@@ -161,6 +251,77 @@ a:hover {
     background: var(--bg-surface);
     color: var(--text);
     border-color: var(--border);
+}
+
+.uk-input::placeholder,
+.uk-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.uk-table {
+    color: var(--text);
+}
+
+.uk-table th,
+.uk-table td {
+    border-color: var(--border);
+}
+
+.uk-table th {
+    color: var(--text-muted);
+}
+
+.uk-icon-button {
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.uk-close {
+    color: var(--text);
+}
+
+.uk-modal-dialog {
+    background: var(--bg-surface);
+    color: var(--text);
+}
+
+.uk-accordion-title {
+    color: var(--text);
+}
+
+/* ==========================================================================
+   Dark-theme specifics (colours that are not a simple token swap)
+   ========================================================================== */
+
+[data-theme="dark"] .uk-alert-danger {
+    background: #3a1f22;
+    color: #f3c2c7;
+}
+
+[data-theme="dark"] .uk-alert-warning {
+    background: #3a3320;
+    color: #f3e2b0;
+}
+
+[data-theme="dark"] .uk-alert-success {
+    background: #1e3524;
+    color: #bfe6c8;
+}
+
+[data-theme="dark"] .uk-offcanvas-bar {
+    background: var(--navbar-bg);
+}
+
+/* clip.svg is a black stroke; invert it on the dark icon button */
+[data-theme="dark"] .uk-icon-button img {
+    filter: invert(1);
+}
+
+/* UIKit gives inline <kbd>/<samp> a near-white background */
+[data-theme="dark"] :not(pre) > kbd,
+[data-theme="dark"] :not(pre) > samp {
+    background: var(--bg-surface-hover);
 }
 
 /* ==========================================================================
@@ -178,6 +339,18 @@ a:hover {
 
 .auth-logo {
     width: 128px;
+}
+
+/* Native <details> disclosure (profiler "Getting started") */
+.disclosure > summary {
+    cursor: pointer;
+    color: var(--brand);
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+.disclosure > summary:hover {
+    color: var(--brand-hover);
 }
 
 .uk-divider-icon {

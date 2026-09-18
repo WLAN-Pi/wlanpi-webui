@@ -22,10 +22,9 @@ from wlanpi_webui.utils import (
 )
 
 getting_started = """
-<ul uk-accordion="">
-<li>
-<a class="uk-accordion-title" href="#">Getting started</a>
-<div class="uk-accordion-content">
+<details class="disclosure">
+<summary>Getting started</summary>
+<div class="uk-margin-small-top">
 <p>Starting the profiler system process:</p>
 <ul class="uk-list uk-list-hyphen">
 <li>Install a supported WLAN NIC into the WLAN Pi.</li>
@@ -42,8 +41,7 @@ getting_started = """
 </ul>
 <p>After associating a client to the profiler SSID, refresh this page to view the result.</p>
 </div>
-</li>
-</ul>
+</details>
 """
 
 
