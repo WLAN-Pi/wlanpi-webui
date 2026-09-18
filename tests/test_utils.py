@@ -69,3 +69,34 @@ class TestServiceNotInstalled:
     def test_service_not_installed_warning_formatting(self):
         res = service_not_installed_warning("wlanpi-profiler")
         assert "Profiler is not installed" in res
+
+
+class TestGetCoreJson:
+    def test_returns_dict(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        class R:
+            def json(self):
+                return {"a": 1}
+
+        monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: R())
+        assert utils.get_core_json("/x") == {"a": 1}
+
+    def test_returns_none_on_request_failure(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        def boom(*a, **k):
+            raise utils.requests.RequestException()
+
+        monkeypatch.setattr(utils, "make_api_request", boom)
+        assert utils.get_core_json("/x") is None
+
+    def test_returns_none_on_non_dict(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        class R:
+            def json(self):
+                return ["not", "a", "dict"]
+
+        monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: R())
+        assert utils.get_core_json("/x") is None

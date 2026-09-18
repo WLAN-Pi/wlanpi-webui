@@ -126,7 +126,8 @@ def make_api_request(
         if json_body is not None:
             headers["Content-Type"] = "application/json"
 
-        response = requests.post(
+        response = requests.request(
+            method=method,
             url=url,
             headers=headers,
             params=params,
@@ -140,6 +141,18 @@ def make_api_request(
         if e.response is not None:
             print(f"Error response: {e.response.text}")
         raise
+
+
+CORE_API_BASE = f"https://{SERVER}:{PORT}"
+
+
+def get_core_json(path: str, params: dict | None = None) -> dict | None:
+    """GET a wlanpi-core API path, returning parsed JSON or None on failure."""
+    try:
+        data = make_api_request("GET", f"{CORE_API_BASE}{path}", params=params).json()
+    except (requests.RequestException, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
 
 
 wlanpi_core_warning = """

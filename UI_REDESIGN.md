@@ -130,14 +130,14 @@ sequentially after #99 and #101.
 - Tests: idle expiry, boot_id mismatch, persisted key across app
   instances, and that a background poll does not re-issue the cookie.
 
-### Phase 3 — dashboard at `/`
+### Phase 3 — dashboard at `/` (done; #108 folded in)
 - Reclaim `/`: remove `@bp.route("/")` from the librespeed blueprint.
-- New dashboard blueprint at `/` reusing existing `about` data (hostname,
-  OS/kernel/hardware/mode, webui/core versions, core status) plus a network
-  summary and quick links to installed apps. Reuse the cached helpers;
-  keep it light (no heavy `network.py` view, no new widgets).
-- `partials/dashboard.html` + `extends/dashboard.html`; add a HOME nav
-  entry.
+- New dashboard blueprint at `/`: system info from `GET
+  /api/v1/system/device/info`, a lazily-loaded network card
+  (`/dashboard/network`) from `GET /api/v1/utils/reachability` +
+  `GET /api/v1/network/info/`, and quick links to installed apps.
+- Migrate the `/network` cards from the bash scripts to the same core API
+  (reachability, public IP, eth0 IP config, LLDP/CDP neighbours).
 
 ### Phase 4 — dark sweep (timeboxed, skippable)
 - Apply the dark token values across the remaining views (cards, forms,

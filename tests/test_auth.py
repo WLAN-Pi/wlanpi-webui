@@ -200,10 +200,10 @@ class TestHmacSignature:
 
         captured = {}
 
-        def fake_post(
-            url, headers=None, params=None, data=None, verify=None, timeout=None
+        def fake_request(
+            method, url, headers=None, params=None, data=None, verify=None, timeout=None
         ):
-            captured.update(url=url, headers=headers, data=data)
+            captured.update(method=method, url=url, headers=headers, data=data)
 
             class R:
                 def raise_for_status(self):
@@ -211,13 +211,14 @@ class TestHmacSignature:
 
             return R()
 
-        monkeypatch.setattr(requests_module, "post", fake_post)
+        monkeypatch.setattr(requests_module, "request", fake_request)
         monkeypatch.setattr(utils, "get_shared_secret", lambda *a, **k: b"test-secret")
         utils.make_api_request(
             "POST",
             "https://127.0.0.1:31415/api/v1/auth/pam",
             json_body={"username": "u", "password": "p"},
         )
+        assert captured["method"] == "POST"
         assert captured["data"] == '{"username": "u", "password": "p"}'
         expected = hmac.new(
             b"test-secret",

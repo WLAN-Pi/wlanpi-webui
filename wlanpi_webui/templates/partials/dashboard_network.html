@@ -1,0 +1,38 @@
+{% if reachability or network %}
+<div class="uk-grid-small uk-child-width-1-1" uk-grid>
+  {% if reachability %}
+  <div>
+    <h4 class="uk-margin-small-bottom">Reachability</h4>
+    <ul class="uk-list uk-list-divider uk-margin-remove-top">
+      {% for label, value in reachability.items() %}
+      {% if label != "custom" %}<li>{{ label }}: {{ value }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if network %}
+  {% if network.interfaces %}
+  <div>
+    <h4 class="uk-margin-small-bottom">Interfaces</h4>
+    <ul class="uk-list uk-list-divider uk-margin-remove-top">
+      {% for name, iface in network.interfaces.items() %}
+      {% if iface is mapping %}<li>{{ name }}: {{ iface.get("status") }} {{ iface.get("ip") }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if network.public_ip and network.public_ip.info %}
+  <div>
+    <h4 class="uk-margin-small-bottom">Public IP</h4>
+    <ul class="uk-list uk-margin-remove-top">
+      {% for line in network.public_ip.info %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% else %}
+<div class="uk-alert-warning" uk-alert>
+  <p>wlanpi-core is unavailable.</p>
+</div>
+{% endif %}

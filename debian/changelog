@@ -1,3 +1,16 @@
+wlanpi-webui (1.8.0-1) unstable; urgency=medium
+
+  * Add a dashboard at / with system info, network status and quick links.
+    LibreSpeed moves to /speedtest/librespeed.
+  * Source the /network cards (reachability, public IP, eth0 IP config,
+    LLDP/CDP neighbours) from the wlanpi-core API instead of running shell
+    scripts as the unprivileged webui user. This fixes the Reachability card
+    always reporting "Arping Gateway: FAIL" (#108).
+  * make_api_request now issues the requested HTTP method, so GET endpoints
+    (e.g. /api/v1/utils/reachability) can be called with the HMAC signature.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 00:50:00 -0400
+
 wlanpi-webui (1.7.2-1) unstable; urgency=medium
 
   * Add a /debug page (toast tests, theme toggle and session details),

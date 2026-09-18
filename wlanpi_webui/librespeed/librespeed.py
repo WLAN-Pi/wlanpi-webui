@@ -4,7 +4,6 @@ from wlanpi_webui.librespeed import bp
 from wlanpi_webui.utils import is_htmx
 
 
-@bp.route("/")
 @bp.route("/speedtest/librespeed")
 def librespeed():
     base = request.host.split(":")[0]

@@ -55,9 +55,12 @@
       <nav class="uk-navbar-container" uk-navbar id="navbar">
         <div class="uk-navbar-left">
           <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
-            href="#"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
+            hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress"
+            href="/"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
               style="width:96px;"></a>
           <ul class="uk-navbar-nav uk-visible@m">
+            <li><a hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                hx-indicator=".progress">HOME</a></li>
             <li>
               <a href="#">SPEED TEST <span uk-navbar-parent-icon></span></a>
               <div class="uk-navbar-dropdown">
@@ -203,6 +206,8 @@
     <div class="uk-offcanvas-bar uk-offcanvas-bar-animation uk-offcanvas-slide">
       <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close></button>
       <ul class="uk-nav uk-nav-default" uk-nav>
+        <li><a hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">HOME</a></li>
         <li><a hx-get="/speedtest/librespeed" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
           hx-indicator=".progress">LIBRESPEED</a></li>
         <li><a hx-get="/speedtest/librespeed/details" hx-target="#content" hx-swap="innerHTML"

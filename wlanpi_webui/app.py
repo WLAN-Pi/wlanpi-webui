@@ -126,6 +126,12 @@ def create_app(config_class=Config):
     app.register_blueprint(debug_bp)
     app.logger.debug("debug blueprint registered")
 
+    app.logger.debug("registering dashboard blueprint")
+    from wlanpi_webui.dashboard import bp as dashboard_bp
+
+    app.register_blueprint(dashboard_bp)
+    app.logger.debug("dashboard blueprint registered")
+
     @app.context_processor
     def inject_vars():
         return {
