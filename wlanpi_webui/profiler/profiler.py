@@ -10,6 +10,7 @@ from pathlib import Path
 from flask import abort, current_app, render_template, request, send_file
 from werkzeug.utils import safe_join
 
+from wlanpi_webui.auth.auth import csrf_required, hx_post_anchor
 from wlanpi_webui.profiler import bp
 from wlanpi_webui.utils import (
     is_htmx,
@@ -370,7 +371,8 @@ def get_profiler_results(filename):
         abort(405)
 
 
-@bp.route("/<task>profiler")
+@bp.route("/<task>profiler", methods=["POST"])
+@csrf_required
 def start_stop_profiler(task):
     if is_htmx(request):
         core_status = system_service_running_state("wlanpi-core")
@@ -398,12 +400,12 @@ def profiler_side_menu():
             profiler_task_anchor_text = "START"
         args = {
             "profiler_message": profiler_message.replace("wlanpi-", ""),
-            "profiler_task_url": profiler_task_url,
-            "profiler_task_anchor_text": profiler_task_anchor_text,
+            "profiler_task_anchor": hx_post_anchor(
+                profiler_task_url, profiler_task_anchor_text
+            ),
         }
         html = """<li class="uk-nav-header">{profiler_message}</li>
-<li><a hx-get="{profiler_task_url}"
-        hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+<li>{profiler_task_anchor}</li>
 <li class="uk-nav-divider"></li>
 <li><a hx-get="/profiler/profiles"
     hx-target="#content"
@@ -444,14 +446,14 @@ def profiler_main_menu():
             profiler_task_anchor_text = "START"
         args = {
             "profiler_message": profiler_message.replace("wlanpi-", ""),
-            "profiler_task_url": profiler_task_url,
-            "profiler_task_anchor_text": profiler_task_anchor_text,
+            "profiler_task_anchor": hx_post_anchor(
+                profiler_task_url, profiler_task_anchor_text
+            ),
             "profiler_ssid": profiler_ssid,
         }
         html = """<li class="uk-nav-header">{profiler_message}</li>
 {profiler_ssid}
-<li><a hx-get="{profiler_task_url}"
-        hx-indicator=".progress">{profiler_task_anchor_text}</a></li>
+<li>{profiler_task_anchor}</li>
 <li class="uk-nav-divider"></li>
 <li><a hx-get="/profiler/profiles"
     hx-target="#content"
