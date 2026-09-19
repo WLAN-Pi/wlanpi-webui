@@ -17,3 +17,11 @@ def settings():
     if is_htmx(request):
         return render_template("/partials/settings.html", **resp_data)
     return render_template("/extends/settings.html", **resp_data)
+
+
+@bp.route("/notifications")
+def notifications():
+    """Session-only record of toasts; the list is filled in by app.js."""
+    if is_htmx(request):
+        return render_template("/partials/notifications.html")
+    return render_template("/extends/notifications.html")

@@ -92,6 +92,7 @@ def stream_stats():
     stats = get_stats()
     if is_htmx(request):
         html = """
+<h3 class="uk-card-title">Health</h3>
 <div class="stat-container">
 <div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
 <div class="stat-label">CPU</div>

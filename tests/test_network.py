@@ -83,7 +83,9 @@ class TestNetwork:
         _login(client, monkeypatch)
         resp = client.get("/network/cards")
         assert resp.status_code == 200
-        assert resp.data.count(b"Unavailable.") == 6
+        # Five generic cards, plus the reachability card with its own message.
+        assert resp.data.count(b"Unavailable.") == 5
+        assert b"wlanpi-core API is not responding." in resp.data
 
     def test_renders_wlan_cards(self, client, monkeypatch):
         from wlanpi_webui.network import network as n

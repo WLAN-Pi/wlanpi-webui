@@ -430,6 +430,109 @@ h6 {
     color: var(--warn-fg);
 }
 
+/* Notifications: UIkit's default is bulky and off-brand, so restyle it */
+.uk-notification-message {
+    position: relative;
+    padding: var(--space-3) var(--space-5) var(--space-3) var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--brand);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    line-height: var(--lh-normal);
+}
+
+.uk-notification-message-success {
+    border-left-color: var(--success);
+}
+
+.uk-notification-message-warning {
+    border-left-color: var(--warning);
+}
+
+.uk-notification-message-danger {
+    border-left-color: var(--danger);
+}
+
+.uk-notification-message-primary {
+    border-left-color: var(--brand);
+}
+
+.uk-notification-message .uk-notification-close {
+    top: 50%;
+    right: var(--space-2);
+    margin-top: -12px;
+}
+
+/* Settings page action rows and diagnostics */
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: var(--space-3) 0 0;
+}
+
+.settings-inline-form {
+    display: inline;
+    margin: 0;
+}
+
+.settings-toasts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+/* About page copy and links */
+.about-copy {
+    max-width: var(--container-narrow);
+}
+
+.about-tagline {
+    margin: var(--space-3) 0 0;
+    font-size: var(--fs-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-ink);
+}
+
+.about-links {
+    max-width: var(--container-narrow);
+}
+
+/* Notification history list */
+.notifications-toolbar {
+    margin-bottom: var(--space-4);
+}
+
+.notifications-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.notifications-list li.notification {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.notification-msg {
+    color: var(--text);
+}
+
+.notification-time {
+    flex: none;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+}
+
 .uk-icon-button {
     background: var(--bg-surface);
     color: var(--text);
@@ -510,13 +613,31 @@ h6 {
     background-color: var(--brand);
 }
 
+.auth-card {
+    width: 100%;
+    max-width: 24rem;
+    padding: var(--space-6);
+}
+
 .auth-shell {
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
 }
 
+.auth-head {
+    text-align: center;
+    margin-bottom: var(--space-5);
+}
+
 .auth-logo {
-    width: 128px;
+    height: 50px;
+    width: auto;
+}
+
+.auth-subtitle {
+    margin: var(--space-3) 0 0;
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
 }
 
 /* Native <details> disclosure (profiler "Getting started") */
@@ -818,6 +939,28 @@ h6 {
 .latency-wrap {
     position: relative;
     height: 220px;
+}
+
+.latency-card {
+    position: relative;
+}
+
+/* Covers the latency card until the first network cards swap lands, so its
+   loading state matches the other cards on the page. */
+#latency-skeleton {
+    position: absolute;
+    inset: 0;
+    padding: 30px;
+    background: var(--bg-surface);
+}
+
+#latency-skeleton[hidden] {
+    display: none;
+}
+
+.latency-skel-chart {
+    height: 180px;
+    margin-top: var(--space-4);
 }
 
 .latency-empty {
@@ -1136,7 +1279,7 @@ h6 {
 }
 
 .flipper-foot {
-    margin-top: var(--space-4);
+    margin: 0 0 var(--space-4);
     color: #9aa5b1;
     font-size: 0.72rem;
     letter-spacing: 0.06em;
@@ -1264,4 +1407,109 @@ h6 {
     .packetstorm-touch button:active {
         transform: none;
     }
+}
+
+/* Start sequence: controls shown on load and after each restart */
+.packetstorm-help {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: rgba(0, 0, 0, 0.72);
+}
+
+.packetstorm-help[hidden] {
+    display: none;
+}
+
+.packetstorm-help-box {
+    width: 100%;
+    max-width: 20rem;
+    padding: var(--space-5);
+    background: var(--bg-surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    font-family: var(--font-mono);
+}
+
+.packetstorm-help-title {
+    margin: 0 0 var(--space-4);
+    font-size: var(--fs-lg);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--brand-ink);
+}
+
+.packetstorm-help-keys {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+}
+
+.packetstorm-help-keys li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.packetstorm-help-keys span:first-child {
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.packetstorm-help-keys kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+}
+
+.packetstorm-help-hint {
+    margin: var(--space-4) 0 0;
+    text-align: center;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.packetstorm-difficulty {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.packetstorm-difficulty button {
+    flex: 1;
+    padding: var(--space-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.packetstorm-difficulty button.is-active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #0b0f13;
 }

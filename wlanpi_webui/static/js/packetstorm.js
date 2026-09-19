@@ -36,13 +36,17 @@
 
   // ---- Persistence ------------------------------------------------------
   var LS_KEY = "wlanpi:packetstorm:v1";
-  var store = { high: 0, mute: true };
+  var store = { high: 0, mute: true, difficulty: "normal" };
   try {
     var rawStore = window.localStorage.getItem(LS_KEY);
     if (rawStore) {
       var parsed = JSON.parse(rawStore);
       if (parsed) {
-        store = { high: +parsed.high || 0, mute: parsed.mute !== false };
+        store = {
+          high: +parsed.high || 0,
+          mute: parsed.mute !== false,
+          difficulty: parsed.difficulty === "easy" ? "easy" : "normal"
+        };
       }
     }
   } catch (e) {
@@ -90,7 +94,8 @@
   // ---- Theme ------------------------------------------------------------
   function readTheme() {
     var out = {
-      brand: "#f45625", page: "#101417", text: "#e6eaee",
+      brand: "#f45625", page: "#101417", surface: "#1a2026", text: "#e6eaee",
+      muted: "#9aa5b1", border: "#2a343d",
       danger: "#d32f2f", ok: "#2e7d32", info: "#0277bd",
       mono: "ui-monospace, Menlo, Consolas, monospace"
     };
@@ -102,7 +107,10 @@
       };
       out.brand = get("--brand") || out.brand;
       out.page = get("--bg-page") || out.page;
+      out.surface = get("--bg-surface") || out.surface;
       out.text = get("--text") || out.text;
+      out.muted = get("--text-muted") || out.muted;
+      out.border = get("--border") || out.border;
       out.danger = get("--danger") || out.danger;
       out.ok = get("--success") || out.ok;
       out.info = get("--info") || out.info;
@@ -135,34 +143,98 @@
     var dy = ay - by;
     return dx * dx + dy * dy;
   }
+  function fmtAirtime(ms) {
+    return (ms / 1000).toFixed(1) + "s";
+  }
 
   // ---- Level spec: band and channel progression -------------------------
-  var SOURCES = ["MICROWAVE", "BABY MONITOR", "CORDLESS PHONE", "BT CLUSTER"];
+  var SOURCES = ["MICROWAVE", "BABY MONITOR", "CORDLESS PHONE", "BT CLUSTER", "FPV DRONE", "RF JAMMER", "VIDEO CAMERA"];
   var ROGUE_SSIDS = ["Free_WiFi", "xfinitywifi", "Hotel_WiFi", "Printer_Setup", "Guest_Net"];
+  // Channel-width boosters: beam count and angular step per width. 160 MHz
+  // needs 5 GHz, 320 MHz needs 6 GHz.
+  var SPREAD = {
+    "40": { beams: 3, step: 0.12 },
+    "80": { beams: 5, step: 0.12 },
+    "160": { beams: 7, step: 0.11 },
+    "320": { beams: 9, step: 0.10 }
+  };
+  function dropTable(band) {
+    var t = ["40", "MU", "BF", "W3", "CSA", "PMF", "W2"];
+    if (band === "5 GHz" || band === "6 GHz") {
+      t.push("80", "160");
+    }
+    if (band === "6 GHz") {
+      t.push("320");
+    }
+    return t;
+  }
+  function beamAngles(count, step) {
+    var out = [];
+    var mid = (count - 1) / 2;
+    var i;
+    for (i = 0; i < count; i++) {
+      out.push((i - mid) * step);
+    }
+    return out;
+  }
+  function pickMimoAngle() {
+    var r = Math.random();
+    var deg;
+    if (r < 0.25) {
+      deg = rand(30, 60);
+    } else if (r < 0.65) {
+      deg = rand(60, 90);
+    } else {
+      deg = rand(120, 180);
+    }
+    return (deg * Math.PI) / 180;
+  }
+  // 5 GHz progression: first non-DFS, then a DFS channel, then non-DFS, and
+  // finally channel 165 with VTX bursts. 6 GHz adds AFC, puncturing, wide
+  // 320 MHz congestion, and VTX from level 9.
+  var FIVE_GHZ = [
+    { ch: 36, dfs: false, vtx: false },
+    { ch: 100, dfs: true, vtx: false },
+    { ch: 149, dfs: false, vtx: false },
+    { ch: 165, dfs: false, vtx: true }
+  ];
   function levelSpec(n) {
     if (n <= 3) {
       return {
         band: "2.4 GHz", ch: [1, 6, 11][(n - 1) % 3],
         rocks: 3 + n, speed: 22 + 7 * n, zones: 3, noise: 0.15 + 0.05 * n,
-        rogues: 0, dfs: false
+        rogues: 0, dfs: false, afc: false, vtx: false, punct: false,
+        zoneW: [56, 110], zoneSlow: 0.55
       };
     }
     if (n <= 7) {
+      var f = FIVE_GHZ[(n - 4) % 4];
       return {
-        band: "5 GHz", ch: [36, 44, 149, 157][(n - 4) % 4],
+        band: "5 GHz", ch: f.ch,
         rocks: 4 + n, speed: 45 + 9 * n, zones: 2, noise: 0.3 + 0.05 * n,
-        rogues: 1, dfs: true
+        rogues: 1, dfs: f.dfs, afc: false, vtx: f.vtx, punct: false,
+        zoneW: [56, 110], zoneSlow: 0.55
       };
     }
     return {
       band: "6 GHz", ch: [5, 21, 37, 53, 69, 85][(n - 8) % 6],
       rocks: 6 + n, speed: 70 + 8 * n, zones: 1, noise: 0.45 + 0.03 * n,
-      rogues: 2, dfs: false
+      rogues: 2, dfs: false, afc: true, vtx: n >= 9, punct: true,
+      zoneW: [120, 200], zoneSlow: 0.4
     };
   }
   var TIER_R = [11, 20, 34];
   var TIER_SCORE = [60, 25, 10];
   var LINK_RATES = [54, 150, 300, 433, 866, 1200, 2400];
+
+  // Easy mode slows the field down and lengthens the telegraphs.
+  var DIFFICULTIES = {
+    normal: { rockSpeed: 1, rogueCool: 1, shipCool: 1, rssiDecay: 1, warn: 1, retries: 0 },
+    easy: { rockSpeed: 0.85, rogueCool: 1.25, shipCool: 0.85, rssiDecay: 0.75, warn: 1.3, retries: 1 }
+  };
+  function diff() {
+    return DIFFICULTIES[store.difficulty] || DIFFICULTIES.normal;
+  }
 
   function edgeSpawn(w, h, margin) {
     var side = (Math.random() * 4) | 0;
@@ -188,7 +260,7 @@
         guard++;
       } while (guard < 12 && dist2(p.x, p.y, w / 2, h / 2) < 170 * 170);
       var a = rand(0, TAU);
-      var sp = rand(spec.speed * 0.6, spec.speed);
+      var sp = rand(spec.speed * 0.6, spec.speed) * diff().rockSpeed;
       rocks.push({
         x: p.x, y: p.y,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
@@ -202,8 +274,9 @@
   function makeZones(w, spec) {
     var zones = [];
     var i;
+    var range = spec.zoneW || [56, 110];
     for (i = 0; i < spec.zones; i++) {
-      zones.push({ x: rand(0, w), w: rand(50, 110), dir: Math.random() < 0.5 ? -1 : 1 });
+      zones.push({ x: rand(0, w), w: rand(range[0], range[1]), dir: Math.random() < 0.5 ? -1 : 1 });
     }
     return zones;
   }
@@ -214,18 +287,21 @@
       w: w, h: h, t: 0, uptime: 0, phase: "play",
       ship: {
         x: w / 2, y: h / 2, vx: 0, vy: 0, a: -Math.PI / 2,
-        rssi: -30, retries: 3, invuln: 0, cool: 0, thrusting: false,
+        rssi: -30, retries: 3 + diff().retries, invuln: 0, cool: 0, thrusting: false,
         respawnWait: 0
       },
       packets: [], rocks: spawnRocks(w, h, 1, spec),
       rogues: [], deauths: [],
       zones: makeZones(w, spec),
       powers: [], parts: [],
-      fx: { spread: 0, mimo: 0, beam: 0, wpa3: 0, pmf: 0 },
+      fx: { spread: 0, spreadKind: "40", mimo: 0, mimoAngle: 1.2, beam: 0, wpa3: 0, pmf: 0, wpa2: 0 },
       combo: 0, score: 0, kills: 0, sent: 0, hits: 0, gains: [],
-      dfs: { active: 0, y: 0, cool: 7, hitDone: false },
+      dfs: { active: 0, y: 0, cool: 7, hitDone: false, dir: 1 },
+      afc: { phase: "idle", timer: 0, y: 0, cool: 8, hitDone: false },
+      vtx: { phase: "idle", timer: 0, x: 0, cool: 6, hitDone: false },
+      punctures: [], punctCool: 5,
       banner: { text: "LEVEL 1  " + spec.band + " / ch " + spec.ch, ttl: 2.4 },
-      shieldDropT: 0,
+      shieldDropT: 0, intro: true, diff: store.difficulty || "normal",
       shake: 0, noise: spec.noise, spec: spec,
       level: 1, band: spec.band, ch: spec.ch,
       paused: false, autoPaused: false, clearTimer: 0,
@@ -246,10 +322,15 @@
     var i;
     for (i = 0; i < n.spec.rogues; i++) {
       var p = edgeSpawn(n.w, n.h, 60);
-      n.rogues.push({ x: p.x, y: p.y, vx: 0, vy: 0, cool: rand(1, 3), ssid: pick(ROGUE_SSIDS) });
+      n.rogues.push({ x: p.x, y: p.y, vx: 0, vy: 0, cool: rand(1, 3), ssid: pick(ROGUE_SSIDS), mlo: n.spec.band === "6 GHz" });
     }
     n.deauths = [];
-    n.dfs = { active: 0, y: 0, cool: 6, hitDone: false };
+    n.dfs = { active: 0, y: 0, cool: 6, hitDone: false, dir: 1 };
+    n.afc = { phase: "idle", timer: 0, y: 0, cool: 8, hitDone: false };
+    n.vtx = { phase: "idle", timer: 0, x: 0, cool: 6, hitDone: false };
+    n.punctures = [];
+    n.punctCool = 5;
+    n.diff = store.difficulty || "normal";
     n.banner = { text: "LEVEL " + n.level + "  " + n.band + " / ch " + n.ch, ttl: 2.4 };
     n.shieldDropT = 0;
     n.phase = "play";
@@ -262,7 +343,7 @@
 
   // ---- update: pure, returns a new state --------------------------------
   function update(S, dt, input) {
-    if (S.phase === "over" || S.paused) {
+    if (S.phase === "over" || S.paused || S.intro) {
       return S;
     }
     var n = Object.assign({}, S);
@@ -326,10 +407,13 @@
 
     var fx = {
       spread: Math.max(0, S.fx.spread - dt),
+      spreadKind: S.fx.spreadKind || "40",
       mimo: Math.max(0, S.fx.mimo - dt),
+      mimoAngle: S.fx.mimoAngle || 1.2,
       beam: Math.max(0, S.fx.beam - dt),
       wpa3: Math.max(0, S.fx.wpa3 - dt),
-      pmf: Math.max(0, S.fx.pmf - dt)
+      pmf: Math.max(0, S.fx.pmf - dt),
+      wpa2: Math.max(0, S.fx.wpa2 - dt)
     };
     n.fx = fx;
 
@@ -345,12 +429,16 @@
     });
     var fired = 0;
     if (input.fire && ship.cool <= 0 && ship.respawnWait <= 0 && packets.length < 16) {
-      ship.cool = 0.22;
-      var angles = fx.spread >= 10 ? [-0.24, -0.12, 0, 0.12, 0.24] : fx.spread > 0 ? [-0.12, 0, 0.12] : [0];
-      // MU-MIMO: two spatial streams, offset to the sides and angled apart
-      // so they diverge toward separate clients instead of firing in parallel.
+      ship.cool = 0.22 * diff().shipCool;
+      var spreadCfg = SPREAD[fx.spreadKind] || SPREAD["40"];
+      var angles = fx.spread > 0 ? beamAngles(spreadCfg.beams, spreadCfg.step) : [0];
+      // MU-MIMO: two spatial streams, offset to the sides and angled apart by
+      // the separation picked when the booster was collected.
+      var sep = fx.mimoAngle || 1.2;
+      var half = sep / 2;
+      var sideOff = 12 + sep * 6;
       var emitters = fx.mimo > 0
-        ? [{ off: -14, da: -0.32 }, { off: 14, da: 0.32 }]
+        ? [{ off: -sideOff, da: -half }, { off: sideOff, da: half }]
         : [{ off: 0, da: 0 }];
       var px = Math.cos(ship.a);
       var py = Math.sin(ship.a);
@@ -359,7 +447,7 @@
         var oy = ship.y + px * em.off;
         var base = ship.a + em.da;
         angles.forEach(function (da) {
-          var sp = 460 * (inZone(ox) ? 0.55 : 1);
+          var sp = 460 * (inZone(ox) ? (S.spec.zoneSlow || 0.55) : 1);
           packets.push({
             x: ox, y: oy,
             vx: Math.cos(base + da) * sp + ship.vx * 0.4,
@@ -467,9 +555,16 @@
       ng.y = wrap(ng.y + ng.vy * dt, n.h);
       ng.cool -= dt;
       if (ng.cool <= 0 && ship.respawnWait <= 0) {
-        ng.cool = Math.max(1.2, 2.8 - S.level * 0.12);
+        ng.cool = Math.max(1.2, 2.8 - S.level * 0.12) * diff().rogueCool;
         var da = Math.atan2(ship.y - ng.y, ship.x - ng.x);
-        deauths.push({ x: ng.x, y: ng.y, vx: Math.cos(da) * 230, vy: Math.sin(da) * 230, life: 4 });
+        if (ng.mlo) {
+          // MLO: two bonded links fire two deauth frames.
+          [-0.18, 0.18].forEach(function (off) {
+            deauths.push({ x: ng.x, y: ng.y, vx: Math.cos(da + off) * 230, vy: Math.sin(da + off) * 230, life: 4 });
+          });
+        } else {
+          deauths.push({ x: ng.x, y: ng.y, vx: Math.cos(da) * 230, vy: Math.sin(da) * 230, life: 4 });
+        }
         beep(220, 0.12, "sawtooth");
       }
       return ng;
@@ -477,6 +572,23 @@
     var keptDeauth = [];
     deauths.forEach(function (d) {
       d.life -= dt;
+      if (fx.wpa2 > 0 && ship.respawnWait <= 0) {
+        // WPA2 downgrade: rogues beamform their deauth frames at the client.
+        var want = Math.atan2(ship.y - d.y, ship.x - d.x);
+        var cur = Math.atan2(d.vy, d.vx);
+        var diff = want - cur;
+        while (diff > Math.PI) {
+          diff -= TAU;
+        }
+        while (diff < -Math.PI) {
+          diff += TAU;
+        }
+        var turn = Math.max(-4.5 * dt, Math.min(4.5 * dt, diff));
+        var spd = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
+        var na = cur + turn;
+        d.vx = Math.cos(na) * spd;
+        d.vy = Math.sin(na) * spd;
+      }
       d.x = wrap(d.x + d.vx * dt, n.w);
       d.y = wrap(d.y + d.vy * dt, n.h);
       if (d.life > 0) {
@@ -506,14 +618,18 @@
         dfs.active = DFS_DUR;
         dfs.y = rand(n.h * 0.2, n.h * 0.8);
         dfs.hitDone = false;
-        n.banner = { text: "DFS RADAR, CLEAR THE BAND", ttl: 1.6 };
+        // Sweep in from the side the player is not on, so they can clear it.
+        dfs.dir = ship.x < n.w / 2 ? -1 : 1;
+        n.banner = { text: "DFS RADAR", ttl: 1.6 };
         beep(440, 0.2, "sawtooth");
       }
       if (dfs.active > 0) {
         dfs.active -= dt;
-        var front = (1 - Math.max(0, dfs.active) / DFS_DUR) * n.w;
+        var dfsProg = 1 - Math.max(0, dfs.active) / DFS_DUR;
+        var front = dfs.dir > 0 ? dfsProg * n.w : (1 - dfsProg) * n.w;
         var inBand = Math.abs(ship.y - dfs.y) < 34;
-        if (inBand && ship.x <= front && ship.respawnWait <= 0) {
+        var reached = dfs.dir > 0 ? ship.x <= front : ship.x >= front;
+        if (inBand && reached && ship.respawnWait <= 0) {
           if (!dfs.hitDone) {
             dfs.hitDone = true;
             n.banner = { text: "RADAR HIT, CLEAR THE BAND", ttl: 1.4 };
@@ -527,6 +643,119 @@
       }
     }
     n.dfs = dfs;
+
+    // AFC: 6 GHz coordination. A stationary band is announced, then locked;
+    // staying inside the locked band drains the link.
+    var afc = Object.assign({}, S.afc);
+    if (S.spec.afc && S.phase === "play") {
+      if (afc.phase === "idle") {
+        afc.cool -= dt;
+        if (afc.cool <= 0) {
+          afc.phase = "warn";
+          afc.timer = 1.5 * diff().warn;
+          afc.y = rand(n.h * 0.2, n.h * 0.8);
+          afc.hitDone = false;
+          n.banner = { text: "AFC CHECK", ttl: 1.4 };
+          beep(520, 0.15, "triangle");
+        }
+      } else if (afc.phase === "warn") {
+        afc.timer -= dt;
+        if (afc.timer <= 0) {
+          afc.phase = "live";
+          afc.timer = 3;
+          beep(300, 0.2, "sawtooth");
+        }
+      } else if (afc.phase === "live") {
+        afc.timer -= dt;
+        if (Math.abs(ship.y - afc.y) < 30 && ship.respawnWait <= 0) {
+          if (!afc.hitDone) {
+            afc.hitDone = true;
+            n.banner = { text: "AFC LOCKED", ttl: 1.2 };
+          }
+          if (damageRssi(n, ship, 22 * dt)) {
+            burst(parts, ship.x, ship.y, REDUCED ? 1 : 3);
+            n.shake = Math.max(n.shake || 0, 4);
+          }
+        }
+        if (afc.timer <= 0) {
+          afc.phase = "idle";
+          afc.cool = 8;
+        }
+      }
+    }
+    n.afc = afc;
+
+    // VTX: a video transmitter seen as a carrier spike on a spectrum analyzer.
+    // It is announced, then fires a full-height spike with noise shoulders.
+    var vtx = Object.assign({}, S.vtx);
+    if (S.spec.vtx && S.phase === "play") {
+      if (vtx.phase === "idle") {
+        vtx.cool -= dt;
+        if (vtx.cool <= 0) {
+          vtx.phase = "warn";
+          vtx.timer = 1.2 * diff().warn;
+          vtx.x = rand(n.w * 0.1, n.w * 0.9);
+          vtx.hitDone = false;
+          n.banner = { text: "VTX", ttl: 1.2 };
+          beep(660, 0.12, "square");
+        }
+      } else if (vtx.phase === "warn") {
+        vtx.timer -= dt;
+        if (vtx.timer <= 0) {
+          vtx.phase = "fire";
+          vtx.timer = 0.6;
+          beep(180, 0.3, "sawtooth");
+        }
+      } else if (vtx.phase === "fire") {
+        vtx.timer -= dt;
+        if (Math.abs(ship.x - vtx.x) < 20 && ship.respawnWait <= 0) {
+          if (!vtx.hitDone) {
+            vtx.hitDone = true;
+            n.banner = { text: "VTX HIT", ttl: 1.2 };
+          }
+          if (damageRssi(n, ship, 40 * dt)) {
+            burst(parts, ship.x, ship.y, REDUCED ? 1 : 3);
+            n.shake = Math.max(n.shake || 0, 6);
+          }
+        }
+        if (vtx.timer <= 0) {
+          vtx.phase = "idle";
+          vtx.cool = 6;
+        }
+      }
+    }
+    n.vtx = vtx;
+
+    // Preamble puncturing: transient notches that destroy packets.
+    n.punctures = [];
+    S.punctures.forEach(function (pu) {
+      var ttl = pu.ttl - dt;
+      if (ttl > 0) {
+        n.punctures.push({ x: pu.x, w: pu.w, ttl: ttl });
+      }
+    });
+    if (S.spec.punct && S.phase === "play") {
+      n.punctCool = (S.punctCool || 0) - dt;
+      if (n.punctCool <= 0) {
+        n.punctCool = 5;
+        var pcount = 1 + ((Math.random() * 2) | 0);
+        var pi;
+        for (pi = 0; pi < pcount; pi++) {
+          n.punctures.push({ x: rand(40, n.w - 40), w: rand(18, 30), ttl: 2.5 });
+        }
+      }
+    }
+    if (n.punctures.length) {
+      n.packets = n.packets.filter(function (p) {
+        var dead = n.punctures.some(function (pu) {
+          return Math.abs(p.x - pu.x) < pu.w / 2;
+        });
+        if (dead) {
+          burst(parts, p.x, p.y, 4);
+        }
+        return !dead;
+      });
+    }
 
     n.packets.forEach(function (p) {
       var hit = -1;
@@ -564,18 +793,14 @@
           }]);
         }
       }
-      // Destroyed interference drops power-ups. 80 MHz bonding does not
-      // exist on 2.4 GHz, so it only drops on 5 GHz and up.
+      // Destroyed interference drops power-ups. The drop table is band-aware
+      // (no 160 MHz on 2.4, no 320 MHz below 6 GHz).
       if (Math.random() < 0.18) {
         var pa = rand(0, TAU);
-        var drops = ["40", "MU", "BF", "W3", "BS", "PMF"];
-        if (n.band !== "2.4 GHz") {
-          drops.push("80");
-        }
         n.powers.push({
           x: rock.x, y: rock.y,
           vx: Math.cos(pa) * 24, vy: Math.sin(pa) * 24,
-          kind: pick(drops), ttl: 9
+          kind: pick(dropTable(n.band)), ttl: 9
         });
       }
       beep(660 + rock.tier * 120, 0.06, "square");
@@ -656,7 +881,7 @@
       if (inZone(ship.x)) {
         decay *= 1.8;
       }
-      ship.rssi -= decay * dt;
+      ship.rssi -= decay * diff().rssiDecay * dt;
       if (nearest > 150 && !inZone(ship.x)) {
         ship.rssi += 3 * dt;
       }
@@ -730,21 +955,27 @@
     }
   }
 
-  var POWER_NAMES = { "40": "40MHz", "80": "80MHz", "MU": "MU-MIMO", "BF": "Beamforming", "W3": "WPA3", "BS": "Band steering", "PMF": "PMF booster" };
+  var POWER_NAMES = { "40": "40MHz", "80": "80MHz", "160": "160MHz", "320": "320MHz", "MU": "MU-MIMO", "BF": "Beamforming", "W3": "WPA3", "W2": "WPA2", "CSA": "Channel switch", "PMF": "PMF shield" };
   function applyPowerup(n, kind) {
-    if (kind === "40") {
-      n.fx.spread = Math.max(n.fx.spread, 8);
-    } else if (kind === "80") {
-      n.fx.spread = 12;
+    if (SPREAD[kind]) {
+      n.fx.spread = 10;
+      n.fx.spreadKind = kind;
     } else if (kind === "MU") {
       n.fx.mimo = Math.max(n.fx.mimo, 10);
+      // Spatial diversity angle is rolled once per pickup.
+      n.fx.mimoAngle = pickMimoAngle();
     } else if (kind === "BF") {
       n.fx.beam = Math.max(n.fx.beam, 10);
     } else if (kind === "W3") {
       n.fx.wpa3 = Math.max(n.fx.wpa3, 10);
     } else if (kind === "PMF") {
       n.fx.pmf = Math.max(n.fx.pmf, 10);
-    } else if (kind === "BS") {
+    } else if (kind === "W2") {
+      // Negative booster: WPA2 lets rogues beamform their deauth frames.
+      n.fx.wpa2 = Math.max(n.fx.wpa2, 10);
+      n.banner = { text: "WPA2 DOWNGRADE, ROGUES LOCK ON", ttl: 1.8 };
+      return;
+    } else if (kind === "CSA") {
       n.zones = [];
     }
     n.banner = { text: POWER_NAMES[kind] + " ACQUIRED", ttl: 1.4 };
@@ -782,7 +1013,7 @@
   var S = initialState(stage.clientWidth || 640, stage.clientHeight || 400);
 
   // ---- Render: the only place that mutates anything besides S ------------
-  var hudTimer = 0;
+  var hudTimer = -1;
   var hudCache = {};
   function setHud(id, text) {
     if (hudCache[id] === text) {
@@ -793,6 +1024,155 @@
     if (el) {
       el.textContent = text;
     }
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // A centred Bluetooth rune of the given size (feather glyph scaled).
+  function drawBtRune(ctx, size) {
+    var k = size / 24;
+    ctx.save();
+    ctx.scale(k, k);
+    ctx.translate(-12, -12);
+    ctx.beginPath();
+    ctx.moveTo(6.5, 6.5);
+    ctx.lineTo(17.5, 17.5);
+    ctx.lineTo(12, 23);
+    ctx.lineTo(12, 1);
+    ctx.lineTo(17.5, 6.5);
+    ctx.lineTo(6.5, 17.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // The largest interference source is drawn as a recognizable device that
+  // matches its label; its fragments stay classic asteroids.
+  function drawSourceShape(ctx, name, x, y, R) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = THEME.text;
+    ctx.fillStyle = THEME.text;
+    var i, j;
+    if (name === "MICROWAVE") {
+      var mw = R * 1.5;
+      var mh = R * 0.95;
+      ctx.strokeRect(-mw / 2, -mh / 2, mw, mh);
+      ctx.strokeRect(-mw / 2 + 3, -mh / 2 + 3, mw * 0.58, mh - 6);
+      ctx.beginPath();
+      ctx.moveTo(-mw / 2 + 5, -2);
+      ctx.lineTo(-mw / 2 + 3 + mw * 0.58 - 2, -2);
+      ctx.moveTo(-mw / 2 + 5, 2);
+      ctx.lineTo(-mw / 2 + 3 + mw * 0.58 - 2, 2);
+      ctx.stroke();
+      for (i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.arc(mw / 2 - 7, i * (mh / 4), 1.6, 0, TAU);
+        ctx.fill();
+      }
+    } else if (name === "BABY MONITOR") {
+      var bw = R * 1.15;
+      var bh = R * 0.9;
+      roundRect(ctx, -bw / 2, -bh / 2, bw, bh, 4);
+      ctx.stroke();
+      ctx.strokeRect(-bw / 2 + 3, -bh / 2 + 3, bw - 6, bh - 12);
+      ctx.beginPath();
+      ctx.moveTo(bw / 2 - 5, -bh / 2);
+      ctx.lineTo(bw / 2 + 2, -bh / 2 - 11);
+      ctx.moveTo(-bw / 4, bh / 2);
+      ctx.lineTo(-bw / 4, bh / 2 + 5);
+      ctx.moveTo(bw / 4, bh / 2);
+      ctx.lineTo(bw / 4, bh / 2 + 5);
+      ctx.stroke();
+    } else if (name === "CORDLESS PHONE") {
+      var pw = R * 0.62;
+      var ph = R * 1.25;
+      roundRect(ctx, -pw / 2, -ph / 2, pw, ph, 5);
+      ctx.stroke();
+      ctx.strokeRect(-pw / 2 + 3, -ph / 2 + 4, pw - 6, ph * 0.2);
+      for (j = 0; j < 3; j++) {
+        for (i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.arc(-pw / 2 + 5 + (i * (pw - 10)) / 2, ph * 0.02 + j * 7, 1.1, 0, TAU);
+          ctx.fill();
+        }
+      }
+    } else if (name === "BT CLUSTER") {
+      drawBtRune(ctx, R * 1.0);
+      var spots = [[-R * 0.78, -R * 0.52], [R * 0.74, -R * 0.44], [0, R * 0.84]];
+      for (i = 0; i < spots.length; i++) {
+        ctx.save();
+        ctx.translate(spots[i][0], spots[i][1]);
+        drawBtRune(ctx, R * 0.52);
+        ctx.restore();
+      }
+    } else if (name === "FPV DRONE") {
+      var arm = R * 0.62;
+      ctx.beginPath();
+      ctx.moveTo(-arm, -arm);
+      ctx.lineTo(arm, arm);
+      ctx.moveTo(arm, -arm);
+      ctx.lineTo(-arm, arm);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.2, 0, TAU);
+      ctx.fill();
+      var corners = [[-arm, -arm], [arm, -arm], [-arm, arm], [arm, arm]];
+      for (i = 0; i < corners.length; i++) {
+        ctx.beginPath();
+        ctx.arc(corners[i][0], corners[i][1], R * 0.22, 0, TAU);
+        ctx.stroke();
+      }
+    } else if (name === "RF JAMMER") {
+      var jw = R * 1.1;
+      var jh = R * 0.8;
+      roundRect(ctx, -jw / 2, -jh / 2, jw, jh, 3);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -jh / 2);
+      ctx.lineTo(0, -jh / 2 - R * 0.5);
+      ctx.stroke();
+      for (i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(0, -jh / 2 - R * 0.5, R * 0.18 + i * R * 0.16, -Math.PI * 0.85, -Math.PI * 0.15);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(-jw * 0.25, jh * 0.1, 1.4, 0, TAU);
+      ctx.arc(jw * 0.25, jh * 0.1, 1.4, 0, TAU);
+      ctx.fill();
+    } else if (name === "VIDEO CAMERA") {
+      var cw = R * 1.4;
+      var ch = R * 0.85;
+      roundRect(ctx, -cw / 2, -ch / 2, cw * 0.72, ch, 3);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cw * 0.36, 0, R * 0.26, 0, TAU);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-cw / 2, -ch * 0.15);
+      ctx.lineTo(-cw / 2 - R * 0.28, -ch * 0.4);
+      ctx.lineTo(-cw / 2 - R * 0.28, ch * 0.1);
+      ctx.lineTo(-cw / 2, ch * 0.25);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-cw * 0.16, -ch / 2);
+      ctx.lineTo(-cw * 0.16, -ch / 2 - R * 0.18);
+      ctx.lineTo(cw * 0.1, -ch / 2 - R * 0.18);
+      ctx.lineTo(cw * 0.1, -ch / 2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function render(S) {
@@ -820,15 +1200,68 @@
       ctx.font = "9px " + THEME.mono;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("CONGESTED", z.x, S.h / 2);
+      var zoneLabelX = Math.max(30, Math.min(S.w - 30, z.x));
+      ctx.fillText("CONGESTION", zoneLabelX, S.h / 2);
     });
 
-    // DFS sweep band. The swept side is live; the unswept side is still safe.
+    // Preamble puncturing: narrow notches that destroy packets.
+    S.punctures.forEach(function (pu) {
+      var px0 = pu.x - pu.w / 2;
+      ctx.fillStyle = "rgba(2, 119, 189, 0.14)";
+      ctx.fillRect(px0, 0, pu.w, S.h);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(px0, 0, pu.w, S.h);
+      ctx.clip();
+      ctx.strokeStyle = "rgba(2, 119, 189, 0.3)";
+      ctx.lineWidth = 1;
+      var ph;
+      for (ph = -S.h; ph < S.w + S.h; ph += 12) {
+        ctx.beginPath();
+        ctx.moveTo(ph, 0);
+        ctx.lineTo(ph + S.h, S.h);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.strokeStyle = "rgba(2, 119, 189, 0.5)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px0, 0);
+      ctx.lineTo(px0, S.h);
+      ctx.moveTo(px0 + pu.w, 0);
+      ctx.lineTo(px0 + pu.w, S.h);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(2, 119, 189, 0.9)";
+      ctx.font = "8px " + THEME.mono;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("PUNCTURED", pu.x, 6);
+    });
+
+    // DFS sweep band. It enters from the side opposite the ship, so the
+    // swept side is live and the unswept side is still safe.
     if (S.dfs.active > 0) {
       var dfsProg = 1 - Math.max(0, S.dfs.active) / DFS_DUR;
-      var dfsFront = dfsProg * S.w;
-      ctx.fillStyle = "rgba(211, 47, 47, 0.16)";
-      ctx.fillRect(0, S.dfs.y - 34, dfsFront, 68);
+      var dfsFront = S.dfs.dir > 0 ? dfsProg * S.w : (1 - dfsProg) * S.w;
+      var dangerX = S.dfs.dir > 0 ? 0 : dfsFront;
+      var dangerW = S.dfs.dir > 0 ? dfsFront : S.w - dfsFront;
+      ctx.fillStyle = "rgba(211, 47, 47, 0.20)";
+      ctx.fillRect(dangerX, S.dfs.y - 34, dangerW, 68);
+      // Hatched, so the damaging sweep reads differently from congestion.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(dangerX, S.dfs.y - 34, dangerW, 68);
+      ctx.clip();
+      ctx.strokeStyle = "rgba(211, 47, 47, 0.35)";
+      ctx.lineWidth = 1;
+      var hatch;
+      for (hatch = dangerX - 68; hatch < dangerX + dangerW + 68; hatch += 10) {
+        ctx.beginPath();
+        ctx.moveTo(hatch, S.dfs.y - 34);
+        ctx.lineTo(hatch + 68, S.dfs.y + 34);
+        ctx.stroke();
+      }
+      ctx.restore();
       ctx.strokeStyle = "rgba(211, 47, 47, 0.4)";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -845,9 +1278,103 @@
       ctx.stroke();
       ctx.fillStyle = THEME.danger;
       ctx.font = "9px " + THEME.mono;
-      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText("RADAR", 4, S.dfs.y - 42);
+      if (S.dfs.dir > 0) {
+        ctx.textAlign = "left";
+        ctx.fillText("RADAR", 4, S.dfs.y - 42);
+      } else {
+        ctx.textAlign = "right";
+        ctx.fillText("RADAR", S.w - 4, S.dfs.y - 42);
+      }
+    }
+
+    // AFC: stationary announced/locked band (6 GHz coordination).
+    if (S.afc && S.afc.phase !== "idle") {
+      var ay = S.afc.y;
+      if (S.afc.phase === "warn") {
+        ctx.strokeStyle = THEME.danger;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, ay - 30);
+        ctx.lineTo(S.w, ay - 30);
+        ctx.moveTo(0, ay + 30);
+        ctx.lineTo(S.w, ay + 30);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = THEME.danger;
+        ctx.font = "9px " + THEME.mono;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText("AFC CHECK", 4, ay - 36);
+      } else {
+        ctx.fillStyle = "rgba(211, 47, 47, 0.20)";
+        ctx.fillRect(0, ay - 30, S.w, 60);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, ay - 30, S.w, 60);
+        ctx.clip();
+        ctx.strokeStyle = "rgba(211, 47, 47, 0.35)";
+        ctx.lineWidth = 1;
+        var ah;
+        for (ah = -60; ah < S.w + 60; ah += 10) {
+          ctx.beginPath();
+          ctx.moveTo(ah, ay - 30);
+          ctx.lineTo(ah + 60, ay + 30);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.fillStyle = THEME.danger;
+        ctx.font = "9px " + THEME.mono;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText("AFC LOCKED", 4, ay - 36);
+      }
+    }
+
+    // VTX: a carrier spike on a spectrum analyzer, with noise shoulders.
+    if (S.vtx && S.vtx.phase !== "idle") {
+      var vx = S.vtx.x;
+      if (S.vtx.phase === "warn") {
+        ctx.strokeStyle = THEME.danger;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(vx, 0);
+        ctx.lineTo(vx, S.h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = THEME.danger;
+        ctx.font = "9px " + THEME.mono;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText("VTX", vx, 4);
+      } else {
+        ctx.fillStyle = "rgba(211, 47, 47, 0.14)";
+        ctx.fillRect(vx - 22, 0, 44, S.h);
+        if (!REDUCED) {
+          ctx.fillStyle = THEME.danger;
+          ctx.globalAlpha = 0.25;
+          var sd;
+          for (sd = 0; sd < 70; sd++) {
+            ctx.fillRect(vx - 22 + Math.random() * 44, Math.random() * S.h, 1.5, 1.5);
+          }
+          ctx.globalAlpha = 1;
+        }
+        ctx.strokeStyle = THEME.danger;
+        ctx.lineWidth = 6;
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.moveTo(vx, 0);
+        ctx.lineTo(vx, S.h);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(vx, 0);
+        ctx.lineTo(vx, S.h);
+        ctx.stroke();
+      }
     }
 
     // Noise floor static.
@@ -880,65 +1407,107 @@
       ctx.fillText(pu.kind, pu.x, pu.y);
     });
 
-    // Packets with short trails.
+    // Packets: RF wavefronts travelling in the shot direction, not bullets.
     S.packets.forEach(function (p) {
-      ctx.strokeStyle = p.ghost ? THEME.info : THEME.brand;
-      ctx.lineWidth = p.ghost ? 1 : 2;
+      var col = p.ghost ? THEME.info : THEME.brand;
+      var ang = Math.atan2(p.vy, p.vx);
+      ctx.strokeStyle = col;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03);
+      ctx.moveTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
-      ctx.fillStyle = p.ghost ? THEME.info : THEME.brand;
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(ang);
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.4, 0, TAU);
-      ctx.fill();
+      ctx.arc(-4, 0, 4.5, -0.7, 0.7);
+      ctx.stroke();
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.arc(-4, 0, 8, -0.55, 0.55);
+      ctx.stroke();
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(-4, 0, 11.5, -0.45, 0.45);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
     });
 
-    // Interference sources: seeded polygons with labels.
+    // Interference sources: the largest is a device matching its label;
+    // fragments stay classic asteroid polygons.
     S.rocks.forEach(function (r) {
       var R = TIER_R[r.tier];
-      ctx.strokeStyle = THEME.text;
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      var k;
-      for (k = 0; k < 8; k++) {
-        var aa = (k / 8) * TAU + r.seed;
-        var rr = R * (0.78 + 0.3 * Math.abs(Math.sin(r.seed * (k + 2))));
-        var px = r.x + Math.cos(aa) * rr;
-        var py = r.y + Math.sin(aa) * rr;
-        if (k === 0) {
-          ctx.moveTo(px, py);
-        } else {
-          ctx.lineTo(px, py);
+      if (r.tier === 2) {
+        drawSourceShape(ctx, r.name, r.x, r.y, R);
+      } else {
+        ctx.strokeStyle = THEME.text;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        var k;
+        for (k = 0; k < 8; k++) {
+          var aa = (k / 8) * TAU + r.seed;
+          var rr = R * (0.78 + 0.3 * Math.abs(Math.sin(r.seed * (k + 2))));
+          var px = r.x + Math.cos(aa) * rr;
+          var py = r.y + Math.sin(aa) * rr;
+          if (k === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
         }
+        ctx.closePath();
+        ctx.stroke();
       }
-      ctx.closePath();
-      ctx.stroke();
-      ctx.fillStyle = THEME.text;
-      ctx.globalAlpha = 0.75;
-      ctx.font = "8px " + THEME.mono;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(r.name, r.x, r.y);
-      ctx.globalAlpha = 1;
     });
 
     // Rogue APs with fake SSID labels, and their deauth frames.
     S.rogues.forEach(function (g) {
-      ctx.strokeStyle = THEME.danger;
       ctx.lineWidth = 1.6;
       var i;
-      for (i = 0; i < 3; i++) {
+      if (g.mlo) {
+        // MLO rogue: two interlocked links, one red and one orange.
+        var lr = 7;
+        var lx = 5;
+        ctx.strokeStyle = THEME.danger;
         ctx.beginPath();
-        ctx.arc(g.x, g.y, 6 + i * 6, -Math.PI * 0.8, -Math.PI * 0.2);
+        ctx.arc(g.x - lx, g.y, lr, 0, TAU);
         ctx.stroke();
+        ctx.strokeStyle = THEME.brand;
+        ctx.beginPath();
+        ctx.arc(g.x + lx, g.y, lr, 0, TAU);
+        ctx.stroke();
+        for (i = 0; i < 3; i++) {
+          ctx.strokeStyle = THEME.danger;
+          ctx.beginPath();
+          ctx.arc(g.x - lx, g.y, 3 + i * 3, -Math.PI * 0.9, -Math.PI * 0.1);
+          ctx.stroke();
+          ctx.strokeStyle = THEME.brand;
+          ctx.beginPath();
+          ctx.arc(g.x + lx, g.y, 3 + i * 3, -Math.PI * 0.9, -Math.PI * 0.1);
+          ctx.stroke();
+        }
+      } else {
+        ctx.strokeStyle = THEME.danger;
+        for (i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.arc(g.x, g.y, 6 + i * 6, -Math.PI * 0.8, -Math.PI * 0.2);
+          ctx.stroke();
+        }
+        ctx.fillStyle = THEME.danger;
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, 2.5, 0, TAU);
+        ctx.fill();
       }
-      ctx.fillStyle = THEME.danger;
-      ctx.beginPath();
-      ctx.arc(g.x, g.y, 2.5, 0, TAU);
-      ctx.fill();
+      ctx.fillStyle = g.mlo ? THEME.brand : THEME.danger;
       ctx.font = "9px " + THEME.mono;
       ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
       ctx.fillText(g.ssid, g.x, g.y - 30);
     });
     S.deauths.forEach(function (d) {
@@ -1055,7 +1624,9 @@
       var panelH = 168;
       var px0 = (S.w - panelW) / 2;
       var py0 = (S.h - panelH) / 2;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+      ctx.fillRect(0, 0, S.w, S.h);
+      ctx.fillStyle = THEME.surface;
       ctx.fillRect(px0, py0, panelW, panelH);
       ctx.strokeStyle = THEME.brand;
       ctx.lineWidth = 2;
@@ -1066,11 +1637,11 @@
       ctx.font = "18px " + THEME.mono;
       ctx.fillText("LEVEL " + S.level + " CLEAR", S.w / 2, py0 + 34);
       ctx.font = "14px " + THEME.mono;
-      ctx.fillText("link quality bonus +" + (S.clearBonus || 0) + " Mbps", S.w / 2, py0 + 68);
+      ctx.fillText("airtime reclaimed +" + fmtAirtime(S.clearBonus || 0), S.w / 2, py0 + 68);
       var nextSpec = levelSpec(S.level + 1);
       ctx.fillText("next: " + nextSpec.band + " / ch " + nextSpec.ch, S.w / 2, py0 + 98);
       var clearProg = 1 - Math.max(0, S.clearTimer) / CLEAR_DUR;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.fillStyle = THEME.border;
       ctx.fillRect(px0 + 24, py0 + 128, panelW - 48, 8);
       ctx.fillStyle = THEME.brand;
       ctx.fillRect(px0 + 24, py0 + 128, (panelW - 48) * clearProg, 8);
@@ -1086,15 +1657,15 @@
 
     // HUD in the DOM, throttled. A restart resets game time, so re-arm the
     // throttle whenever it runs backwards or the header would stay stale.
-    if (S.t < hudTimer) {
-      hudTimer = 0;
+    if (S.t <= hudTimer) {
+      hudTimer = -1;
     }
     if (S.t - hudTimer > 0.1) {
       hudTimer = S.t;
       var link = LINK_RATES[Math.min(S.combo, LINK_RATES.length - 1)];
       var fxBits = [];
       if (S.fx.spread > 0) {
-        fxBits.push((S.fx.spread >= 10 ? "80MHz" : "40MHz") + " " + Math.ceil(S.fx.spread) + "s");
+        fxBits.push((S.fx.spreadKind || "40") + "MHz " + Math.ceil(S.fx.spread) + "s");
       }
       if (S.fx.mimo > 0) {
         fxBits.push("MU-MIMO " + Math.ceil(S.fx.mimo) + "s");
@@ -1106,16 +1677,20 @@
         fxBits.push("WPA3 shield " + Math.ceil(S.fx.wpa3) + "s");
       }
       if (S.fx.pmf > 0) {
-        fxBits.push("PMF " + Math.ceil(S.fx.pmf) + "s");
+        fxBits.push("PMF shield " + Math.ceil(S.fx.pmf) + "s");
       }
-      setHud("ps-score", Math.round(S.score) + " Mbps");
+      if (S.fx.wpa2 > 0) {
+        fxBits.push("WPA2 " + Math.ceil(S.fx.wpa2) + "s");
+      }
+      setHud("ps-score", fmtAirtime(S.score) + " airtime");
       setHud("ps-rssi", Math.round(S.ship.rssi) + " dBm");
       setHud("ps-retries", "retries " + Math.max(0, S.ship.retries));
       setHud("ps-level", "level " + S.level);
       setHud("ps-band", S.band + " / ch " + S.ch);
       setHud("ps-link", "link " + link + "M");
       setHud("ps-fx", fxBits.join("  "));
-      setHud("ps-high", "best " + store.high + " Mbps");
+      setHud("ps-diff", S.diff || "normal");
+      setHud("ps-high", "best " + fmtAirtime(store.high));
       var bar = document.getElementById("ps-rssibar");
       if (bar) {
         var pct = Math.max(0, Math.min(100, ((S.ship.rssi + 90) / 60) * 100));
@@ -1133,19 +1708,30 @@
     '<span id="ps-band"></span>' +
     '<span id="ps-link"></span>' +
     '<span id="ps-fx"></span>' +
+    '<span id="ps-diff"></span>' +
     '<span id="ps-high"></span>';
-  hud.setAttribute("style",
-    "position:absolute;top:8px;left:10px;right:10px;display:flex;flex-wrap:wrap;" +
-    "gap:4px 14px;font-family:" + THEME.mono + ";font-size:12px;color:" + THEME.text + ";" +
-    "pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,0.6);");
-
   var overlay = document.createElement("div");
   overlay.id = "packetstorm-over";
   overlay.setAttribute("style", "display:none;position:absolute;inset:0;align-items:center;" +
     "justify-content:center;background:rgba(0,0,0,0.55);");
-  overlay.innerHTML = '<div id="ps-overbox" style="font-family:' + THEME.mono +
-    ';color:' + THEME.text + ';text-align:center;line-height:1.7;"></div>';
+  overlay.innerHTML = '<div id="ps-overbox"></div>';
   stage.appendChild(overlay);
+
+  // HUD and overlays read the theme tokens, and are refreshed on theme change.
+  function applyChrome() {
+    hud.setAttribute("style",
+      "position:absolute;top:8px;left:10px;right:10px;display:flex;flex-wrap:wrap;" +
+      "gap:4px 14px;font-family:" + THEME.mono + ";font-size:12px;color:" + THEME.text + ";" +
+      "pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,0.35);");
+    var box = document.getElementById("ps-overbox");
+    if (box) {
+      box.setAttribute("style",
+        "font-family:" + THEME.mono + ";color:" + THEME.text +
+        ";background:" + THEME.surface + ";border:2px solid " + THEME.border +
+        ";border-radius:6px;padding:20px 26px;text-align:center;line-height:1.7;");
+    }
+  }
+  applyChrome();
 
   function showOver(o) {
     var box = document.getElementById("ps-overbox");
@@ -1153,18 +1739,83 @@
       return;
     }
     box.innerHTML =
-      "SPEED TEST RESULT<br>" +
-      "peak " + o.peak.toFixed(1) + " Mbps<br>" +
-      "average " + o.avg.toFixed(1) + " Mbps<br>" +
-      "packets sent " + o.sent + "<br>" +
-      "packet loss " + o.loss.toFixed(1) + "%<br>" +
-      "uptime " + Math.round(o.uptime) + "s<br>" +
-      "reached " + S.band + " / ch " + S.ch + ", level " + o.level + "<br>" +
-      "<br>ENTER OR TAP TO RETEST";
+      "Link report<br>" +
+      "Airtime reclaimed: " + fmtAirtime(o.score) + "<br>" +
+      "Frames sent: " + o.sent + "<br>" +
+      "Frame loss: " + o.loss.toFixed(1) + "%<br>" +
+      "Uptime: " + Math.round(o.uptime) + " s<br>" +
+      "Reached: " + S.band + " / ch " + S.ch + ", level " + o.level + "<br>" +
+      "<br>Press Enter or tap to retest";
     overlay.style.display = "flex";
   }
   function hideOver() {
     overlay.style.display = "none";
+  }
+
+  // Start sequence: the controls panel holds the game until the first input.
+  var help = document.getElementById("packetstorm-help");
+  var diffHandlers = [];
+  var diffButtons = help ? help.querySelectorAll("[data-diff]") : [];
+
+  function syncDiffButtons() {
+    Array.prototype.forEach.call(diffButtons, function (btn) {
+      var on = btn.getAttribute("data-diff") === (store.difficulty || "normal");
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-pressed", String(on));
+    });
+  }
+
+  function setDifficulty(mode) {
+    store.difficulty = mode === "easy" ? "easy" : "normal";
+    saveStore();
+    S = initialState(S.w, S.h);
+    S.intro = false;
+    hideHelp();
+    hudTimer = -1;
+    try {
+      canvas.focus({ preventScroll: true });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  Array.prototype.forEach.call(diffButtons, function (btn) {
+    var handler = function (e) {
+      e.preventDefault();
+      setDifficulty(btn.getAttribute("data-diff"));
+    };
+    btn.addEventListener("click", handler);
+    diffHandlers.push([btn, "click", handler]);
+  });
+
+  function showHelp() {
+    if (help) {
+      help.hidden = false;
+      syncDiffButtons();
+    }
+  }
+  function hideHelp() {
+    if (help) {
+      help.hidden = true;
+    }
+  }
+  function startPlay(evt) {
+    // Let the difficulty buttons handle their own click; otherwise hiding the
+    // panel on pointerdown would swallow it.
+    if (evt && evt.target && evt.target.closest && evt.target.closest("[data-diff]")) {
+      return;
+    }
+    if (!S.intro) {
+      return;
+    }
+    S = Object.assign({}, S);
+    S.intro = false;
+    hideHelp();
+    try {
+      canvas.focus({ preventScroll: true });
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   // ---- Canvas sizing: container, DPR, never resets the game -------------
@@ -1289,6 +1940,7 @@
       if (S.phase === "over") {
         hideOver();
         S = initialState(S.w, S.h);
+        showHelp();
       }
     }
   }
@@ -1387,6 +2039,7 @@
   try {
     mo = new MutationObserver(function () {
       THEME = readTheme();
+      applyChrome();
     });
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   } catch (e) {
@@ -1396,6 +2049,7 @@
     if (S.phase === "over") {
       hideOver();
       S = initialState(S.w, S.h);
+      showHelp();
     }
   }
 
@@ -1405,6 +2059,9 @@
   window.addEventListener("pagehide", teardown);
   document.addEventListener("htmx:beforeSwap", onBeforeSwap);
   overlay.addEventListener("click", onOverlayTap);
+  document.addEventListener("keydown", startPlay);
+  document.addEventListener("pointerdown", startPlay);
+  document.addEventListener("touchstart", startPlay);
 
   function teardown() {
     cancelAnimationFrame(raf);
@@ -1415,10 +2072,17 @@
     window.removeEventListener("pagehide", teardown);
     document.removeEventListener("htmx:beforeSwap", onBeforeSwap);
     overlay.removeEventListener("click", onOverlayTap);
+    document.removeEventListener("keydown", startPlay);
+    document.removeEventListener("pointerdown", startPlay);
+    document.removeEventListener("touchstart", startPlay);
     touchHandlers.forEach(function (h) {
       h[0].removeEventListener(h[1], h[2]);
     });
     touchHandlers = [];
+    diffHandlers.forEach(function (h) {
+      h[0].removeEventListener(h[1], h[2]);
+    });
+    diffHandlers = [];
     if (ro) {
       ro.disconnect();
       ro = null;
@@ -1437,6 +2101,9 @@
     canvas.focus({ preventScroll: true });
   } catch (e) {
     /* ignore */
+  }
+  if (S.intro) {
+    showHelp();
   }
   raf = requestAnimationFrame(frame);
 })();

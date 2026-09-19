@@ -97,7 +97,8 @@ class TestSystemPage:
         _login(client, monkeypatch)
         resp = client.get("/system")
         assert resp.status_code == 200
-        assert b"Health" in resp.data
+        # The Health title loads with the stats fragment, not in the shell.
+        assert b"system-health" in resp.data
         assert b"system/facts" in resp.data
         assert b"Hostname" not in resp.data
 
@@ -107,6 +108,12 @@ class TestSystemPage:
         assert resp.status_code == 200
         assert b"Hostname" in resp.data
         assert b"Core" in resp.data
+
+    def test_stats_fragment_has_health_title(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/stream/stats", headers={"hx-request": "true"})
+        assert resp.status_code == 200
+        assert b'uk-card-title">Health<' in resp.data
 
     def test_debug_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)

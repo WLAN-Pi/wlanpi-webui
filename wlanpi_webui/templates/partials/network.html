@@ -21,25 +21,36 @@
     </div>
   </div>
   <script>wlanpiInitPoll('network-cards', 'refresh-network', 15)</script>
-  <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
-    <h3 class="uk-card-title">Latency</h3>
-    <div class="latency-wrap">
-      <canvas id="latency-chart" aria-label="Latency over the last five minutes"></canvas>
-      <div class="latency-empty" id="latency-empty" hidden>Collecting latency samples...</div>
+  <div class="uk-card uk-card-default uk-card-body uk-margin-bottom latency-card">
+    <div id="latency-live">
+      <h3 class="uk-card-title">Latency</h3>
+      <div class="latency-wrap">
+        <canvas id="latency-chart" aria-label="Latency over the last five minutes"></canvas>
+        <div class="latency-empty" id="latency-empty" hidden>Collecting latency samples...</div>
+      </div>
+    </div>
+    <div id="latency-skeleton" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 30%;"></p>
+      <p class="skel latency-skel-chart"></p>
     </div>
   </div>
   <script>
   // Latency history: samples the Reachability card after every cards refresh
   // and draws ping google / ping gateway / arping on one graph. Chart.js is
-  // lazy-loaded so the 200 KB bundle never blocks the page, and the colours
-  // come from the theme tokens.
+  // lazy-loaded so the 200 KB bundle never blocks the page, the colours come
+  // from the theme tokens, and the axes use a fixed five-minute window and a
+  // grow-only y-max so the graph does not rescale as samples arrive.
   (function () {
     if (window.wlanpiLatencyInit) return;
     window.wlanpiLatencyInit = true;
 
     var KEY = "wlanpi-latency";
     var MAX = 120;
+    var WINDOW = 5 * 60 * 1000;
     var chartUrl = "{{ url_for('static', filename='js/Chart.bundle.min.js') }}";
+    var axisMax = 0;
+    var sampled = false;
+    var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
     function loadChart(cb) {
       if (window.Chart) { cb(); return; }
@@ -82,10 +93,32 @@
       };
     }
 
+    function history() {
+      var cutoff = Date.now() - WINDOW;
+      return load().filter(function (p) { return p.t >= cutoff; });
+    }
+
+    var GAP_MS = 120 * 1000;
+
+    // Build a series, inserting a null break whenever samples are missing for
+    // a stretch of time, so the line never spans a gap where there is no data.
+    function seriesData(hist, key) {
+      var out = [];
+      var prev = null;
+      hist.forEach(function (p) {
+        if (prev !== null && p.t - prev.t > GAP_MS) {
+          out.push({ x: prev.t + (p.t - prev.t) / 2, y: null });
+        }
+        out.push({ x: p.t, y: p[key] });
+        prev = p;
+      });
+      return out;
+    }
+
     function dataset(hist, key, label, color, pointRadius) {
       return {
         label: label,
-        data: hist.map(function (p) { return p[key]; }),
+        data: seriesData(hist, key),
         fill: false,
         lineTension: 0.1,
         borderColor: color,
@@ -95,16 +128,10 @@
       };
     }
 
-    function history() {
-      var cutoff = Date.now() - 5 * 60 * 1000;
-      return load().filter(function (p) { return p.t >= cutoff; });
-    }
-
     function dataFor(hist, c) {
       // Dots while the window is sparse, so the first sample is visible.
       var pr = hist.length <= 8 ? 2 : 0;
       return {
-        labels: hist.map(function (p) { return new Date(p.t).toLocaleTimeString(); }),
         datasets: [
           dataset(hist, "g", "Ping Google", c.brand, pr),
           dataset(hist, "gw", "Ping Gateway", c.info, pr),
@@ -113,26 +140,52 @@
       };
     }
 
-    function options(c) {
+    // Round up to a tidy ceiling that only ever grows, so the y-axis is stable.
+    function updateAxisMax(hist) {
+      var m = 0;
+      hist.forEach(function (p) {
+        if (p.g != null && p.g > m) { m = p.g; }
+        if (p.gw != null && p.gw > m) { m = p.gw; }
+        if (p.arp != null && p.arp > m) { m = p.arp; }
+      });
+      var nice = Math.max(20, Math.ceil(m / 10) * 10);
+      if (nice > axisMax) {
+        axisMax = nice;
+      }
+    }
+
+    function options(c, tMin, tMax) {
       var narrow = window.innerWidth < 640;
       return {
         type: "line",
-        data: { labels: [], datasets: [] },
+        data: { datasets: [] },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: { duration: REDUCED ? 0 : 300 },
           legend: {
             position: narrow ? "bottom" : "top",
             labels: { fontColor: c.text, fontSize: narrow ? 10 : 12, boxWidth: narrow ? 10 : 12 }
           },
           scales: {
             xAxes: [{
+              type: "time",
+              time: {
+                min: tMin,
+                max: tMax,
+                displayFormats: { second: "HH:mm:ss", minute: "HH:mm" }
+              },
               gridLines: { color: c.grid },
               ticks: { fontColor: c.text, maxTicksLimit: narrow ? 4 : 8, fontSize: narrow ? 9 : 11 }
             }],
             yAxes: [{
               gridLines: { color: c.grid },
-              ticks: { fontColor: c.text, beginAtZero: true, fontSize: narrow ? 9 : 11 },
+              ticks: {
+                fontColor: c.text,
+                beginAtZero: true,
+                max: axisMax || undefined,
+                fontSize: narrow ? 9 : 11
+              },
               scaleLabel: { display: !narrow, labelString: "ms", fontColor: c.text }
             }]
           }
@@ -142,36 +195,44 @@
 
     function render() {
       var canvas = document.getElementById("latency-chart");
-      if (!canvas) return;
+      if (!canvas || !window.Chart) return;
+      var skeleton = document.getElementById("latency-skeleton");
       var empty = document.getElementById("latency-empty");
       var hist = history();
       var points = hist.filter(function (p) {
         return p.g != null || p.gw != null || p.arp != null;
       }).length;
-      if (empty) empty.hidden = points >= 1;
+
+      if (skeleton) { skeleton.hidden = sampled; }
+      if (empty) { empty.hidden = points >= 1; }
       if (points < 1) {
         canvas.style.visibility = "hidden";
         return;
       }
       canvas.style.visibility = "visible";
-      if (!window.Chart) return;
+
       var c = colors();
+      var now = Date.now();
+      var tMin = now - WINDOW;
+      updateAxisMax(hist);
+
       if (!window.wlanpiLatencyChart || !canvas.dataset.live) {
-        if (window.wlanpiLatencyChart) window.wlanpiLatencyChart.destroy();
-        var opts = options(c);
+        if (window.wlanpiLatencyChart) { window.wlanpiLatencyChart.destroy(); }
+        var opts = options(c, tMin, now);
         opts.data = dataFor(hist, c);
         window.wlanpiLatencyChart = new Chart(canvas.getContext("2d"), opts);
         canvas.dataset.live = "1";
       } else {
         var ch = window.wlanpiLatencyChart;
-        var data = dataFor(hist, c);
-        ch.data.labels = data.labels;
-        ch.data.datasets = data.datasets;
-        ch.options.legend.labels.fontColor = c.text;
+        ch.data.datasets = dataFor(hist, c).datasets;
+        ch.options.scales.xAxes[0].time.min = tMin;
+        ch.options.scales.xAxes[0].time.max = now;
         ch.options.scales.xAxes[0].ticks.fontColor = c.text;
         ch.options.scales.xAxes[0].gridLines.color = c.grid;
         ch.options.scales.yAxes[0].ticks.fontColor = c.text;
+        ch.options.scales.yAxes[0].ticks.max = axisMax;
         ch.options.scales.yAxes[0].gridLines.color = c.grid;
+        ch.options.legend.labels.fontColor = c.text;
         ch.update();
       }
     }
@@ -188,6 +249,7 @@
         arp: parseVal(text, "Arping Gateway")
       });
       save(hist);
+      sampled = true;
       render();
     }
 

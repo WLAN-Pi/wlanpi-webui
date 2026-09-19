@@ -9,6 +9,7 @@
   <meta name="description" content="Tools for Wireless LAN Professionals">
   <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
   <meta name="theme-color" content="#fff">
+  <meta name="wlanpi-boot-id" content="{{ session.get('boot_id', '') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="192x192"
     href="{{ url_for('static', filename='img/android-chrome-192x192.png') }}">
@@ -98,12 +99,11 @@
     <!--FOOTER-->
     <footer class="app-footer">
       <div class="app-footer-inner">
-        <span class="app-footer-brand"><a href="https://wlanpi.com" target="_blank" rel="noopener">WLAN Pi: Portable testing, troubleshooting, and visibility</a></span>
+        <span class="app-footer-brand"><a href="https://wlanpi.com" target="_blank" rel="noopener">WLAN Pi: Wi-Fi Analysis. Anywhere. Anytime.</a></span>
         <span><a hx-get="/about" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
             hx-indicator=".progress" href="/about">About</a>
           &middot; <a href="https://docs.wlanpi.com" target="_blank" rel="noopener">Docs</a>
           &middot; <a href="https://ko-fi.com/wlanpi" target="_blank" rel="noopener">Donate</a>
-          &middot; <a href="https://github.com/WLAN-Pi/feedback" target="_blank" rel="noopener">Feedback</a>
           &middot; <a href="https://github.com/WLAN-Pi" target="_blank" rel="noopener">GitHub</a>
           &middot; <a href="https://twitter.com/wlanpi" target="_blank" rel="noopener">Twitter</a></span>
       </div>
