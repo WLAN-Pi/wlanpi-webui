@@ -56,12 +56,12 @@ function trw(t) {
 (trans.show_detailed_b["en-US"] = "to toggle details about how <a href='https://github.com/librespeed/speedtest' target='_blank'>LibreSpeed</a> works and the algorithms involved."),
 (trans.desc_ping = []),
 (trans.desc_ping["en-US"] =
-    "Ping is measured as a response time for a HTTP request. Multiple requests are sent in 100 ms intervals. The graph shows response times for individual requests. The time values are preferably obtained from the JavaScript Performance API. If this API is not supported in the user's web browser, the JavaScript Date().getTime() function is used, which however provides less precise values."),
+    "Ping is measured as a response time for an HTTP request. Multiple requests are sent in 100 ms intervals. The graph shows response times for individual requests. The time values are preferably obtained from the JavaScript Performance API. If this API is not supported in the user's web browser, the JavaScript Date().getTime() function is used, which provides less precise values."),
 (trans.desc_jitter = []),
-(trans.desc_jitter["en-US"] = "Jitter is computed as a standard deviation of all ping values measured up to the given time. A more representative value is therefore indicated at the end of the measurement."),
+(trans.desc_jitter["en-US"] = "Jitter is computed as the standard deviation of all ping values measured up to the given time. A more representative value is therefore indicated at the end of the measurement."),
 (trans.desc_down_up = []),
 (trans.desc_down_up["en-US"] =
-    "Download and upload are measured by transferring blocks of data by HTTP requests. The bandwidth is computed from HTTP payload data transferred (without HTTP and lower layer headers). The graph shows an arithmetic mean of all values measured up to the given time. A more representative value for large file transfers is therefore indicated at the end of the measurement."),
+    "Download and upload are measured by transferring blocks of data via HTTP requests. The bandwidth is computed from HTTP payload data transferred (without HTTP and lower-layer headers). The graph shows an arithmetic mean of all values measured up to the given time. A more representative value for large file transfers is therefore indicated at the end of the measurement."),
 (trans.desc_final = []),
 (trans.desc_final["en-US"] = "The final number indicated in gauges is an average value for all pings and a value at the end of the measurement for the other characteristics."),
 (trans.desc_origin = []),
