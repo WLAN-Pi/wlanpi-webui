@@ -47,7 +47,7 @@
     }
   }
 </script>
-{% macro card(id, title, lines) %}
+{% macro card(id, title, lines, empty="Unavailable.") %}
 <div>
   <div class="uk-card uk-card-default uk-card-hover uk-card-body">
     <div class="card-head">
@@ -58,14 +58,14 @@
           src="{{ url_for('static', filename='icon/clip.svg') }}" alt="" /></button>
     </div>
     <ul id="{{ id }}" class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
-      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">Unavailable.</li>{% endfor %}
+      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
     </ul>
   </div>
 </div>
 {% endmacro %}
 <div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid
   uk-height-match="target: > div > .uk-card">
-  {{ card("reachability", "Reachability", reachability) }}
+  {{ card("reachability", "Reachability", reachability, reachability_empty) }}
   {{ card("publicip", "Public IP", publicip) }}
   {{ card("ipconfig", "Eth0 IP Config", ipconfig) }}
   {% for w in wlan_cards %}{{ card(w.id, w.title, w.lines) }}{% else %}{{ card("wlan", "WLAN", []) }}{% endfor %}

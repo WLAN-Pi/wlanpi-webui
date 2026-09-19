@@ -39,14 +39,17 @@
 {% endmacro %}
 <div class="flipper-screen">
   <h1 class="visually-hidden">WLAN Pi</h1>
+  <div class="flipper-foot">{{ hostname }} &middot; {{ mode }}</div>
   <div class="flipper-grid">
     {{ launch("/speedtest/librespeed", "download", "Speedtest") }}
     {{ tile("/network", "server", "Network") }}
     {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
-    {% if kismet_installed %}{{ launch("/kismet", "receiver", "Kismet", new_tab=True) }}{% endif %}
+    {% if kismet_installed %}<a class="flipper-tile" href="/kismet" onclick="wlanpiLaunchKismet(event)">
+      <span class="flipper-tile-icon" uk-icon="icon: receiver; ratio: 1.8"></span>
+      <span class="flipper-tile-label">Kismet</span>
+    </a>{% endif %}
     {% if grafana_installed %}{{ launch("/grafana_url", "database", "Grafana", new_tab=True) }}{% endif %}
     {% if cockpit_installed %}{{ launch("/app/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
     {{ packetstorm_tile() }}
   </div>
-  <div class="flipper-foot">{{ hostname }} &middot; {{ mode }}</div>
 </div>

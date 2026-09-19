@@ -1,3 +1,27 @@
+wlanpi-webui (1.10.0-1) unstable; urgency=medium
+
+  * Packet Storm: expand the game with a 5 GHz channel progression (36, 100,
+    149, 165) where only channel 100 runs the DFS radar and channel 165 adds
+    VTX carrier bursts, and a 6 GHz tier with AFC lockout events, preamble
+    puncturing, wide 320 MHz congestion, and MLO rogues that fire two deauth
+    frames. Add an Easy mode, an airtime score, and RF wavefront packets.
+  * Add a Notifications page with a fuzzy searchable, scrollable history that
+    is keyed to the boot id and clears on reboot.
+  * Restyle toasts and add the notification history behind them.
+  * Network: give the latency graph a skeleton loader, a fixed five-minute
+    window and grow-only y-axis, and stop drawing lines across gaps where no
+    data was collected. Distinguish a core API failure from empty data on the
+    Reachability card.
+  * LibreSpeed: theme the page to match the WebUI (light and dark), match the
+    navbar, add an "Unloaded" chart title, populate the loaded ping and jitter
+    statistics placeholders, and lay the results out in a compact row.
+  * UI consistency: card-based Settings, reworked About, unified page headers
+    and data lists, on-system error pages, and a login polish.
+  * Dashboard: show the Kismet tile as a toast when the service is not running
+    instead of opening a dead port, and move the host line above the tiles.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Fri, 18 Sep 2026 23:30:00 -0400
+
 wlanpi-webui (1.9.0-1) unstable; urgency=medium
 
   * Add Packet Storm, a hidden Wi-Fi themed Asteroids game at /packetstorm,

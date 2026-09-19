@@ -3,14 +3,39 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
 <meta charset="UTF-8" />
+<title>WLAN Pi: Speedtest</title>
+<script>
+// Follow the WebUI theme: same origin, so localStorage / cookie are shared.
+(function () {
+  var t = null;
+  try { t = localStorage.getItem("wlanpi-theme"); } catch (e) {}
+  if (t !== "dark" && t !== "light") {
+    var m = document.cookie.match(/(?:^|;\s*)wlanpi_theme=(dark|light)/);
+    if (m) { t = m[1]; }
+  }
+  if (t !== "dark" && t !== "light") {
+    t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 <link rel="stylesheet" href="librespeed_detailed_style.css">
 <script src="Chart.bundle.min.js"></script>
 <script src="jquery.min.js"></script>
 <script src="librespeed_detailed_base.js"></script>
 </head>
 <body>
-<a class="back-home" href="/"><img src="/static/img/wlanpi-sticker.png" alt="WLAN Pi logo" width="96" height="37"><span>&larr; Home</span></a>
-<br />
+<header class="ls-topbar">
+  <a class="ls-brand" href="/"><img src="/static/img/wlanpi-sticker.png" alt="WLAN Pi logo" width="96" height="37"></a>
+  <a class="ls-home" href="/">HOME</a>
+  <a class="ls-back" href="/" aria-label="Back to the dashboard">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  </a>
+</header>
 <div class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></div>
 	<div id="settings_top">
 		<label><script>trw('test_length');</script> <input id="length" type="number" step=1 min=4 max=60> seconds</label>
@@ -29,6 +54,7 @@
 			<div id="jitter_text" class="meter_text"></div>
 			<div class="unit">ms</div>
 		</div>
+		<div class="chart-title">Unloaded</div>
 		<canvas id="chart_pj_area"></canvas>
 	</div>
 	<div class="test_group">
@@ -47,12 +73,11 @@
 		<canvas id="chart_du_area"></canvas>
 	</div>
 </div>
-<div id="stats_block">
-	<h3><script>trw('stats');</script></h3>
-	<table id="stats_table" class="left_tables">
-	</table>
-</div>
 <div class="results-row">
+	<div class="test_group" id="stats_block">
+		<h3><script>trw('stats');</script></h3>
+		<table id="stats_table" class="left_tables"></table>
+	</div>
 	<div class="test_group">
 		<h3>Download</h3>
 		<table id="results_table_download" class="right_tables"></table>

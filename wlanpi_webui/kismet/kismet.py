@@ -1,4 +1,4 @@
-from flask import redirect, request
+from flask import jsonify, redirect, request
 
 from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.kismet import bp
@@ -8,6 +8,12 @@ from wlanpi_webui.utils import (
     system_service_running_state,
     wlanpi_core_warning,
 )
+
+
+@bp.route("/kismet/status")
+def kismet_status():
+    """Report whether Kismet is running so the dashboard can avoid a dead tab."""
+    return jsonify({"running": system_service_running_state("kismet")})
 
 
 @bp.route("/kismet")

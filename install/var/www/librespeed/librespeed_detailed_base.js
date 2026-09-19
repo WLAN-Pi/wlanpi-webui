@@ -114,6 +114,32 @@ var chart1,
     ping_cnt = 0.001;
 
 
+// Read meter and chart colours from the theme tokens so the page follows the
+// WebUI light/dark theme (the HTML sets data-theme before this runs).
+function applyMeterTheme() {
+    try {
+        var cs = getComputedStyle(document.documentElement);
+        var get = function (name, fallback) {
+            var v = cs.getPropertyValue(name);
+            return (v && v.trim()) || fallback;
+        };
+        meterBk = get("--ls-meter-bg", meterBk);
+        progColor = get("--ls-meter-progress", progColor);
+        dlColor = get("--ls-dl", dlColor);
+        ulColor = get("--ls-ul", ulColor);
+        pingColor = get("--ls-ping", pingColor);
+        jitColor = get("--ls-jitter", jitColor);
+        if (window.Chart) {
+            Chart.defaults.global.defaultFontColor = get("--text-muted", "#666");
+            if (Chart.defaults.scale && Chart.defaults.scale.gridLines) {
+                Chart.defaults.scale.gridLines.color = get("--border", "rgba(0,0,0,0.1)");
+            }
+        }
+    } catch (e) { /* keep defaults */ }
+}
+applyMeterTheme();
+
+
 function drawMeter(c, amount, bk, fg, progress, prog) {
     var ctx = c.getContext("2d");
     var dp = window.devicePixelRatio || 1;
@@ -339,7 +365,6 @@ function initUI() {
 
     $('#results_table_download').html("<tr><th>" + tr("time") + " (s)</th><th>" + tr("speed") + " (Mbps)</th></tr>");
     $('#results_table_upload').html("<tr><th>" + tr("time") + " (s)</th><th>" + tr("speed") + " (Mbps)</th></tr>");
-    $('#stats_table').html("<tr><td>No results yet. Run the test to populate statistics.</td></tr>");
     max_download = 0;
     min_download = 0;
     max_upload = 0;
@@ -354,6 +379,8 @@ function initUI() {
     ping_sum = 0;
     ping_cnt = 0.001;
     $("#length").val(parameters.time_dl_max);
+    // Show the full statistics table with placeholders, not just a message.
+    updateStats();
 }
 
 $(document).ready(function() {
@@ -467,12 +494,10 @@ function updateStats() {
         [tr("total_download"), Math.round(total_download / 1024 / 1024) + " MB"],
         [tr("total_upload"), Math.round(total_upload / 1024 / 1024) + " MB"],
         ["Unloaded ping:", fmtStat(ping_sum / ping_cnt, "ms")],
-        ["Unloaded jitter:", unloaded_jitter === null ? "n/a" : Number(unloaded_jitter).toFixed(2) + " ms"]
+        ["Unloaded jitter:", unloaded_jitter === null ? "n/a" : Number(unloaded_jitter).toFixed(2) + " ms"],
+        ["Loaded ping:", last_loaded_ping === null ? "n/a" : fmtStat(last_loaded_ping, "ms")],
+        ["Loaded jitter:", last_loaded_jitter === null ? "n/a" : fmtStat(last_loaded_jitter, "ms")]
     ];
-    if (last_loaded_ping !== null) {
-        rows.push(["Loaded ping:", fmtStat(last_loaded_ping, "ms")]);
-        rows.push(["Loaded jitter:", fmtStat(last_loaded_jitter, "ms")]);
-    }
     $('#stats_table').html(
         rows.map(function (r) { return "<tr><th>" + r[0] + "</th><td>" + r[1] + "</td></tr>"; }).join("")
     );

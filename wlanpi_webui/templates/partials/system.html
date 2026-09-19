@@ -25,9 +25,9 @@
     uk-height-match="target: > div > .uk-card">
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title">Health</h3>
         <div class="sys-live" id="system-health" hx-get="/stream/stats" hx-swap="innerHTML" hx-target="this"
           hx-trigger="load, refresh-system" aria-busy="true" aria-label="Loading">
+          <p class="skel" style="height: 1.1em; width: 40%; margin-bottom: var(--space-3);"></p>
           {% for _ in range(4) %}
           <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
           {% endfor %}

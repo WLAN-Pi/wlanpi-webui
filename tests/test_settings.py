@@ -60,3 +60,21 @@ class TestSettings:
         assert b"wlanpiToast" in resp.data
         assert b"Log out" in resp.data
         assert b"/debug" not in resp.data
+        assert b"/notifications" in resp.data
+
+
+class TestNotifications:
+    def test_requires_login(self, client):
+        assert client.get("/notifications").status_code == 302
+
+    def test_renders(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/notifications")
+        assert resp.status_code == 200
+        assert b"notifications-list" in resp.data
+
+    def test_htmx_returns_partial(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/notifications", headers={"hx-request": "true"})
+        assert resp.status_code == 200
+        assert b"<html" not in resp.data

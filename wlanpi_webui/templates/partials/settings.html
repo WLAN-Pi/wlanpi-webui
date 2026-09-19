@@ -4,36 +4,53 @@
     <h2 class="page-title">Settings</h2>
     <p class="page-lede">Interface, session, and diagnostics.</p>
   </div>
-  <h4>User Interface</h4>
-  <p>
-    <button class="uk-button uk-button-default" onclick="wlanpiToggleTheme()">Toggle dark mode</button>
-  </p>
 
-  <h4>Session</h4>
-  <ul class="uk-list">
-    <li>Signed in as <strong>{{ current_user }}</strong></li>
-  </ul>
-  <form method="post" action="{{ url_for('auth.logout') }}" class="uk-margin-remove">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button class="uk-button logout-button" type="submit">Log out</button>
-  </form>
-
-  <h4>Diagnostics</h4>
-
-  <h5>Toasts</h5>
-  <div class="uk-margin-small-bottom">
-    {% for status in toast_statuses %}
-    <button class="uk-button uk-button-default uk-margin-small-right uk-margin-small-bottom"
-      onclick="wlanpiToast('Test {{ status }} toast', '{{ status }}')">{{ status }}</button>
-    {% endfor %}
-    <button class="uk-button uk-button-default uk-margin-small-bottom"
-      onclick="wlanpiToast('Test default toast')">default</button>
+  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid
+    uk-height-match="target: > div > .uk-card">
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Appearance</h3>
+        <p class="uk-text-meta">Switch between the light and dark themes. The choice is remembered on this device.</p>
+        <div class="settings-actions">
+          <button class="uk-button uk-button-default" type="button" onclick="wlanpiToggleTheme()">Toggle dark mode</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title">Session</h3>
+        <p class="uk-text-meta">Signed in as <strong>{{ current_user }}</strong>.</p>
+        <div class="settings-actions">
+          <form method="post" action="{{ url_for('auth.logout') }}" class="settings-inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="uk-button logout-button" type="submit">Log out</button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <h5>Session state</h5>
-  <ul class="uk-list data-list">
-    <li>User: {{ current_user }}</li>
-    <li>Boot id: {{ boot_id }}</li>
-    <li>Idle timeout: {{ idle_timeout }}s</li>
-  </ul>
+  <h4>Diagnostics</h4>
+  <div class="uk-card uk-card-default uk-card-body">
+    <h5>Notification history</h5>
+    <div class="settings-actions">
+      <a class="uk-button uk-button-default" hx-get="/notifications" hx-target="#content" hx-swap="innerHTML"
+        hx-push-url="true" hx-indicator=".progress" href="/notifications">Notifications</a>
+    </div>
+    <h5>Test notifications</h5>
+    <div class="settings-toasts">
+      {% for status in toast_statuses %}
+      <button class="uk-button uk-button-default" type="button"
+        onclick="wlanpiToast('Test {{ status }} toast', '{{ status }}')">{{ status }}</button>
+      {% endfor %}
+      <button class="uk-button uk-button-default" type="button"
+        onclick="wlanpiToast('Test default toast')">default</button>
+    </div>
+    <h5>Session state</h5>
+    <ul class="uk-list uk-list-divider data-list">
+      <li>User: {{ current_user }}</li>
+      <li>Boot id: {{ boot_id }}</li>
+      <li>Idle timeout: {{ idle_timeout }}s</li>
+    </ul>
+  </div>
 </div>

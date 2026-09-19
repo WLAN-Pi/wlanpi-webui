@@ -26,10 +26,10 @@
 </head>
 <body class="bg-page uk-height-viewport">
   <div class="uk-flex uk-flex-center uk-flex-middle uk-height-viewport uk-padding">
-    <div class="uk-card uk-card-default uk-card-body uk-width-large auth-shell">
-      <div class="uk-text-center uk-margin-bottom">
+    <div class="uk-card uk-card-default auth-card auth-shell">
+      <div class="auth-head">
         <img class="auth-logo" src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo" width="128" height="50">
-        <p class="uk-text-meta uk-margin-small-top uk-margin-remove-bottom">{% block subtitle %}{% endblock %}</p>
+        <p class="auth-subtitle">{% block subtitle %}{% endblock %}</p>
       </div>
       {% block content %}{% endblock %}
     </div>

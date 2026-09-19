@@ -87,7 +87,7 @@ class TestModernization:
         resp = client.get("/")
         assert b"<h1" in resp.data
         assert b"skip-link" in resp.data
-        assert b"Portable testing, troubleshooting" in resp.data
+        assert b"Wi-Fi Analysis. Anywhere. Anytime." in resp.data
         assert b"uk-active" in resp.data
         assert b'aria-current="page"' in resp.data
 

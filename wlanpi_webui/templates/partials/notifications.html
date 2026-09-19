@@ -1,0 +1,17 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Diagnostics</p>
+    <h2 class="page-title">Notifications</h2>
+    <p class="page-lede">Messages are cleared on device reboot.</p>
+  </div>
+  <div class="uk-card uk-card-default uk-card-body">
+    <div class="notifications-toolbar">
+      <label class="visually-hidden" for="notifications-search">Search notifications</label>
+      <input id="notifications-search" class="uk-input" type="search" placeholder="Search notifications"
+        oninput="wlanpiFilterNotifications(this.value)">
+    </div>
+    <ul class="uk-list uk-list-divider notifications-list" id="notifications-list">
+      <li class="uk-text-meta">No notifications yet.</li>
+    </ul>
+  </div>
+</div>

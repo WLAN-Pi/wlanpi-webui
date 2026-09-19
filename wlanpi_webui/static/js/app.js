@@ -198,17 +198,118 @@
     wlanpiFire(id, evt);
   };
 
-  // ---- Toasts ---------------------------------------------------------
+  // ---- Toasts and notification history --------------------------------
+  // Persisted in localStorage but keyed by the kernel boot id, so it
+  // survives reloads and clears on device reboot. The /notifications page
+  // renders the list with a fuzzy search.
+  var NOTIF_KEY = "wlanpi-notifications";
+  var NOTIF_MAX = 100;
+
+  function bootId() {
+    var m = document.querySelector('meta[name="wlanpi-boot-id"]');
+    return m ? m.content : "";
+  }
+
+  function loadNotifications() {
+    var data = null;
+    try {
+      data = JSON.parse(localStorage.getItem(NOTIF_KEY));
+    } catch (e) {
+      data = null;
+    }
+    if (!data || data.boot !== bootId() || !Array.isArray(data.items)) {
+      data = { boot: bootId(), items: [] };
+    }
+    return data;
+  }
+
+  function saveNotifications(data) {
+    try {
+      localStorage.setItem(NOTIF_KEY, JSON.stringify(data));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function fuzzyMatch(text, query) {
+    text = text.toLowerCase();
+    query = query.toLowerCase();
+    var i = 0;
+    var j;
+    for (j = 0; j < text.length && i < query.length; j++) {
+      if (text.charAt(j) === query.charAt(i)) {
+        i++;
+      }
+    }
+    return i === query.length;
+  }
+
+  function renderNotifications(query) {
+    var el = document.getElementById("notifications-list");
+    if (!el) {
+      return;
+    }
+    if (query === undefined) {
+      var input = document.getElementById("notifications-search");
+      query = input ? input.value : "";
+    }
+    var items = loadNotifications().items.slice().reverse();
+    if (query) {
+      items = items.filter(function (n) {
+        return fuzzyMatch(n.message + " " + n.status, query);
+      });
+    }
+    if (!items.length) {
+      el.innerHTML =
+        '<li class="uk-text-meta">' +
+        (query ? "No matching notifications." : "No notifications yet.") +
+        "</li>";
+      return;
+    }
+    el.innerHTML = items
+      .map(function (n) {
+        return (
+          '<li class="notification notification-' +
+          n.status +
+          '"><span class="notification-msg">' +
+          n.message +
+          '</span><span class="notification-time">' +
+          new Date(n.t).toLocaleTimeString() +
+          "</span></li>"
+        );
+      })
+      .join("");
+  }
+
+  window.wlanpiFilterNotifications = function (query) {
+    renderNotifications(query);
+  };
+
   window.wlanpiToast = function (message, status) {
+    status = status || "primary";
+    var data = loadNotifications();
+    data.items.push({ message: message, status: status, t: Date.now() });
+    if (data.items.length > NOTIF_MAX) {
+      data.items.shift();
+    }
+    saveNotifications(data);
     if (window.UIkit && UIkit.notification) {
       UIkit.notification({
         message: message,
-        status: status || "primary",
+        status: status,
         pos: "top-right",
-        timeout: 10000,
+        timeout: 8000,
       });
     }
+    renderNotifications();
   };
+
+  document.addEventListener("htmx:afterSwap", function () {
+    renderNotifications();
+  });
+  window.addEventListener("load", function () {
+    renderNotifications();
+  });
 
   // Debug aid: fire a test toast from the query string, e.g.
   //   /about?toast=Hello&status=warning
@@ -256,6 +357,31 @@
       redirectToLogin();
     }
   });
+
+  // Kismet opens in a new tab, but only when the service is up; otherwise
+  // tell the user instead of landing them on a dead port.
+  window.wlanpiLaunchKismet = function (evt) {
+    if (evt) {
+      evt.preventDefault();
+    }
+    fetch("/kismet/status", { headers: { Accept: "application/json" } })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (data && data.running) {
+          window.open("/kismet", "_blank", "noopener");
+        } else {
+          window.wlanpiToast(
+            "Kismet is not running. Start it from Applications.",
+            "warning"
+          );
+        }
+      })
+      .catch(function () {
+        window.wlanpiToast("Kismet status is unavailable.", "warning");
+      });
+  };
 
   // ---- Konami code ----------------------------------------------------
   // Hidden shortcut to /packetstorm. Ignores keystrokes in form fields,

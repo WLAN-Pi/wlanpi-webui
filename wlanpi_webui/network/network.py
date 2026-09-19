@@ -52,16 +52,22 @@ def network():
 @bp.route("/network/cards")
 def network_cards():
     """Network cards, sourced from the wlanpi-core API."""
-    reachability = get_core_json("/api/v1/utils/reachability") or {}
+    reach = get_core_json("/api/v1/utils/reachability")
     net = get_core_json("/api/v1/network/info/") or {}
+
+    if reach is None:
+        reachability: list[str] = []
+        reachability_empty = "wlanpi-core API is not responding."
+    else:
+        reachability = [
+            f"{label}: {value}" for label, value in reach.items() if label != "custom"
+        ]
+        reachability_empty = "No reachability data returned."
 
     resp_data = {
         "hostname": get_hostname(),
-        "reachability": [
-            f"{label}: {value}"
-            for label, value in reachability.items()
-            if label != "custom"
-        ],
+        "reachability": reachability,
+        "reachability_empty": reachability_empty,
         "publicip": _lines(net.get("public_ip")),
         "ipconfig": _lines(net.get("eth0_ipconfig_info")),
         "lldp": _lines(net.get("lldp_neighbour_info")),

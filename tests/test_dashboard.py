@@ -105,6 +105,15 @@ class TestRedirects:
         assert resp.status_code == 302
         assert ":2501" in resp.headers["Location"]
 
+    def test_kismet_status_reports_running(self, client, monkeypatch):
+        from wlanpi_webui.kismet import kismet as k
+
+        monkeypatch.setattr(k, "system_service_running_state", lambda *a, **kw: True)
+        _login(client, monkeypatch)
+        resp = client.get("/kismet/status")
+        assert resp.status_code == 200
+        assert resp.get_json() == {"running": True}
+
 
 class TestNoIframes:
     @pytest.mark.parametrize(
@@ -149,6 +158,8 @@ class TestPacketStorm:
         assert resp.status_code == 200
         assert b"packetstorm-stage" in resp.data
         assert b"packetstorm.js" in resp.data
+        assert b"packetstorm-help" in resp.data
+        assert b'data-diff="easy"' in resp.data
         assert b"<html" not in resp.data
 
     def test_dashboard_tile_uses_custom_svg(self, client, monkeypatch):

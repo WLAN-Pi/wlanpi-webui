@@ -32,5 +32,24 @@
       </button>
     </div>
   </div>
+  <div class="packetstorm-help" id="packetstorm-help" hidden>
+    <div class="packetstorm-help-box">
+      <h2 class="packetstorm-help-title">Packet Storm</h2>
+      <ul class="packetstorm-help-keys">
+        <li><span>Rotate</span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> / <kbd>A</kbd> <kbd>D</kbd></span></li>
+        <li><span>Thrust</span><span><kbd>&uarr;</kbd> / <kbd>W</kbd></span></li>
+        <li><span>Fire</span><kbd>Space</kbd></li>
+        <li><span>Channel hop</span><kbd>Shift</kbd></li>
+        <li><span>Pause</span><kbd>P</kbd></li>
+        <li><span>Mute</span><kbd>M</kbd></li>
+        <li><span>Leave</span><kbd>Esc</kbd></li>
+      </ul>
+      <div class="packetstorm-difficulty" role="group" aria-label="Difficulty">
+        <button type="button" data-diff="normal">Normal</button>
+        <button type="button" data-diff="easy">Easy</button>
+      </div>
+      <p class="packetstorm-help-hint">Press any key or tap to start</p>
+    </div>
+  </div>
   <script src="{{ url_for('static', filename='js/packetstorm.js') }}" defer></script>
 </div>
