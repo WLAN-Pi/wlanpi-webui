@@ -143,6 +143,13 @@ if which nginx >/dev/null 2>&1; then
             echo "Run 'nginx -t' to check for configuration errors."
         fi
     fi
+
+    # The site configs ship with this package, so reload whenever they changed
+    # even though the symlinks were already in place.
+    if nginx -t >/dev/null 2>&1; then
+        echo "Reloading nginx..."
+        deb-systemd-invoke reload nginx.service || true
+    fi
 fi
 
 # generate garbage.dat file
@@ -160,6 +167,16 @@ fi
 # fix up permissions
 if [ -d /var/www/librespeed ]; then
     chown -R www-data:www-data /var/www/librespeed
+fi
+
+# sudo rejects drop-ins that are group or world writable
+if [ -f /etc/sudoers.d/wlanpi-webui ]; then
+    chown root:root /etc/sudoers.d/wlanpi-webui
+    chmod 0440 /etc/sudoers.d/wlanpi-webui
+    if command -v visudo >/dev/null 2>&1; then
+        visudo -c -f /etc/sudoers.d/wlanpi-webui >/dev/null || \
+            echo "WARNING: invalid sudoers drop-in at /etc/sudoers.d/wlanpi-webui"
+    fi
 fi
 
 systemctl daemon-reload

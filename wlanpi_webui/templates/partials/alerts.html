@@ -1,0 +1,40 @@
+{# Viewing this page marks the active conditions read (see app.js). #}
+<div id="alerts-seen" hidden data-keys="{{ alert_keys | join(',') }}"></div>
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Diagnostics</p>
+    <h2 class="page-title">Alerts</h2>
+    <p class="page-lede">Conditions that need attention, and the message history behind them.</p>
+  </div>
+
+  {% if alerts %}
+  <div class="uk-grid-small uk-child-width-1-1" uk-grid>
+    {% for alert in alerts %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h3 class="uk-card-title uk-margin-small-bottom">{{ alert.title }}</h3>
+        <p class="uk-text-meta uk-margin-remove-top">{{ alert.detail }}</p>
+        <pre class="alert-fix">{{ alert.fix }}</pre>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="uk-alert-success" uk-alert>
+    <p>No active alerts.</p>
+  </div>
+  {% endif %}
+
+  <h4>History</h4>
+  <p class="uk-text-meta">Messages raised since the last reboot.</p>
+  <div class="uk-card uk-card-default uk-card-body">
+    <div class="notifications-toolbar">
+      <label class="visually-hidden" for="notifications-search">Search messages</label>
+      <input id="notifications-search" class="uk-input" type="search" placeholder="Search messages"
+        oninput="wlanpiFilterNotifications(this.value)">
+    </div>
+    <ul class="uk-list uk-list-divider notifications-list" id="notifications-list">
+      <li class="uk-text-meta">No messages yet.</li>
+    </ul>
+  </div>
+</div>

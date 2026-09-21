@@ -73,6 +73,9 @@
     if (/^\/(apps|profiler|kismet|grafana|cockpit|speedtest)/.test(path)) {
       return "apps";
     }
+    if (path.indexOf("/cli") === 0) {
+      return "cli";
+    }
     if (path.indexOf("/network") === 0) {
       return "network";
     }
@@ -200,8 +203,8 @@
 
   // ---- Toasts and notification history --------------------------------
   // Persisted in localStorage but keyed by the kernel boot id, so it
-  // survives reloads and clears on device reboot. The /notifications page
-  // renders the list with a fuzzy search.
+  // survives reloads and clears on device reboot. The /alerts page renders
+  // the list with a fuzzy search.
   var NOTIF_KEY = "wlanpi-notifications";
   var NOTIF_MAX = 100;
 
@@ -262,7 +265,7 @@
     if (!items.length) {
       el.innerHTML =
         '<li class="uk-text-meta">' +
-        (query ? "No matching notifications." : "No notifications yet.") +
+        (query ? "No matching messages." : "No messages yet.") +
         "</li>";
       return;
     }
@@ -357,11 +360,107 @@
     return done(fallbackCopyText(text));
   };
 
+  var ALERTS_SEEN_KEY = "wlanpi-alerts-seen";
+
+  function alertsSeen() {
+    try {
+      var v = JSON.parse(localStorage.getItem(ALERTS_SEEN_KEY));
+      return Array.isArray(v) ? v : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveAlertsSeen(keys) {
+    try {
+      localStorage.setItem(ALERTS_SEEN_KEY, JSON.stringify(keys));
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function alertKeysFrom(value) {
+    return (value || "").split(",").filter(function (k) {
+      return k.length > 0;
+    });
+  }
+
+  // The bell badge counts active alerts the user has not looked at yet.
+  // Stale keys are dropped, so a condition that clears and later returns is
+  // unread again.
+  function syncAlertsBell(keys) {
+    var el = document.getElementById("alerts-bell");
+    if (!el) return;
+    var seen = alertsSeen().filter(function (k) {
+      return keys.indexOf(k) !== -1;
+    });
+    saveAlertsSeen(seen);
+    var unread = keys.filter(function (k) {
+      return seen.indexOf(k) === -1;
+    });
+    var badge = el.querySelector(".alerts-badge");
+    if (badge) {
+      badge.textContent = String(unread.length);
+      badge.hidden = unread.length === 0;
+    }
+  }
+
+  // Called by the alerts page once its conditions are on screen.
+  window.wlanpiMarkAlertsSeen = function (keys) {
+    var seen = alertsSeen();
+    keys.forEach(function (k) {
+      if (seen.indexOf(k) === -1) seen.push(k);
+    });
+    saveAlertsSeen(seen);
+    syncAlertsBell(keys);
+  };
+
+  // Server-queued toast (e.g. "Profiler started.") rides on a response header
+  // so it survives the redirect back to the page the user came from. The same
+  // hook carries the active-alert keys for the navbar bell.
+  // Listen on document: app.js loads in <head>, so document.body is still
+  // null when this file runs. htmx events bubble.
+  document.addEventListener("htmx:afterSettle", function (evt) {
+    var xhr = evt.detail && evt.detail.xhr;
+    if (xhr && xhr.getResponseHeader) {
+      var alerts = xhr.getResponseHeader("X-Wlanpi-Alerts");
+      if (alerts !== null) {
+        var bell = document.getElementById("alerts-bell");
+        if (bell) bell.dataset.alertKeys = alerts;
+        syncAlertsBell(alertKeysFrom(alerts));
+      }
+    }
+    syncAlertsSeenFromPage();
+
+    if (!xhr || !xhr.getResponseHeader) return;
+    var raw = xhr.getResponseHeader("X-Wlanpi-Toast");
+    if (!raw) return;
+    var toast;
+    try {
+      toast = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    if (toast && toast.message) {
+      window.wlanpiToast(toast.message, toast.status || "primary");
+    }
+  });
+
+  function syncAlertsSeenFromPage() {
+    var seenEl = document.getElementById("alerts-seen");
+    if (seenEl) {
+      window.wlanpiMarkAlertsSeen(alertKeysFrom(seenEl.dataset.keys));
+    }
+  }
+
   document.addEventListener("htmx:afterSwap", function () {
     renderNotifications();
   });
   window.addEventListener("load", function () {
     renderNotifications();
+    syncAlertsSeenFromPage();
+    var bell = document.getElementById("alerts-bell");
+    if (bell) syncAlertsBell(alertKeysFrom(bell.dataset.alertKeys));
   });
 
   // Debug aid: fire a test toast from the query string, e.g.

@@ -2265,3 +2265,166 @@ h6 {
     text-align: right;
     word-break: break-word;
 }
+
+/* ============================================================
+   Speedtest report
+   ============================================================ */
+
+/* Result page: Download and Upload as plain stats, not a table. */
+.speedtest-headline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    margin: var(--stack-sm) 0;
+}
+
+.speedtest-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.speedtest-stat-value {
+    font-size: var(--fs-2xl);
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--brand-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.speedtest-stat-label {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+/* Results table: keep a long note from stretching the row. */
+.speedtest-note-cell {
+    max-width: 18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Navbar alerts bell with an unread counter */
+.alerts-bell-link {
+    display: inline-flex;
+    align-items: center;
+    color: inherit;
+}
+
+/* The icon is the positioning context, so the counter lands on the bell
+   regardless of the navbar link's padding. */
+.alerts-bell-icon {
+    position: relative;
+    display: inline-flex;
+}
+
+.alerts-bell-icon svg {
+    display: block;
+}
+
+.alerts-badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--brand);
+    color: #0b0f13;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+    /* Ring in the navbar colour so the count reads over the bell. */
+    box-shadow: 0 0 0 2px var(--navbar-bg);
+    pointer-events: none;
+}
+
+/* Speedtest results gallery: each stored run is a copyable PNG card */
+.speedtest-result-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.speedtest-result-card canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+}
+
+.result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Speedtest result: compact latency block + note form */
+.speedtest-latency {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 32rem;
+    margin: var(--stack-sm) 0;
+}
+
+.speedtest-latency-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-sm);
+}
+
+.speedtest-latency-label {
+    min-width: 5.5rem;
+    color: var(--text-muted);
+}
+
+.speedtest-note {
+    max-width: 40rem;
+    margin-top: var(--stack-sm);
+}
+
+.speedtest-note label {
+    display: block;
+    margin-bottom: var(--space-1);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+/* ============================================================
+   CLI terminal
+   ============================================================ */
+
+/* The terminal is the whole page: it fills the space between the navbar and
+   the footer, inset by a little breathing room. */
+.cli-wrap {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-3);
+}
+
+.cli-terminal {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+}
+
+.cli-terminal .xterm {
+    height: 100%;
+}
+
+/* xterm paints its viewport black by default; the terminal's own background
+   already comes from the theme, so let it show through. */
+.cli-terminal .xterm .xterm-viewport {
+    background-color: transparent;
+}

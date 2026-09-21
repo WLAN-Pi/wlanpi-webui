@@ -1,10 +1,11 @@
 from unittest.mock import patch
 
 import pytest
+from flask import session
 
 from wlanpi_webui.utils import (
     get_safe_redirect_target,
-    service_not_installed_warning,
+    service_friendly_name,
     start_stop_service,
 )
 
@@ -89,23 +90,103 @@ class TestGetSafeReferrerTarget:
             assert utils.get_safe_referrer_target() == "/apps"
 
 
-class TestServiceNotInstalled:
-    @patch("wlanpi_webui.utils.system_service_exists")
-    def test_start_uninstalled_service_returns_warning(self, mock_exists):
-        mock_exists.return_value = False
-        res = start_stop_service("start", "kismet")
-        assert "Kismet is not installed" in res
-        assert "wlanpiToast" in res
+class _Resp:
+    def __init__(self, code):
+        self.status_code = code
+        self.text = ""
 
-    @patch("wlanpi_webui.utils.system_service_exists")
-    def test_start_uninstalled_grafana_returns_warning(self, mock_exists):
-        mock_exists.return_value = False
-        res = start_stop_service("start", "grafana-server")
-        assert "Grafana is not installed" in res
 
-    def test_service_not_installed_warning_formatting(self):
-        res = service_not_installed_warning("wlanpi-profiler")
-        assert "Profiler is not installed" in res
+class TestServiceFriendlyName:
+    def test_known_services(self):
+        assert service_friendly_name("wlanpi-profiler") == "Profiler"
+        assert service_friendly_name("kismet") == "Kismet"
+        assert service_friendly_name("grafana-server") == "Grafana"
+        assert service_friendly_name("wlanpi-grafana-scanner-wlan0") == (
+            "Grafana Scanner Wlan0"
+        )
+
+    def test_suffix_stripped(self):
+        assert service_friendly_name("kismet.service") == "Kismet"
+
+
+class TestStartStopServiceToast:
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_start_uninstalled_queues_warning(self, mock_exists, app):
+        mock_exists.return_value = False
+        with app.test_request_context():
+            res = start_stop_service("start", "kismet")
+            assert res.status_code == 302
+            assert session["wlanpi_toast"] == {
+                "message": "Kismet is not installed.",
+                "status": "warning",
+            }
+
+    @patch("wlanpi_webui.utils.make_api_request")
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_start_success_queues_success(
+        self, mock_exists, mock_running, mock_api, app
+    ):
+        mock_exists.return_value = True
+        mock_running.return_value = True
+        mock_api.return_value = _Resp(200)
+        with app.test_request_context():
+            start_stop_service("start", "wlanpi-profiler")
+            assert session["wlanpi_toast"] == {
+                "message": "Profiler started.",
+                "status": "success",
+            }
+
+    @patch("wlanpi_webui.utils.make_api_request")
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_stop_success_queues_success(
+        self, mock_exists, mock_running, mock_api, app
+    ):
+        mock_exists.return_value = True
+        mock_running.return_value = True
+        mock_api.return_value = _Resp(200)
+        with app.test_request_context():
+            start_stop_service("stop", "kismet")
+            assert session["wlanpi_toast"]["message"] == "Kismet stopped."
+
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_core_down_queues_danger(self, mock_exists, mock_running, app):
+        mock_exists.return_value = True
+        mock_running.return_value = False
+        with app.test_request_context():
+            start_stop_service("start", "kismet")
+            assert session["wlanpi_toast"] == {
+                "message": "wlanpi-core is not running.",
+                "status": "danger",
+            }
+
+    @patch("wlanpi_webui.utils.make_api_request")
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_api_failure_queues_warning(self, mock_exists, mock_running, mock_api, app):
+        mock_exists.return_value = True
+        mock_running.return_value = True
+        mock_api.return_value = _Resp(500)
+        with app.test_request_context():
+            start_stop_service("start", "kismet")
+            assert session["wlanpi_toast"] == {
+                "message": "Could not start Kismet.",
+                "status": "warning",
+            }
+
+
+class TestToastHeader:
+    def test_emitted_once_then_cleared(self, app):
+        client = app.test_client()
+        with client.session_transaction() as sess:
+            sess["wlanpi_toast"] = {"message": "Kismet stopped.", "status": "success"}
+        resp = client.get("/login")
+        assert resp.headers.get("X-Wlanpi-Toast") == (
+            '{"message": "Kismet stopped.", "status": "success"}'
+        )
+        assert client.get("/login").headers.get("X-Wlanpi-Toast") is None
 
 
 class TestGetCoreJson:

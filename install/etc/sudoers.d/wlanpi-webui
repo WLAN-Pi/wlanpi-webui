@@ -1,0 +1,5 @@
+# Let the WebUI mint its own wlanpi-core JWT without a password.
+#
+# The command is a fixed, root-owned, argument-free wrapper, so the grant
+# cannot be used to mint tokens for any other device id.
+wlanpi ALL=(root) NOPASSWD: /usr/libexec/wlanpi-webui/get-core-token

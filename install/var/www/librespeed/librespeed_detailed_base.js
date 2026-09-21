@@ -504,6 +504,52 @@ function updateStats() {
 }
 
 
+// Report the finished test to the WebUI, which stores it for the report page
+// and the notifications tab. Same origin, so the session cookie authenticates
+// it. Best-effort: never blocks or breaks the UI.
+function reportResult() {
+    var result = {
+        download_mbps: avg(dl_samples),
+        upload_mbps: avg(ul_samples),
+        ping_ms: ping_cnt > 0 ? ping_sum / ping_cnt : null,
+        jitter_ms: unloaded_jitter,
+        loaded_ping_ms: last_loaded_ping,
+        loaded_jitter_ms: last_loaded_jitter,
+        download_min_mbps: min_download || null,
+        download_max_mbps: max_download || null,
+        upload_min_mbps: min_upload || null,
+        upload_max_mbps: max_upload || null,
+        download_mb: total_download ? total_download / 1024 / 1024 : null,
+        upload_mb: total_upload ? total_upload / 1024 / 1024 : null,
+        client_ip: data[4] || "",
+        duration_s: (Number(parameters.time_dl_max) || 0) + (Number(parameters.time_ul_max) || 0)
+    };
+    fetch("/app/librespeed/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result)
+    }).then(function (r) {
+        return r.ok ? r.json() : null;
+    }).then(function (saved) {
+        if (saved && saved.url) showResultCard(result, saved.url);
+    }).catch(function () { /* best-effort */ });
+}
+
+function showResultCard(result, url) {
+    var el = I("result_card");
+    if (!el) return;
+    el.innerHTML =
+        "<h3>Result</h3>" +
+        '<p class="result_line">' +
+        fmtStat(result.download_mbps, "Mbps") + " down &middot; " +
+        fmtStat(result.upload_mbps, "Mbps") + " up &middot; " +
+        fmtStat(result.ping_ms, "ms") + " ping</p>" +
+        '<p><a class="btn" href="' + url + '">View result</a> ' +
+        '<a class="btn" href="/app/librespeed/results">All results</a></p>';
+    el.style.display = "block";
+}
+
+
 function startStop() {
     if (w != null) {
         //speedtest is running, abort
@@ -558,6 +604,7 @@ function startStop() {
                 }
                 resetUI();
                 updateUI(true);
+                reportResult();
             } else {
                 data[11] = performance.now() - timers[status];
                 updateUI();

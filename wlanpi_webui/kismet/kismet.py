@@ -6,7 +6,6 @@ from wlanpi_webui.utils import (
     is_htmx,
     start_stop_service,
     system_service_running_state,
-    wlanpi_core_warning,
 )
 
 
@@ -26,9 +25,5 @@ def kismet():
 @csrf_required
 def start_stop_kismet(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "kismet")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "kismet")
     return "", 204

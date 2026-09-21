@@ -1,0 +1,65 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Analysis</p>
+    <h2 class="page-title">Speedtest result</h2>
+    <p class="page-lede">{{ result.tested_at | default('') }}</p>
+  </div>
+
+  <div class="speedtest-result-card">
+    <canvas class="result-image" data-result='{{ result | tojson }}'
+      aria-label="Speedtest result: {{ result.download_mbps | default('n/a') }} Mbps down, {{ result.upload_mbps | default('n/a') }} Mbps up"></canvas>
+    <div class="result-actions">
+      <button type="button" class="uk-button uk-button-default uk-button-small" data-copy-result>Copy image</button>
+    </div>
+  </div>
+
+  <div class="speedtest-headline">
+    {% for label, value in headline %}
+    <div class="speedtest-stat">
+      <span class="speedtest-stat-value">{{ value }}</span>
+      <span class="speedtest-stat-label">{{ label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="speedtest-latency">
+    {% for condition, ping, jitter in latency %}
+    <div class="speedtest-latency-row">
+      <span class="speedtest-latency-label">{{ condition }}</span>
+      <span>{{ ping }} ms ping</span>
+      <span>{{ jitter }} ms jitter</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <details class="disclosure" open>
+    <summary>Details</summary>
+    <div class="uk-overflow-auto uk-margin-small-top">
+      <table class="uk-table uk-table-small uk-table-divider">
+        <tbody>
+          {% for label, value in details %}
+          <tr>
+            <th>{{ label }}</th>
+            <td>{{ value }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <form class="speedtest-note" method="post" action="/app/librespeed/results/{{ result.id }}/note">
+    <label for="result-note">Note</label>
+    <textarea id="result-note" name="note" class="uk-textarea" rows="2" maxlength="{{ note_max }}"
+      placeholder="Context for this result ({{ note_max }} characters max)">{{ result.note | default('') }}</textarea>
+    <div class="settings-actions">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="uk-button uk-button-default" type="submit">Save note</button>
+    </div>
+  </form>
+
+  <p class="uk-margin-top">
+    <a class="uk-button uk-button-default" href="/app/librespeed/results" hx-get="/app/librespeed/results"
+      hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">Back to results</a>
+  </p>
+</div>

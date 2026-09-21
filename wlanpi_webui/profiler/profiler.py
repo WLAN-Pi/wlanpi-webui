@@ -17,7 +17,6 @@ from wlanpi_webui.utils import (
     is_htmx,
     start_stop_service,
     system_service_running_state,
-    wlanpi_core_warning,
 )
 
 getting_started = """
@@ -673,9 +672,5 @@ def get_profiler_results(filename):
 @csrf_required
 def start_stop_profiler(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-profiler")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-profiler")
     return "", 204

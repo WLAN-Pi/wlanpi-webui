@@ -5,3 +5,5 @@
 /install/etc/nginx/unlink.sh /etc/wlanpi-webui/scripts
 /install/etc/nginx/fixpermissions.sh /etc/wlanpi-webui/scripts
 /install/etc/cockpit/cockpit.conf /etc/cockpit
+/install/usr/libexec/wlanpi-webui/get-core-token /usr/libexec/wlanpi-webui
+/install/etc/sudoers.d/wlanpi-webui /etc/sudoers.d

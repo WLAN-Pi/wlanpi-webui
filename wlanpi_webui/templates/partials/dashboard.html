@@ -58,6 +58,7 @@
   <div class="launcher-grid">
     {{ launch("/speedtest/librespeed", "download", "Speedtest") }}
     {{ tile("/network", "server", "Network") }}
+    {{ tile("/cli", "code", "CLI") }}
     {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
     {% if kismet_installed %}<a class="launcher-tile" href="/kismet" onclick="wlanpiLaunchKismet(event)">
       <span class="launcher-tile-icon" uk-icon="icon: receiver; ratio: 1.8"></span>
