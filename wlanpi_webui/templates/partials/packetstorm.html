@@ -1,6 +1,14 @@
-<div class="packetstorm-stage" id="packetstorm-stage">
+<div class="packetstorm-stage game-stage" id="packetstorm-stage" data-csrf="{{ csrf_token }}"
+  {% if config.GAME_DEBUG or config.DEBUG %}data-debug="1"{% endif %}>
   <canvas id="packetstorm-canvas" tabindex="0" role="img"
     aria-label="Packet Storm: steer the client with arrows or WASD, space fires packets"></canvas>
+  <a class="game-exit" href="/" hx-get="/" hx-target="#content" hx-swap="innerHTML"
+    hx-push-url="true" hx-indicator=".progress" aria-label="Exit">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 11l9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+    </svg>
+  </a>
   <div class="packetstorm-hud" id="packetstorm-hud" aria-hidden="true"></div>
   <div class="packetstorm-touch" id="packetstorm-touch" hidden>
     <div class="packetstorm-pad">

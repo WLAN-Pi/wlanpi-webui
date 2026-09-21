@@ -54,6 +54,7 @@ def network_cards():
     """Network cards, sourced from the wlanpi-core API."""
     reach = get_core_json("/api/v1/utils/reachability")
     net = get_core_json("/api/v1/network/info/") or {}
+    public_ip6 = get_core_json("/api/v1/network/info/publicip6")
 
     if reach is None:
         reachability: list[str] = []
@@ -69,6 +70,7 @@ def network_cards():
         "reachability": reachability,
         "reachability_empty": reachability_empty,
         "publicip": _lines(net.get("public_ip")),
+        "publicip6": _lines(public_ip6),
         "ipconfig": _lines(net.get("eth0_ipconfig_info")),
         "lldp": _lines(net.get("lldp_neighbour_info")),
         "cdp": _lines(net.get("cdp_neighbour_info")),

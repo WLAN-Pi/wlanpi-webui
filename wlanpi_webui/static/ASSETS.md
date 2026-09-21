@@ -12,8 +12,10 @@ update them deliberately and record the new version + checksum here.
 | `js/uikit.js`, `js/uikit.min.js`, `js/uikit-icons.js`, `js/uikit-icons.min.js` | 3.25.23 | `uikit@3.25.23` (`dist/js/*`) | |
 | `js/Chart.bundle.min.js` | 2.7.1 | copied from `install/var/www/librespeed/` (same file the speedtest page uses) | Shared by the speedtest page and the network latency graph. |
 | `css/uikit.css`, `css/uikit.min.css`, `css/uikit-rtl.css`, `css/uikit-rtl.min.css` | 3.25.23 | `uikit@3.25.23` (`dist/css/*`) | |
+| `vendor/beacon/beacon.js`, `vendor/beacon/beacon.wasm` | pinned build | Emscripten 3.1.43 (GPL-2.0) | Vendored engine for a hidden page. Built with local `configure.ac` changes; loads its data at runtime. See [`vendor/beacon/README.md`](vendor/beacon/README.md). Do not bump casually. |
 
-`css/app.css`, `img/*` and `icon/*` are first-party assets, not vendored.
+`css/app.css`, `img/*` and `icon/*` are first-party assets, not vendored. The
+vendored engine is code we now own; see its README before touching it.
 
 ## Update procedure
 
@@ -43,4 +45,6 @@ e97c9411e574d1a9b17de0b8637cff4ffbac34a55ec0ea7b2239273e9fd906ba  js/uikit-icons
 83036eb6b2571fefba32f9342511556b59127cff09877e4c559043287e3e9faf  css/uikit.min.css
 2420d4dbbb194497dd12c838c9616223e541d2a9b66346790c6c7d9497759b8a  css/uikit-rtl.css
 ee2f6203c15a72c7a00fe76c45c5ca7aa5a2677e630c8fb464581eb06cb4a298  css/uikit-rtl.min.css
+f973828f988343c6b8a47fa39ba474dd407f8f8ffcc661284d7fccd6adc044b9  vendor/beacon/beacon.js
+64866c990952abfe084ddf3bd1c6bb323cfe9ee234d560171ae2898d55e978ef  vendor/beacon/beacon.wasm
 ```

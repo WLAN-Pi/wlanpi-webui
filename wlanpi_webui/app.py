@@ -25,6 +25,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from wlanpi_webui.config import Config, get_hostname
 from wlanpi_webui.utils import (
     get_dpkg_status_mtime,
+    is_beacon_armed,
     is_htmx,
     load_or_create_session_key,
     package_installed,
@@ -160,6 +161,12 @@ def create_app(config_class=Config):
         # (no flash) and survives even when localStorage is unavailable.
         theme = request.cookies.get("wlanpi_theme")
         return {"theme": theme if theme in ("dark", "light") else None}
+
+    @app.context_processor
+    def inject_beacon():
+        # Deliberately uncached (unlike utility_processor): the flag is read at
+        # request time so deleting the file disarms the dashboard immediately.
+        return {"beacon_armed": is_beacon_armed()}
 
     @app.before_request
     def enforce_session_freshness():

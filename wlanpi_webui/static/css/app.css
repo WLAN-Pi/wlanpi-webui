@@ -70,6 +70,17 @@
     --radius-md: 6px;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+    /* On-screen game controls, sitting over the stage/game. Light theme uses a
+       translucent white surface with the darker brand ink for contrast. */
+    --ctl-bg: rgba(255, 255, 255, 0.55);
+    --ctl-border: var(--brand);
+    --ctl-fg: var(--brand-ink);
+    --ctl-active-bg: var(--brand);
+    --ctl-active-fg: #0b0f13;
+    --ctl-blur: blur(6px);
+    --ctl-hint-bg: rgba(255, 255, 255, 0.72);
+    --ctl-hint-fg: var(--text-muted);
 }
 
 /* Dark theme values, applied by the toggle in the user menu. */
@@ -89,6 +100,15 @@
     --warn-bg: #3a3320;
     --warn-fg: #f3e2b0;
     --focus-ring: rgba(255, 138, 92, 0.5);
+
+    /* Dark theme controls: translucent dark surface, lighter brand ink. */
+    --ctl-bg: rgba(10, 14, 18, 0.38);
+    --ctl-border: var(--brand);
+    --ctl-fg: var(--brand-ink);
+    --ctl-active-bg: var(--brand);
+    --ctl-active-fg: #0b0f13;
+    --ctl-hint-bg: rgba(10, 14, 18, 0.6);
+    --ctl-hint-fg: #e6eaee;
 }
 
 /* ==========================================================================
@@ -682,9 +702,9 @@ h6 {
         min-height: 139vh;
     }
 
-    /* Center the dashboard flipper in the visible viewport instead of
+    /* Center the dashboard launcher in the visible viewport instead of
        centering it inside the 139vh shell and pushing it below the fold. */
-    #thebiglebowski:has(.flipper-screen) {
+    #thebiglebowski:has(.launcher-screen) {
         min-height: 100vh;
         min-height: 100dvh;
     }
@@ -1084,6 +1104,8 @@ h6 {
     background: var(--bg-surface);
     color: var(--text-muted);
     font-size: var(--fs-xs);
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .app-footer-inner {
@@ -1209,13 +1231,13 @@ h6 {
 }
 
 /* ==========================================================================
-   Dashboard: Flipper Zero-style launcher
+   Dashboard: tile launcher
    A deliberate always-dark "device screen" (orange on near-black, monospace,
    chunky bordered tiles) so it reads as the WLAN Pi's home screen rather than
    another info page. Colours are fixed on purpose, not tokenised.
    ========================================================================== */
 
-.flipper-screen {
+.launcher-screen {
     width: max-content;
     max-width: 100%;
     align-self: center;
@@ -1229,7 +1251,7 @@ h6 {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-.flipper-grid {
+.launcher-grid {
     display: grid;
     grid-template-columns: repeat(3, 140px);
     justify-content: center;
@@ -1237,16 +1259,16 @@ h6 {
 }
 
 @media (max-width: 560px) {
-    .flipper-screen {
+    .launcher-screen {
         width: 100%;
     }
 
-    .flipper-grid {
+    .launcher-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-.flipper-tile {
+.launcher-tile {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1266,19 +1288,66 @@ h6 {
         border-color 0.08s ease;
 }
 
-.flipper-tile:hover,
-.flipper-tile:focus {
+.launcher-tile:hover,
+.launcher-tile:focus {
     background: var(--brand);
     border-color: var(--brand);
     color: #0b0f13 !important;
     transform: translateY(-2px);
 }
 
-.flipper-tile-icon {
+.launcher-tile-icon {
     line-height: 1;
 }
 
-.flipper-foot {
+/* Hidden by default: Packet Storm is revealed by the faint footer glyph. */
+.launcher-tile[hidden] {
+    display: none;
+}
+
+@keyframes launcher-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.launcher-tile.revealed {
+    animation: launcher-reveal 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .launcher-tile.revealed {
+        animation: none;
+    }
+}
+
+/* Faint easter-egg glyph tucked into the dashboard footer. */
+.launcher-egg {
+    margin-left: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 0.7rem;
+    line-height: 1;
+    vertical-align: middle;
+    opacity: 0.3;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s ease;
+}
+
+.launcher-egg:hover,
+.launcher-egg:focus {
+    opacity: 0.9;
+}
+
+.launcher-foot {
     margin: 0 0 var(--space-4);
     color: #9aa5b1;
     font-size: 0.72rem;
@@ -1287,25 +1356,33 @@ h6 {
     text-transform: uppercase;
 }
 
-/* Bound the shell to the visible viewport whenever the game is mounted, so
+/* Bound the shell to the visible viewport whenever a game is mounted, so
    the 139vh mobile floor and 100vh min-height cannot push the stage and its
-   thumb controls below the fold. :has() tracks the stage through htmx swaps. */
-#thebiglebowski:has(.packetstorm-stage) {
+   thumb controls below the fold. :has() tracks the stage through htmx swaps.
+   Both games share these sizing rules via .game-stage. */
+#thebiglebowski:has(.game-stage) {
     height: 100vh;
     height: 100dvh;
     min-height: 0;
     overflow: hidden;
 }
 
-#thebiglebowski:has(.packetstorm-stage) #content {
+/* Immersive games: drop the shell chrome so the game owns the viewport. This
+   is CSS-only (no Fullscreen API), so it also works on iOS Safari. */
+#thebiglebowski:has(.game-stage) > .uk-box-shadow-small,
+#thebiglebowski:has(.game-stage) .app-footer {
+    display: none;
+}
+
+#thebiglebowski:has(.game-stage) #content {
     min-height: 0;
 }
 
-#thebiglebowski:has(.packetstorm-stage) .packetstorm-stage {
+#thebiglebowski:has(.game-stage) .game-stage {
     min-height: 0;
 }
 
-.packetstorm-stage {
+.game-stage {
     flex: 1;
     position: relative;
     display: flex;
@@ -1314,9 +1391,18 @@ h6 {
     min-height: 60vh;
     overflow: hidden;
     background: var(--bg-page);
+    -webkit-user-select: none;
+    user-select: none;
 }
 
-.packetstorm-stage canvas {
+/* Mobile plays in fullscreen: fill the screen and letterbox the 4:3 game. */
+.beacon-stage:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+}
+
+.game-stage canvas {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -1325,9 +1411,282 @@ h6 {
     touch-action: none;
 }
 
-.packetstorm-stage canvas:focus {
+.game-stage canvas:focus {
     outline: 2px solid var(--brand);
     outline-offset: -2px;
+}
+
+/* Shared "leave the game" control, top-left inside the stage (so it stays
+   visible in real fullscreen, unlike shell-level chrome). */
+.game-exit {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    padding: 0;
+    border: 2px solid var(--ctl-border);
+    border-radius: 50%;
+    background: var(--ctl-bg);
+    color: var(--ctl-fg);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: var(--ctl-blur);
+    transition: background 0.08s ease, color 0.08s ease;
+}
+
+.game-exit svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.game-exit:hover,
+.game-exit:focus,
+.game-exit:active {
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
+}
+
+/* The hidden game sizes its canvas in JS to a 4:3 box that fits the stage,
+   so the absolutely-positioned fill above is overridden. */
+.beacon-stage canvas {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+}
+
+.beacon-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+.beacon-retry {
+    pointer-events: auto;
+    padding: 0.4rem 1.1rem;
+    border: 2px solid var(--ctl-border);
+    border-radius: 999px;
+    background: var(--ctl-bg);
+    color: var(--ctl-fg);
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.beacon-retry[hidden] {
+    display: none;
+}
+
+/* On-screen controls for touch devices; mirrors the Packet Storm pad look. */
+.beacon-touch {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.beacon-touch[hidden] {
+    display: none;
+}
+
+/* One cohesive pad, eight-way: dragging between arrows holds both, so the
+   player can move and turn at once with a single thumb. */
+.beacon-dpad {
+    position: absolute;
+    left: var(--space-4);
+    bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(3, 3.2rem);
+    grid-template-rows: repeat(3, 3.2rem);
+    grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+    padding: 0.35rem;
+    border: 2px solid var(--ctl-border);
+    border-radius: 50%;
+    background: var(--ctl-bg);
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: var(--ctl-blur);
+}
+
+.beacon-dpad-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--ctl-fg);
+    pointer-events: none;
+    transition: background 0.08s ease, color 0.08s ease;
+}
+
+.beacon-dpad-key[data-dir="up"] {
+    grid-area: up;
+}
+
+.beacon-dpad-key[data-dir="left"] {
+    grid-area: left;
+}
+
+.beacon-dpad-key[data-dir="right"] {
+    grid-area: right;
+}
+
+.beacon-dpad-key[data-dir="down"] {
+    grid-area: down;
+}
+
+.beacon-dpad-key svg {
+    width: 1.7rem;
+    height: 1.7rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.beacon-dpad-key.is-active {
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
+}
+
+.beacon-dpad-center {
+    grid-area: 2 / 2;
+    align-self: center;
+    justify-self: center;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--ctl-fg);
+    opacity: 0.5;
+}
+
+.beacon-touch button {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.6rem;
+    height: 3.6rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--ctl-border);
+    background: var(--ctl-bg);
+    color: var(--ctl-fg);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    backdrop-filter: var(--ctl-blur);
+    transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease;
+}
+
+.beacon-touch button svg {
+    width: 1.8rem;
+    height: 1.8rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.beacon-touch button:active {
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
+    transform: scale(0.94);
+}
+
+/* Bottom-right action row: Use, Run (next to Fire), Fire. */
+.beacon-actions {
+    position: absolute;
+    right: var(--space-4);
+    bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: flex-end;
+    gap: 0.7rem;
+}
+
+.beacon-touch .beacon-fire {
+    width: 4.8rem;
+    height: 4.8rem;
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
+}
+
+.beacon-touch .beacon-fire svg {
+    width: 2.4rem;
+    height: 2.4rem;
+}
+
+/* Menu: circular icon button, top-right, stacked under the shared Exit. */
+.beacon-touch .beacon-menu {
+    position: absolute;
+    top: calc(var(--space-3) + 3.2rem);
+    right: var(--space-3);
+    width: 2.8rem;
+    height: 2.8rem;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.beacon-rotate {
+    position: absolute;
+    top: calc(var(--space-3) + 6.6rem);
+    left: 50%;
+    z-index: 6;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--ctl-hint-bg);
+    color: var(--ctl-hint-fg);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateX(-50%);
+}
+
+.beacon-rotate[hidden] {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .beacon-touch button {
+        transition: none;
+    }
+    .beacon-touch button:active {
+        transform: none;
+    }
 }
 
 .packetstorm-touch {
@@ -1360,15 +1719,15 @@ h6 {
     height: 4.5rem;
     padding: 0;
     border-radius: 50%;
-    border: 2px solid var(--brand);
-    background: var(--bg-surface);
-    color: var(--brand-ink, inherit);
-    opacity: 0.92;
+    border: 2px solid var(--ctl-border);
+    background: var(--ctl-bg);
+    color: var(--ctl-fg);
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
+    backdrop-filter: var(--ctl-blur);
     transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease;
 }
 
@@ -1383,16 +1742,16 @@ h6 {
 }
 
 .packetstorm-touch button:active {
-    background: var(--brand);
-    color: #0b0f13;
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
     transform: scale(0.94);
 }
 
 .packetstorm-touch button[data-ps="fire"] {
     width: 5.25rem;
     height: 5.25rem;
-    background: var(--brand);
-    color: #0b0f13;
+    background: var(--ctl-active-bg);
+    color: var(--ctl-active-fg);
 }
 
 .packetstorm-touch button[data-ps="fire"] svg {
@@ -1506,10 +1865,34 @@ h6 {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     cursor: pointer;
+    transition: background 0.08s ease, border-color 0.08s ease, color 0.08s ease,
+        transform 0.08s ease;
+}
+
+.packetstorm-difficulty button:hover,
+.packetstorm-difficulty button:focus-visible {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.packetstorm-difficulty button:active {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #0b0f13;
+    transform: scale(0.97);
 }
 
 .packetstorm-difficulty button.is-active {
     background: var(--brand);
     border-color: var(--brand);
     color: #0b0f13;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .packetstorm-difficulty button {
+        transition: none;
+    }
+    .packetstorm-difficulty button:active {
+        transform: none;
+    }
 }

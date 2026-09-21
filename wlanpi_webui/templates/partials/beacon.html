@@ -1,0 +1,94 @@
+{% if wad_available %}
+<div class="beacon-stage game-stage" id="beacon-stage">
+  <canvas id="beacon-canvas" tabindex="0" role="img"
+    aria-label="Use the arrow keys to move and turn, V to fire, Space to open doors"></canvas>
+  <div class="beacon-loading" id="beacon-loading" role="status">
+    <span id="beacon-loading-text">Loading game data&hellip;</span>
+    <button type="button" class="beacon-retry" id="beacon-retry" hidden>Retry</button>
+  </div>
+  <a class="game-exit" href="/" hx-get="/" hx-target="#content" hx-swap="innerHTML"
+    hx-push-url="true" hx-indicator=".progress" aria-label="Exit">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 11l9-8 9 8" />
+      <path d="M5 10v10h14V10" />
+    </svg>
+  </a>
+  <div class="beacon-rotate" id="beacon-rotate" hidden>Rotate to landscape for a larger view</div>
+  <div class="beacon-touch" id="beacon-touch" hidden>
+    <button type="button" class="beacon-menu" data-key="menu" aria-label="Menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </svg>
+    </button>
+    <div class="beacon-dpad" id="beacon-dpad" role="group" aria-label="Move and turn">
+      <span class="beacon-dpad-key" data-dir="up" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+      </span>
+      <span class="beacon-dpad-key" data-dir="left" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M2 5v6h6" />
+          <path d="M3.6 15a9 9 0 1 0 2.1-9.4L2 10" />
+        </svg>
+      </span>
+      <span class="beacon-dpad-key" data-dir="right" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M22 5v6h-6" />
+          <path d="M20.4 15a9 9 0 1 1-2.1-9.4L22 10" />
+        </svg>
+      </span>
+      <span class="beacon-dpad-key" data-dir="down" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 5v14" />
+          <path d="M19 12l-7 7-7-7" />
+        </svg>
+      </span>
+      <span class="beacon-dpad-center" aria-hidden="true"></span>
+    </div>
+    <div class="beacon-actions">
+      <button type="button" data-key="use" aria-label="Use">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 11V6a2 2 0 0 0-4 0" />
+          <path d="M14 10V4a2 2 0 0 0-4 0v2" />
+          <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.3l-3.6-3.6a2 2 0 0 1 2.8-2.8L7 15" />
+        </svg>
+      </button>
+      <button type="button" data-key="run" aria-label="Run">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 5l7 7-7 7" />
+          <path d="M13 5l7 7-7 7" />
+        </svg>
+      </button>
+      <button type="button" class="beacon-fire" data-key="fire" aria-label="Fire">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" />
+          <path d="M12 2v3" />
+          <path d="M12 19v3" />
+          <path d="M2 12h3" />
+          <path d="M19 12h3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/beacon.js') }}" defer></script>
+</div>
+{% else %}
+<div class="page">
+  <div class="page-head">
+    <p class="page-eyebrow">Missing game data</p>
+    <h2 class="page-title">Install the game data</h2>
+    <p class="page-lede">
+      This page needs its game data, which is not installed on this device.
+    </p>
+  </div>
+  <p class="about-copy">
+    The package installs it automatically. Running from a source checkout, place
+    <code>data.wad</code> at <code>{{ wad_path }}</code> and reload this page.
+  </p>
+</div>
+{% endif %}

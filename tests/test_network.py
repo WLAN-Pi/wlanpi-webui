@@ -83,8 +83,8 @@ class TestNetwork:
         _login(client, monkeypatch)
         resp = client.get("/network/cards")
         assert resp.status_code == 200
-        # Five generic cards, plus the reachability card with its own message.
-        assert resp.data.count(b"Unavailable.") == 5
+        # Six generic cards, plus the reachability card with its own message.
+        assert resp.data.count(b"Unavailable.") == 6
         assert b"wlanpi-core API is not responding." in resp.data
 
     def test_renders_wlan_cards(self, client, monkeypatch):
@@ -93,6 +93,8 @@ class TestNetwork:
         def fake(path, params=None):
             if "reachability" in path:
                 return {"Ping Google": "5ms", "custom": []}
+            if "publicip6" in path:
+                return {"info": ["2001:db8::1", "Testland"]}
             return {
                 "public_ip": {"info": []},
                 "eth0_ipconfig_info": {"info": []},
@@ -119,6 +121,8 @@ class TestNetwork:
         assert b"SSID: HomeNet" in resp.data
         assert b"Channel 6 (2437 MHz)" in resp.data
         assert b"MAC: AA:BB:CC:DD:EE:FF" in resp.data
+        assert b"Public IPv6" in resp.data
+        assert b"2001:db8::1" in resp.data
 
     def test_shell_loads_without_core(self, client, monkeypatch):
         _login(client, monkeypatch)

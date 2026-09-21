@@ -1,3 +1,22 @@
+wlanpi-webui (1.11.0-1) unstable; urgency=medium
+
+  * Add a second hidden page: Doom (id Software, 1993) on the vendored GPL
+    Chocolate Doom WebAssembly engine, armed by reaching level 8 of Packet
+    Storm. It ships the Freedoom Phase 1 IWAD (fetched at package build time),
+    runs fullscreen, and gets on-screen controls on touch devices.
+  * Hide the Packet Storm tile behind a faint glyph in the launcher footer.
+    The hidden page's tile additionally requires the level unlock and only
+    appears once Packet Storm is visible. Tapping the glyph toggles both, and
+    the reveal is permanent.
+  * Network: add a Public IPv6 card, sourced from the wlanpi-core
+    /api/v1/network/info/publicip6 endpoint.
+  * Rename the dashboard launcher CSS classes for clarity.
+  * Mobile games: eight-way d-pad, a shared Exit control, and theme-aware
+    translucent controls. Packet Storm's difficulty buttons gain hover and
+    press states, and its HUD clears the Exit button.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Sun, 20 Sep 2026 23:27:14 -0400
+
 wlanpi-webui (1.10.0-1) unstable; urgency=medium
 
   * Packet Storm: expand the game with a 5 GHz channel progression (36, 100,
@@ -40,7 +59,7 @@ wlanpi-webui (1.9.0-1) unstable; urgency=medium
 
 wlanpi-webui (1.8.0-1) unstable; urgency=medium
 
-  * Add a Flipper Zero-style tile launcher at / (dark "device screen", app
+  * Add a tile launcher at / (dark "device screen", app
     tiles, status strip). LibreSpeed moves to /speedtest/librespeed.
   * Source the /network cards (reachability, public IP, eth0 IP config,
     LLDP/CDP neighbours) from the wlanpi-core API instead of running shell

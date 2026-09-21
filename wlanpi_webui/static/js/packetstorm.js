@@ -60,6 +60,39 @@
     }
   }
 
+  // Hidden page arming: fired once when the player reaches the first 6 GHz
+  // level. No anti-cheat by design; the endpoint is idempotent and guarded by
+  // the session CSRF token only.
+  var CSRF = stage.getAttribute("data-csrf") || "";
+  var DEBUG = stage.getAttribute("data-debug") === "1";
+  var armed = false;
+  function armBeacon() {
+    if (armed) {
+      return;
+    }
+    armed = true;
+    try {
+      fetch("/beacon/arm", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: CSRF ? { "X-CSRF-Token": CSRF } : {}
+      })
+        .then(function (resp) {
+          if (!resp.ok) {
+            return;
+          }
+          // The only signal: one muted HUD line, gone with the transition.
+          S = Object.assign({}, S);
+          S.hint = { text: "unlicensed band available", ttl: 2.4 };
+        })
+        .catch(function () {
+          /* a failure notice is louder than the success: stay silent */
+        });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   // ---- Audio (off by default, WebAudio oscillators only) ----------------
   var actx = null;
   function beep(freq, dur, type) {
@@ -309,9 +342,9 @@
     };
   }
 
-  function nextLevel(S) {
+  function gotoLevel(S, level) {
     var n = Object.assign({}, S);
-    n.level = S.level + 1;
+    n.level = level;
     n.spec = levelSpec(n.level);
     n.band = n.spec.band;
     n.ch = n.spec.ch;
@@ -335,7 +368,23 @@
     n.shieldDropT = 0;
     n.phase = "play";
     n.clearTimer = 0;
+    if (n.level === 8) {
+      armBeacon();
+    }
     return n;
+  }
+
+  function nextLevel(S) {
+    return gotoLevel(S, S.level + 1);
+  }
+
+  // Debug-only level jump. Inert unless the server rendered data-debug.
+  function jumpLevel(delta) {
+    if (S.phase === "over") {
+      return;
+    }
+    S = gotoLevel(S, Math.max(1, S.level + delta));
+    hudTimer = -1;
   }
 
   // ---- Input ------------------------------------------------------------
@@ -922,6 +971,9 @@
 
     if (n.banner.ttl > 0) {
       n.banner = { text: n.banner.text, ttl: n.banner.ttl - dt };
+    }
+    if (n.hint && n.hint.ttl > 0) {
+      n.hint = { text: n.hint.text, ttl: n.hint.ttl - dt };
     }
     n.shake = Math.max(0, (n.shake || 0) - 30 * dt);
     return n;
@@ -1691,6 +1743,7 @@
       setHud("ps-fx", fxBits.join("  "));
       setHud("ps-diff", S.diff || "normal");
       setHud("ps-high", "best " + fmtAirtime(store.high));
+      setHud("ps-hint", S.hint && S.hint.ttl > 0 ? S.hint.text : "");
       var bar = document.getElementById("ps-rssibar");
       if (bar) {
         var pct = Math.max(0, Math.min(100, ((S.ship.rssi + 90) / 60) * 100));
@@ -1709,7 +1762,8 @@
     '<span id="ps-link"></span>' +
     '<span id="ps-fx"></span>' +
     '<span id="ps-diff"></span>' +
-    '<span id="ps-high"></span>';
+    '<span id="ps-high"></span>' +
+    '<span id="ps-hint"></span>';
   var overlay = document.createElement("div");
   overlay.id = "packetstorm-over";
   overlay.setAttribute("style", "display:none;position:absolute;inset:0;align-items:center;" +
@@ -1719,8 +1773,9 @@
 
   // HUD and overlays read the theme tokens, and are refreshed on theme change.
   function applyChrome() {
+    // Leave room on the right for the shared Exit button.
     hud.setAttribute("style",
-      "position:absolute;top:8px;left:10px;right:10px;display:flex;flex-wrap:wrap;" +
+      "position:absolute;top:8px;left:10px;right:4rem;display:flex;flex-wrap:wrap;" +
       "gap:4px 14px;font-family:" + THEME.mono + ";font-size:12px;color:" + THEME.text + ";" +
       "pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,0.35);");
     var box = document.getElementById("ps-overbox");
@@ -1902,7 +1957,8 @@
     }
   }
   function onKeyDown(e) {
-    if (!GAME_KEYS[e.key]) {
+    var debugJump = DEBUG && (e.key === "]" || e.key === "[");
+    if (!GAME_KEYS[e.key] && !debugJump) {
       return;
     }
     if (!focused()) {
@@ -1910,6 +1966,10 @@
     }
     e.preventDefault();
     var k = e.key;
+    if (debugJump) {
+      jumpLevel(k === "]" ? 1 : -1);
+      return;
+    }
     if (k === "ArrowLeft" || k === "a" || k === "A") {
       held.left = true;
     } else if (k === "ArrowRight" || k === "d" || k === "D") {

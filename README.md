@@ -233,7 +233,6 @@ Check error log:
 sudo tail -f /var/log/webui_error.log
 ```
 
-
 ## Contributing
 
 Contributions are always welcome! Please sync with us before starting work.

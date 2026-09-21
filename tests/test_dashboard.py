@@ -58,10 +58,10 @@ class TestDashboard:
         _login(client, monkeypatch)
         resp = client.get("/")
         assert resp.status_code == 200
-        assert b"flipper-screen" in resp.data
-        assert resp.data.count(b'class="flipper-tile"') >= 2
+        assert b"launcher-screen" in resp.data
+        assert resp.data.count(b'class="launcher-tile"') >= 2
         assert b"Speedtest" in resp.data
-        assert b"flipper-foot" in resp.data
+        assert b"launcher-foot" in resp.data
         assert b"testpi" in resp.data
         assert b"classic" in resp.data
 

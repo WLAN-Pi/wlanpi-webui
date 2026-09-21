@@ -67,6 +67,7 @@
   uk-height-match="target: > div > .uk-card">
   {{ card("reachability", "Reachability", reachability, reachability_empty) }}
   {{ card("publicip", "Public IP", publicip) }}
+  {{ card("publicip6", "Public IPv6", publicip6) }}
   {{ card("ipconfig", "Eth0 IP Config", ipconfig) }}
   {% for w in wlan_cards %}{{ card(w.id, w.title, w.lines) }}{% else %}{{ card("wlan", "WLAN", []) }}{% endfor %}
   {{ card("lldp", "LLDP Neighbour", lldp) }}
