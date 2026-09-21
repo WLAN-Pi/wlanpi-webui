@@ -257,21 +257,25 @@ def system_service_exists(service):
     return False
 
 
-def system_service_running_state(service):
+def system_service_running_state(service, quiet=False):
     """
     Checks the status of the systemd service.
     Returns true if systemd service is running, false otherwise.
+
+    ``quiet`` suppresses the INFO logs, for callers that poll frequently.
     """
     try:
         # this cmd fails if service not installed
         cmd = ["/bin/systemctl", "is-active", "--quiet", service]
-        current_app.logger.info("subprocess is running %s", cmd)
+        if not quiet:
+            current_app.logger.info("subprocess is running %s", cmd)
         # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
         subprocess.run(cmd).check_returncode()
     except subprocess.CalledProcessError as exc:
-        current_app.logger.info(
-            "service %s is not running (error code: %s)", service, exc.returncode
-        )
+        if not quiet:
+            current_app.logger.info(
+                "service %s is not running (error code: %s)", service, exc.returncode
+            )
         return False
     return True
 

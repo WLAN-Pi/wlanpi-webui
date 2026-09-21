@@ -1,3 +1,39 @@
+wlanpi-webui (1.12.0-1) unstable; urgency=medium
+
+  * Profiler: replace the file listing with a unified client capabilities
+    table. Each profiled client now shows the 802.11be/ax/ac features it
+    reported, plus security and roaming support, with a Wi-Fi 7 summary,
+    server-side sort and filter, a column picker with saved widths, and
+    per-row report, pcap, and "copy Wireshark command" actions.
+  * Profiler: add Start/Stop controls, the running state, and a Purge data
+    link to the profiles page, and update the getting started steps now that
+    there is no profiler dropdown in the navigation.
+  * Profiler: show the live session from the profiler runtime files (state,
+    mode, channel, SSID, passphrase, uptime, and capture counters), polled
+    every few seconds, with a Wi-Fi QR code to join and the previous session
+    snapshot when stopped.
+  * Fix a horizontal overflow on narrow viewports: the page container is now
+    border-box, and the client capabilities table scrolls inside its wrapper
+    instead of stretching the whole layout.
+  * Profiler: fix the report modal in dark mode (theme the footer and the
+    report text), and state that the client must complete the WPA3-SAE
+    handshake in AP mode.
+  * Apps: simplify the Profiler card to Start/Stop plus a single Launch
+    button; purge is available on the profiles page.
+  * Profiler: lead the capabilities table with the report/pcap/copy actions,
+    move session reports under getting started, and poll both the session and
+    the client table so new clients appear automatically (no manual refresh).
+  * Profiler: keep the service status in step with the live session, so it
+    moves from "starting..." to "up and ready to capture association
+    requests" once the profiler is running.
+  * Profiler: toast when a client is profiled and highlight its row, so it is
+    obvious which client the profiler just saw.
+  * Copy actions now name what was copied ("Copied Wireshark command to
+    clipboard.") instead of a generic message.
+  * About: drop nginx from the "built with" list.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 11:45:00 -0400
+
 wlanpi-webui (1.11.0-1) unstable; urgency=medium
 
   * Add a second hidden page: Doom (id Software, 1993) on the vendored GPL

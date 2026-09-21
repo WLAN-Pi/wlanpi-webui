@@ -99,3 +99,16 @@ class Config:
     # Development overrides; never set these in production.
     BEACON_FORCE_UNLOCK = bool(os.environ.get("WLANPI_WEBUI_BEACON_FORCE_UNLOCK"))
     GAME_DEBUG = bool(os.environ.get("WLANPI_WEBUI_GAME_DEBUG"))
+    # Live profiler runtime files, written by wlanpi-profiler for external
+    # consumers. Read-only; absent when the profiler has never run or is down.
+    PROFILER_STATUS_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_STATUS", "/run/wlanpi-profiler.status.json"
+    )
+    PROFILER_INFO_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_INFO", "/run/wlanpi-profiler.info.json"
+    )
+    # Persistent snapshot of the previous session (survives reboots).
+    PROFILER_LAST_SESSION_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_LAST_SESSION",
+        "/var/lib/wlanpi-profiler/last-session.json",
+    )

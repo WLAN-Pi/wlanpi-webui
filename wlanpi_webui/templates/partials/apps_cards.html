@@ -29,10 +29,9 @@
         <p class="uk-text-meta">Determine wireless client capabilities from association frames.</p>
         <p class="app-actions">
           {{ profiler_toggle|safe }}
-          <a class="uk-button uk-button-default" hx-get="/profiler/profiles" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-            hx-indicator=".progress">Profiles</a>
-          <a class="uk-button uk-button-default" hx-get="/profiler/purge" hx-target="#content" hx-swap="innerHTML"
-            hx-push-url="true" hx-indicator=".progress">Purge data</a>
+          <a class="uk-button {% if profiler_running %}uk-button-primary{% else %}uk-button-default{% endif %}"
+            hx-get="/profiler/profiles" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">Launch</a>
         </p>
       </div>
     </div>

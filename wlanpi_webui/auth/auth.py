@@ -68,6 +68,19 @@ def hx_post_anchor(
     )
 
 
+def service_toggle_anchor(
+    running: bool, start: str, stop: str, target: str = "#content"
+) -> str:
+    """Start/Stop button for a systemd-backed service."""
+    if running:
+        return hx_post_anchor(
+            stop, "Stop", target=target, css="uk-button uk-button-default"
+        )
+    return hx_post_anchor(
+        start, "Start", target=target, css="uk-button uk-button-primary"
+    )
+
+
 def pam_authenticate(username: str, password: str) -> str | None:
     """Authenticate via core; returns a core status string or None on failure."""
     try:

@@ -304,6 +304,59 @@
     renderNotifications();
   };
 
+  function fallbackCopyText(text) {
+    if (!document.queryCommandSupported?.("copy")) return false;
+    var input = document.createElement("textarea");
+    input.textContent = text;
+    input.style.position = "fixed";
+    document.body.appendChild(input);
+    input.select();
+    try {
+      document.execCommand("copy");
+      return true;
+    } catch (ex) {
+      console.warn("Copy to clipboard failed.", ex);
+      return false;
+    } finally {
+      document.body.removeChild(input);
+    }
+  }
+
+  window.wlanpiCopyText = function (text, btn, label) {
+    // `label` names what was copied, so the toast and the notification
+    // history say what landed on the clipboard.
+    var what = label || "text";
+
+    function done(ok) {
+      if (ok && btn) {
+        btn.classList.add("copy-ok");
+        setTimeout(function () {
+          btn.classList.remove("copy-ok");
+        }, 1500);
+      }
+      if (window.wlanpiToast) {
+        window.wlanpiToast(
+          ok ? "Copied " + what + " to clipboard." : "Could not copy " + what + ".",
+          ok ? "success" : "warning"
+        );
+      }
+      return ok;
+    }
+
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(
+        function () {
+          done(true);
+        },
+        function () {
+          done(fallbackCopyText(text));
+        }
+      );
+      return true;
+    }
+    return done(fallbackCopyText(text));
+  };
+
   document.addEventListener("htmx:afterSwap", function () {
     renderNotifications();
   });

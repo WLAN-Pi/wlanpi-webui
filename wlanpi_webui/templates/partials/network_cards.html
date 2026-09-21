@@ -2,49 +2,7 @@
   function copyCardToClipboard(card, btn, hostname, title) {
     const body = document.getElementById(card).innerText;
     const text = hostname + " - " + title + " - " + new Date().toISOString() + "\n" + body;
-
-    function done(ok) {
-      if (ok && btn) {
-        btn.classList.add("copy-ok");
-        setTimeout(() => btn.classList.remove("copy-ok"), 1500);
-      }
-      if (window.wlanpiToast) {
-        window.wlanpiToast(
-          ok ? "Copied to clipboard." : "Copy to clipboard failed.",
-          ok ? "success" : "warning"
-        );
-      }
-      return ok;
-    }
-
-    if (navigator.clipboard?.writeText && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(
-        () => done(true),
-        () => done(fallbackCopy(text))
-      );
-      return true;
-    }
-
-    return done(fallbackCopy(text));
-  }
-
-  function fallbackCopy(text) {
-    if (!document.queryCommandSupported?.("copy")) return false;
-
-    const input = document.createElement("textarea");
-    input.textContent = text;
-    input.style.position = "fixed";
-    document.body.appendChild(input);
-    input.select();
-    try {
-      document.execCommand("copy");
-      return true;
-    } catch (ex) {
-      console.warn("Copy to clipboard failed.", ex);
-      return false;
-    } finally {
-      document.body.removeChild(input);
-    }
+    return window.wlanpiCopyText(text, btn, title);
   }
 </script>
 {% macro card(id, title, lines, empty="Unavailable.") %}

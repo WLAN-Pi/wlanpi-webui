@@ -1,0 +1,95 @@
+<div id="profiler-capabilities"
+  hx-get="/profiler/capabilities?sort={{ sort }}&dir={{ direction }}{% if filter %}&filter={{ filter | urlencode }}{% endif %}"
+  hx-trigger="every 5s" hx-swap="outerHTML">
+  {% if rows %}
+  <div class="cap-summary">
+    <div class="cap-stat">
+      <span class="cap-stat-num">{{ summary.total }}</span>
+      <span class="cap-stat-label">Total clients</span>
+    </div>
+    <div class="cap-stat">
+      <span class="cap-stat-num">{{ summary.laa }}</span>
+      <span class="cap-stat-label">LAA clients</span>
+    </div>
+    {% for label, value in summary.counts %}
+    <div class="cap-stat">
+      <span class="cap-stat-num">{{ value }}</span>
+      <span class="cap-stat-label">{{ label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="cap-meta">
+    Chipsets: {{ summary.chipsets | join(', ') if summary.chipsets else 'None' }}
+    &middot; Bands: {{ summary.bands | join(', ') if summary.bands else 'None' }}
+  </p>
+
+  <div class="cap-toolbar">
+    <form class="uk-flex uk-flex-middle uk-flex-wrap" hx-get="/profiler/capabilities"
+      hx-target="#profiler-capabilities" hx-swap="outerHTML" hx-indicator=".progress">
+      <input type="hidden" name="sort" value="{{ sort }}" />
+      <input type="hidden" name="dir" value="{{ direction }}" />
+      <input id="cap-filter" class="uk-input uk-form-small uk-width-medium" type="search" name="filter"
+        value="{{ filter }}" placeholder="Filter MAC, chipset, OUI&hellip;" aria-label="Filter clients"
+        hx-preserve="true" />
+      <button class="uk-button uk-button-default uk-button-small uk-margin-small-left" type="submit">Filter</button>
+    </form>
+    <details class="cap-columns" id="cap-columns" hx-preserve="true">
+      <summary>Columns</summary>
+      <div id="cap-column-picker" class="cap-column-picker"></div>
+      <button type="button" class="uk-button uk-button-default uk-button-small" data-cap-reset>Reset to defaults</button>
+    </details>
+  </div>
+
+  <div class="uk-overflow-auto cap-table-wrap">
+    <table class="uk-table uk-table-small uk-table-divider cap-table" id="cap-table">
+      <thead>
+        <tr>
+          <th scope="col" class="cap-th cap-actions-th cap-sticky-actions">Actions</th>
+          {% for col in columns %}
+          {% set next_dir = 'desc' if (sort == col.key and direction == 'asc') else 'asc' %}
+          <th scope="col" class="cap-th{% if col.key == 'mac' %} cap-sticky{% endif %}" data-column="{{ col.key }}"
+            data-group="{{ col.group }}" {% if col.key in default_columns %}data-default="1"{% endif %}
+            hx-get="/profiler/capabilities?sort={{ col.key }}&dir={{ next_dir }}{% if filter %}&filter={{ filter | urlencode }}{% endif %}"
+            hx-target="#profiler-capabilities" hx-swap="outerHTML" hx-indicator=".progress" tabindex="0" role="button"
+            aria-label="Sort by {{ col.label }}">
+            <span class="cap-th-label">{{ col.label }}</span>
+            {% if sort == col.key %}<span class="cap-sort">{% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>{% endif %}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr data-mac="{{ row.profile.mac }}">
+          <td class="cap-td cap-actions cap-sticky-actions">
+            {% if row.profile.text_href %}
+            <button type="button" class="uk-button uk-button-default uk-button-small"
+              hx-get="/profiler/profile?profile={{ row.profile.key }}" hx-target="#profiler-modals"
+              _="on htmx:afterOnLoad wait 10ms then add .uk-open to #profile_{{ row.profile.key }}">report</button>
+            {% endif %}
+            {% if row.profile.pcap_href %}
+            <a href="{{ row.profile.pcap_href }}"><button type="button"
+                class="uk-button uk-button-default uk-button-small">pcap</button></a>
+            {% endif %}
+            {% if row.profile.pcapng %}
+            <button type="button" class="uk-button uk-button-default uk-button-small cap-copy"
+              data-pcapng="{{ row.profile.pcapng }}" title="Copy Wireshark command">copy</button>
+            {% endif %}
+          </td>
+          {% for col in columns %}
+          {% set cell = row.cells[loop.index0] %}
+          <td class="cap-td{% if col.key == 'mac' %} cap-sticky{% endif %}">
+            {% if cell[1] %}<span class="cap-pill {{ cell[1] }}">{{ cell[0] }}</span>{% else %}{{ cell[0] }}{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="uk-alert-danger" uk-alert>
+    <p>No client profiles found on host. See the getting started instructions above to get started.</p>
+  </div>
+  {% endif %}
+</div>

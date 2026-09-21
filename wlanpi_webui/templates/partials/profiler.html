@@ -1,14 +1,77 @@
-<div class="page uk-flex uk-flex-1 uk-flex-center">
-  <div class="uk-section uk-padding-remove-top uk-padding-remove-bottom">
-    <div class="uk-flex uk-flex-column uk-width-1">
-      <div class="page-head">
-        <p class="page-eyebrow">Analysis</p>
-        <h2 class="page-title">Profiler</h2>
-        <p class="page-lede">Determine wireless client capabilities by automating the analysis of association frames.</p>
-      </div>
-      {% autoescape false %} {{ content }} {% endautoescape %}
-
-      <div id='profiler-modals'></div>
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Analysis</p>
+    <h2 class="page-title">Profiler</h2>
+    <p class="page-lede">Determine wireless client capabilities by automating the analysis of association frames.</p>
+  </div>
+  {% if content %}{% autoescape false %}{{ content }}{% endautoescape %}{% endif %}
+  {% if show_capabilities %}
+  <div class="profiler-service">
+    <div class="profiler-service-info" id="profiler-service-status">
+      <p class="app-status {{ service.state_class }}">{{ service.state_label }}</p>
+      <p class="uk-text-meta uk-margin-remove">{{ service.message }}</p>
+    </div>
+    <div class="profiler-service-actions">
+      {{ profiler_toggle | safe }}
+      <a class="uk-button uk-button-default" hx-get="/profiler/purge" hx-target="#content" hx-swap="innerHTML"
+        hx-push-url="true" hx-indicator=".progress">Purge data</a>
     </div>
   </div>
+
+  <div class="uk-card uk-card-default uk-card-body profiler-session-card">
+    <h3 class="uk-card-title">Profiler session</h3>
+    <div class="session-layout">
+      <div id="profiler-session" hx-get="/profiler/session" hx-trigger="load, every 5s" hx-swap="innerHTML">
+        <p class="uk-text-meta">Loading session&hellip;</p>
+      </div>
+      {% if profiler_qr %}
+      <div class="session-qr">
+        <div id="profiler-qr" data-wifi="{{ profiler_qr }}"
+          _="on load js(window.wlanpiRenderQr(me))"></div>
+        <p class="uk-text-meta uk-margin-small-top">Scan to join {{ profiler_ssid }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="profiler-block">
+    {% autoescape false %}{{ getting_started }}{% endautoescape %}
+  </div>
+
+  {% if reports %}
+  <div class="profiler-block">
+    <details class="disclosure">
+      <summary>Session reports</summary>
+      <div class="uk-overflow-auto uk-margin-small-top">
+        <table class="uk-table uk-table-small uk-table-divider">
+          <thead>
+            <tr>
+              <th>Last Modification</th>
+              <th>Report</th>
+              <th>Download</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+            <tr>
+              <td class="uk-text-nowrap">{{ report.modifytime }}</td>
+              <td>{{ report.name }}</td>
+              <td><a href="{{ report.href }}"><button type="button"
+                    class="uk-button uk-button-default uk-button-small">CSV</button></a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
+  <div id="profiler-capabilities" hx-get="/profiler/capabilities" hx-trigger="load, every 5s"
+    hx-swap="outerHTML">
+    <p class="uk-text-meta">Loading client profiles&hellip;</p>
+  </div>
+  {% endif %}
+
+  <div id='profiler-modals'></div>
 </div>
