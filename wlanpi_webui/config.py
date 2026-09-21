@@ -99,3 +99,29 @@ class Config:
     # Development overrides; never set these in production.
     BEACON_FORCE_UNLOCK = bool(os.environ.get("WLANPI_WEBUI_BEACON_FORCE_UNLOCK"))
     GAME_DEBUG = bool(os.environ.get("WLANPI_WEBUI_GAME_DEBUG"))
+    # Live profiler runtime files, written by wlanpi-profiler for external
+    # consumers. Read-only; absent when the profiler has never run or is down.
+    PROFILER_STATUS_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_STATUS", "/run/wlanpi-profiler.status.json"
+    )
+    PROFILER_INFO_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_INFO", "/run/wlanpi-profiler.info.json"
+    )
+    # Persistent snapshot of the previous session (survives reboots).
+    PROFILER_LAST_SESSION_PATH = os.environ.get(
+        "WLANPI_WEBUI_PROFILER_LAST_SESSION",
+        "/var/lib/wlanpi-profiler/last-session.json",
+    )
+    # Root-owned, argument-free wrapper that mints this WebUI's wlanpi-core
+    # bearer token. The shared HMAC secret is root-only, so this is how the
+    # unprivileged service gets a token.
+    CORE_TOKEN_WRAPPER = os.environ.get(
+        "WLANPI_WEBUI_CORE_TOKEN_WRAPPER",
+        "/usr/libexec/wlanpi-webui/get-core-token",
+    )
+    # Speedtest results, stored server-side so the report page and the
+    # results page can show past runs. Lives beside the session key.
+    SPEEDTEST_RESULTS_PATH = os.environ.get(
+        "WLANPI_WEBUI_SPEEDTEST_RESULTS",
+        "/var/lib/wlanpi-webui/speedtest.json",
+    )

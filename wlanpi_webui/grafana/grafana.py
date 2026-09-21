@@ -7,7 +7,6 @@ from wlanpi_webui.utils import (
     start_stop_service,
     system_service_exists,
     system_service_running_state,
-    wlanpi_core_warning,
 )
 
 
@@ -112,11 +111,7 @@ def get_data_streams(target: str | None = "#content") -> list[dict]:
 @csrf_required
 def start_stop_grafana(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "grafana-server")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "grafana-server")
     return "", 204
 
 
@@ -124,11 +119,7 @@ def start_stop_grafana(task):
 @csrf_required
 def start_stop_grafana_scanner0(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-scanner-wlan0")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-scanner-wlan0")
     return "", 204
 
 
@@ -136,11 +127,7 @@ def start_stop_grafana_scanner0(task):
 @csrf_required
 def start_stop_grafana_scanner1(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-scanner-wlan1")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-scanner-wlan1")
     return "", 204
 
 
@@ -148,11 +135,7 @@ def start_stop_grafana_scanner1(task):
 @csrf_required
 def start_stop_grafana_scanner2(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-scanner-wlan2")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-scanner-wlan2")
     return "", 204
 
 
@@ -160,11 +143,7 @@ def start_stop_grafana_scanner2(task):
 @csrf_required
 def start_stop_grafana_scat(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-scat")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-scat")
     return "", 204
 
 
@@ -172,11 +151,7 @@ def start_stop_grafana_scat(task):
 @csrf_required
 def start_stop_grafana_scat_pcap(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-scat-pcap")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-scat-pcap")
     return "", 204
 
 
@@ -184,11 +159,7 @@ def start_stop_grafana_scat_pcap(task):
 @csrf_required
 def start_stop_grafana_gps(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-gps")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-gps")
     return "", 204
 
 
@@ -196,11 +167,7 @@ def start_stop_grafana_gps(task):
 @csrf_required
 def start_stop_grafana_qscan(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-qscan")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-qscan")
     return "", 204
 
 
@@ -208,11 +175,7 @@ def start_stop_grafana_qscan(task):
 @csrf_required
 def start_stop_grafana_internet(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-internet")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-internet")
     return "", 204
 
 
@@ -220,11 +183,7 @@ def start_stop_grafana_internet(task):
 @csrf_required
 def start_stop_grafana_health(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-health")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-health")
     return "", 204
 
 
@@ -232,11 +191,7 @@ def start_stop_grafana_health(task):
 @csrf_required
 def start_stop_grafana_wipry24(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-wipry-lp-24")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-wipry-lp-24")
     return "", 204
 
 
@@ -244,11 +199,7 @@ def start_stop_grafana_wipry24(task):
 @csrf_required
 def start_stop_grafana_wipry5(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-wipry-lp-5")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-wipry-lp-5")
     return "", 204
 
 
@@ -256,11 +207,7 @@ def start_stop_grafana_wipry5(task):
 @csrf_required
 def start_stop_grafana_wipry6(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-wipry-lp-6")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-wipry-lp-6")
     return "", 204
 
 
@@ -268,11 +215,7 @@ def start_stop_grafana_wipry6(task):
 @csrf_required
 def start_stop_grafana_wispy24(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-wispy-24")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-wispy-24")
     return "", 204
 
 
@@ -280,9 +223,5 @@ def start_stop_grafana_wispy24(task):
 @csrf_required
 def start_stop_grafana_wispy5(task):
     if is_htmx(request):
-        core_status = system_service_running_state("wlanpi-core")
-        if core_status:
-            return start_stop_service(task, "wlanpi-grafana-wispy-5")
-        else:
-            return wlanpi_core_warning
+        return start_stop_service(task, "wlanpi-grafana-wispy-5")
     return "", 204

@@ -252,15 +252,6 @@ div.test_area canvas {
     width: auto;
 }
 
-.ls-home {
-    margin-left: 30px;
-    color: var(--navbar-text);
-    text-decoration: none;
-    font-size: 0.875rem;
-    letter-spacing: normal;
-    text-transform: uppercase;
-}
-
 .ls-back {
     display: flex;
     align-items: center;
@@ -270,7 +261,6 @@ div.test_area canvas {
     text-decoration: none;
 }
 
-.ls-home:hover,
 .ls-back:hover {
     color: var(--brand);
 }
@@ -343,4 +333,34 @@ div.test_group {
     #logo {
         width: 10em;
     }
+}
+
+/* Post-test result card: headline numbers plus links to the stored report. */
+.result_card {
+    max-width: 720px;
+    margin: 20px auto;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text);
+    text-align: center;
+}
+
+.result_card h3 {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+}
+
+.result_card .result_line {
+    margin: 0 0 14px;
+    font-size: 1.15rem;
+}
+
+.result_card .btn {
+    height: 2.6em;
+    margin: 0 4px;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+    line-height: 2.3em;
 }

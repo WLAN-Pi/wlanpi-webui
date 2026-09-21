@@ -1,10 +1,10 @@
 """Tests for PAM-backed session login, CSRF, and POST-only mutating routes."""
 
-import hashlib
-import hmac
+import json
 import re
 
 import pytest
+import requests as requests_module
 
 from wlanpi_webui.app import create_app
 
@@ -231,48 +231,76 @@ class TestMutatingRoutes:
         assert resp.status_code == 204
 
 
-class TestHmacSignature:
-    def test_json_body_signed_exactly(self, monkeypatch):
-        import requests as requests_module
+class _Resp:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload or {}
 
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests_module.HTTPError(response=self)
+
+    def json(self):
+        return self._payload
+
+
+class TestCoreToken:
+    def _patch_token(self, monkeypatch, token="abc"):
+        def fake_run(*a, **k):
+            return type(
+                "R", (), {"stdout": json.dumps({"access_token": token}), "stderr": ""}
+            )()
+
+        monkeypatch.setattr("wlanpi_webui.utils.subprocess.run", fake_run)
+
+    def test_make_api_request_sends_bearer(self, app, monkeypatch):
         from wlanpi_webui import utils
 
+        utils.reset_core_token()
+        self._patch_token(monkeypatch)
         captured = {}
 
-        def fake_request(
-            method, url, headers=None, params=None, data=None, verify=None, timeout=None
-        ):
-            captured.update(method=method, url=url, headers=headers, data=data)
-
-            class R:
-                def raise_for_status(self):
-                    pass
-
-            return R()
+        def fake_request(method, url, headers=None, **kwargs):
+            captured["headers"] = headers
+            return _Resp(200)
 
         monkeypatch.setattr(requests_module, "request", fake_request)
-        monkeypatch.setattr(utils, "get_shared_secret", lambda *a, **k: b"test-secret")
-        utils.make_api_request(
-            "POST",
-            "https://127.0.0.1:31415/api/v1/auth/pam",
-            json_body={"username": "u", "password": "p"},
-        )
-        assert captured["method"] == "POST"
-        assert captured["data"] == '{"username": "u", "password": "p"}'
-        expected = hmac.new(
-            b"test-secret",
-            b"POST\n/api/v1/auth/pam\n\n" + captured["data"].encode(),
-            hashlib.sha256,
-        ).hexdigest()
-        assert captured["headers"]["X-Request-Signature"] == expected
-        assert captured["headers"]["Content-Type"] == "application/json"
+        with app.test_request_context():
+            utils.make_api_request(
+                "POST",
+                "https://127.0.0.1:31415/api/v1/auth/pam",
+                json_body={"username": "u"},
+            )
+        assert captured["headers"]["Authorization"] == "Bearer abc"
+        assert "X-Request-Signature" not in captured["headers"]
 
-    def test_no_body_in_debug_logging(self, app, monkeypatch):
+    def test_401_remints_and_retries(self, app, monkeypatch):
         from wlanpi_webui import utils
 
-        calls = []
+        utils.reset_core_token()
+        self._patch_token(monkeypatch, token="fresh")
+        seen = []
+
+        def fake_request(method, url, headers=None, **kwargs):
+            seen.append(headers["Authorization"])
+            return _Resp(401 if len(seen) == 1 else 200)
+
+        monkeypatch.setattr(requests_module, "request", fake_request)
         with app.test_request_context():
-            logger = app.logger
-            monkeypatch.setattr(logger, "debug", lambda *a: calls.append(a))
-            utils.generate_hmac_signature("POST", "/api/v1/auth/pam", body="s3cretpw")
-        assert not any("s3cretpw" in str(c) for c in calls)
+            utils.make_api_request("GET", "https://127.0.0.1:31415/api/v1/x")
+        assert seen == ["Bearer fresh", "Bearer fresh"]
+        assert len(seen) == 2
+
+    def test_clock_error_raises_core_auth_error(self, app, monkeypatch):
+        from wlanpi_webui import utils
+
+        utils.reset_core_token()
+        self._patch_token(monkeypatch)
+        monkeypatch.setattr(
+            requests_module,
+            "request",
+            lambda *a, **k: _Resp(503, {"error": "AUTH_CLOCK_NOT_SET"}),
+        )
+        with app.test_request_context():
+            with pytest.raises(utils.CoreAuthError):
+                utils.make_api_request("GET", "https://127.0.0.1:31415/api/v1/x")

@@ -7,6 +7,7 @@ wlanpi_webui.app
 the main flask app
 """
 
+import json
 import logging
 from datetime import timedelta
 from time import time
@@ -24,12 +25,14 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from wlanpi_webui.config import Config, get_hostname
 from wlanpi_webui.utils import (
+    active_alerts,
     get_dpkg_status_mtime,
     is_beacon_armed,
     is_htmx,
     load_or_create_session_key,
     package_installed,
     read_boot_id,
+    system_service_running_state,
 )
 
 # Endpoints polled in the background (the stats bar). These must not refresh
@@ -72,6 +75,12 @@ def create_app(config_class=Config):
 
     app.register_blueprint(librespeed_bp)
     app.logger.debug("librespeed blueprint registered")
+
+    app.logger.debug("registering cli blueprint")
+    from wlanpi_webui.cli import bp as cli_bp
+
+    app.register_blueprint(cli_bp)
+    app.logger.debug("cli blueprint registered")
 
     app.logger.debug("registering profiler blueprint")
     from wlanpi_webui.profiler import bp as profiler_bp
@@ -185,6 +194,22 @@ def create_app(config_class=Config):
             session["last_seen"] = now
         return None
 
+    @app.after_request
+    def emit_queued_toast(response):
+        # The navbar bell reads the alert keys from every response.
+        core_running = _context_cache.get("core_running", True)
+        response.headers["X-Wlanpi-Alerts"] = ",".join(
+            a["key"] for a in active_alerts(core_running)
+        )
+        # A queued toast survives redirects and non-HTML responses (e.g. the
+        # speedtest report POST), so it rides the next page the user loads.
+        if 300 <= response.status_code < 400 or response.mimetype != "text/html":
+            return response
+        toast = session.pop("wlanpi_toast", None)
+        if toast:
+            response.headers["X-Wlanpi-Toast"] = json.dumps(toast)
+        return response
+
     @app.before_request
     def require_login():
         if session.get("user"):
@@ -207,6 +232,16 @@ def create_app(config_class=Config):
     _context_cache_mtime = 0
     CONTEXT_CACHE_TTL = 60
 
+    def _with_alerts(context):
+        # Computed per render so a core failure surfaces promptly; the
+        # expensive service/package checks above stay cached.
+        alerts = active_alerts(context["core_running"])
+        return {
+            **context,
+            "alerts": alerts,
+            "alert_keys": [a["key"] for a in alerts],
+        }
+
     @app.context_processor
     def utility_processor():
         nonlocal _context_cache, _context_cache_time, _context_cache_mtime
@@ -220,18 +255,19 @@ def create_app(config_class=Config):
             and cache_age < CONTEXT_CACHE_TTL
             and _context_cache_mtime == current_mtime
         ):
-            return _context_cache
+            return _with_alerts(_context_cache)
 
         _context_cache = {
             "profiler_installed": package_installed("wlanpi-profiler"),
             "kismet_installed": package_installed("kismet"),
             "cockpit_installed": package_installed("cockpit"),
             "grafana_installed": package_installed("grafana"),
+            "core_running": system_service_running_state("wlanpi-core", quiet=True),
         }
         _context_cache_time = current_time
         _context_cache_mtime = current_mtime
 
-        return _context_cache
+        return _with_alerts(_context_cache)
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

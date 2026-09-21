@@ -20,6 +20,8 @@
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <!--UIkit CSS-->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
+  <!--Vendored terminal CSS (only used by /cli)-->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/xterm/xterm.css') }}">
   <!--App CSS-->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/app.css') }}">
   <!--UIkit JS-->
@@ -30,30 +32,12 @@
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
-  <script> 
-  function setAlertVisibility(visibility) {
-  document.getElementById("connection-alert").style.visibility = visibility;
-  }
-  document.body.addEventListener("htmx:responseError", function() {
-      setAlertVisibility("visible")
-  });
-  document.body.addEventListener("htmx:sendError", function() {
-      setAlertVisibility("visible")
-  });
-  document.body.addEventListener("htmx:afterRequest", function(evt) {
-      if (evt.detail.xhr.status === 404 || evt.detail.xhr.status === 502) {
-          setAlertVisibility("visible")
-      } else {
-          setAlertVisibility("hidden")
-      }
-  });
-  </script> 
   <div class="progress" style="height: 5px; background-color: var(--bg-surface);">
     <div class="indeterminate" style="background-color: var(--brand);"></div>
   </div>
   <div id="thebiglebowski" class="uk-flex uk-flex-column">
     <!--HEADER-->
-    {% set _nav = 'apps' if request.path.startswith(('/apps', '/profiler', '/kismet', '/grafana', '/cockpit', '/speedtest')) else ('network' if request.path.startswith('/network') else ('system' if request.path.startswith('/system') else ('home' if request.path == '/' else ''))) %}
+    {% set _nav = 'cli' if request.path.startswith('/cli') else ('apps' if request.path.startswith(('/apps', '/profiler', '/kismet', '/grafana', '/cockpit', '/speedtest', '/app/librespeed')) else ('network' if request.path.startswith('/network') else ('system' if request.path.startswith('/system') else ('home' if request.path == '/' else '')))) %}
     <div class="uk-box-shadow-small uk-flex-first uk-background-muted" style="margin: 0px !important;">
       <nav class="uk-navbar-container" uk-navbar id="navbar" aria-label="Primary">
         <div class="uk-navbar-left">
@@ -66,6 +50,8 @@
                 hx-indicator=".progress"{% if _nav == 'home' %} aria-current="page"{% endif %}>HOME</a></li>
             <li{% if _nav == 'apps' %} class="uk-active"{% endif %}><a data-nav="apps" hx-get="/apps" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
                 hx-indicator=".progress"{% if _nav == 'apps' %} aria-current="page"{% endif %}>APPS</a></li>
+            <li{% if _nav == 'cli' %} class="uk-active"{% endif %}><a data-nav="cli" hx-get="/cli" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                hx-indicator=".progress"{% if _nav == 'cli' %} aria-current="page"{% endif %}>CLI</a></li>
             <li{% if _nav == 'network' %} class="uk-active"{% endif %}><a data-nav="network" hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
                 hx-swap="innerHTML"{% if _nav == 'network' %} aria-current="page"{% endif %}>NETWORK</a></li>
             <li{% if _nav == 'system' %} class="uk-active"{% endif %}><a data-nav="system" hx-get="/system" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
@@ -74,8 +60,19 @@
         </div>
         <div class="uk-navbar-right">
           <ul class="uk-navbar-nav">
-            <li id="connection-alert" style="visibility: hidden;">
-              <a href="#" uk-icon="icon: warning; ratio: 1.5;" title="Connection error." data-uk-tooltip></a>
+            <li id="alerts-bell" class="alerts-bell" data-alert-keys="{{ alert_keys | join(',') }}">
+              <a class="alerts-bell-link" hx-get="/alerts" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+                hx-indicator=".progress" title="Alerts" aria-label="Alerts" data-uk-tooltip>
+                <span class="alerts-bell-icon">
+                  {# Solid bell drawn inline so it inherits the navbar colour; the
+                     UIkit glyph hardcodes a thin black stroke. #}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2.5c-.83 0-1.5.67-1.5 1.5v.9C7.9 5.5 6 7.9 6 10.7v3.4l-1.5 2.4A1 1 0 0 0 5.4 18h13.2a1 1 0 0 0 .9-1.5L18 14.1v-3.4c0-2.8-1.9-5.2-4.5-5.8V4c0-.83-.67-1.5-1.5-1.5z" />
+                    <path d="M9.6 19.5a2.4 2.4 0 0 1 4.8 0z" />
+                  </svg>
+                  <span class="alerts-badge" hidden></span>
+                </span>
+              </a>
             </li>
             <li class="uk-visible@m">
               <a hx-get="/settings" hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress"
@@ -119,6 +116,8 @@
             hx-indicator=".progress">HOME</a></li>
         <li{% if _nav == 'apps' %} class="uk-active"{% endif %}><a data-nav="apps" hx-get="/apps" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
             hx-indicator=".progress">APPS</a></li>
+        <li{% if _nav == 'cli' %} class="uk-active"{% endif %}><a data-nav="cli" hx-get="/cli" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
+            hx-indicator=".progress">CLI</a></li>
         <li{% if _nav == 'network' %} class="uk-active"{% endif %}><a data-nav="network" hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
             hx-swap="innerHTML">NETWORK</a></li>
         <li{% if _nav == 'system' %} class="uk-active"{% endif %}><a data-nav="system" hx-get="/system" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
@@ -133,6 +132,9 @@
   <!--JS-->
   <script src="{{ url_for('static', filename='js/_hyperscript.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/qrcode.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/profiler.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/speedtest_results.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/cli.js') }}" defer></script>
   <!--/JS-->
 </body>
 

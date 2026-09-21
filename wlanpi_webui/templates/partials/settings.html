@@ -32,20 +32,6 @@
 
   <h4>Diagnostics</h4>
   <div class="uk-card uk-card-default uk-card-body">
-    <h5>Notification history</h5>
-    <div class="settings-actions">
-      <a class="uk-button uk-button-default" hx-get="/notifications" hx-target="#content" hx-swap="innerHTML"
-        hx-push-url="true" hx-indicator=".progress" href="/notifications">Notifications</a>
-    </div>
-    <h5>Test notifications</h5>
-    <div class="settings-toasts">
-      {% for status in toast_statuses %}
-      <button class="uk-button uk-button-default" type="button"
-        onclick="wlanpiToast('Test {{ status }} toast', '{{ status }}')">{{ status }}</button>
-      {% endfor %}
-      <button class="uk-button uk-button-default" type="button"
-        onclick="wlanpiToast('Test default toast')">default</button>
-    </div>
     <h5>Session state</h5>
     <ul class="uk-list uk-list-divider data-list">
       <li>User: {{ current_user }}</li>

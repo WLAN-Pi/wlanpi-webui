@@ -13,6 +13,7 @@ update them deliberately and record the new version + checksum here.
 | `js/Chart.bundle.min.js` | 2.7.1 | copied from `install/var/www/librespeed/` (same file the speedtest page uses) | Shared by the speedtest page and the network latency graph. |
 | `css/uikit.css`, `css/uikit.min.css`, `css/uikit-rtl.css`, `css/uikit-rtl.min.css` | 3.25.23 | `uikit@3.25.23` (`dist/css/*`) | |
 | `vendor/beacon/beacon.js`, `vendor/beacon/beacon.wasm` | pinned build | Emscripten 3.1.43 (GPL-2.0) | Vendored engine for a hidden page. Built with local `configure.ac` changes; loads its data at runtime. See [`vendor/beacon/README.md`](vendor/beacon/README.md). Do not bump casually. |
+| `vendor/xterm/xterm.js`, `vendor/xterm/xterm.css`, `vendor/xterm/addon-fit.js` | 6.0.0 / 0.11.0 | `@xterm/xterm@6.0.0` (`lib/xterm.js`, `css/xterm.css`) and `@xterm/addon-fit@0.11.0` (`lib/addon-fit.js`) | MIT. Terminal renderer for `/cli`. |
 
 `css/app.css`, `img/*` and `icon/*` are first-party assets, not vendored. The
 vendored engine is code we now own; see its README before touching it.
@@ -47,4 +48,7 @@ e97c9411e574d1a9b17de0b8637cff4ffbac34a55ec0ea7b2239273e9fd906ba  js/uikit-icons
 ee2f6203c15a72c7a00fe76c45c5ca7aa5a2677e630c8fb464581eb06cb4a298  css/uikit-rtl.min.css
 f973828f988343c6b8a47fa39ba474dd407f8f8ffcc661284d7fccd6adc044b9  vendor/beacon/beacon.js
 64866c990952abfe084ddf3bd1c6bb323cfe9ee234d560171ae2898d55e978ef  vendor/beacon/beacon.wasm
+14903579ff54664cd72f8e8699e6961a6272c21863ec1c3b118cdc8af5d4a972  vendor/xterm/xterm.js
+854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6  vendor/xterm/xterm.css
+ba3ea256ce0620a0992a197d6c9baea64823fc93d8da07a9e366ca9943c18527  vendor/xterm/addon-fit.js
 ```

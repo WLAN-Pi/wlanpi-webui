@@ -1,0 +1,9 @@
+#!/bin/sh
+# Mint a wlanpi-core JWT for the WebUI.
+#
+# Deliberately root-owned and argument-free: this is the only command the
+# unprivileged wlanpi user (and therefore the WebUI) may run as root, and it
+# must not be usable to mint a token for any other device id. The shared HMAC
+# secret is root-only, so this wrapper is how the WebUI gets a bearer token.
+set -eu
+exec /usr/bin/getjwt wlanpi-webui --no-color

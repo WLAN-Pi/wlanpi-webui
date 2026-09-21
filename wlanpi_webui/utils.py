@@ -1,31 +1,46 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
+import math
 import os
 import secrets
 import subprocess
 import urllib.parse
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from time import time
 
 import requests
-from flask import current_app, redirect, request
+from flask import current_app, redirect, request, session
 
-SECRET_PATH = "/home/wlanpi/.local/share/wlanpi-core/secrets/shared_secret.bin"
 CA_CERT = "/etc/nginx/ssl/self-signed-wlanpi.cert"
 SERVER = "127.0.0.1"
 PORT = "31415"
+TOKEN_TIMEOUT = 15
 
 
-def get_shared_secret(secret_path=SECRET_PATH) -> bytes:
-    """Load shared secret from file."""
-    if os.path.exists(secret_path):
-        if os.access(secret_path, os.R_OK):
-            return Path(secret_path).read_bytes()
-    return b""
+class CoreAuthError(requests.RequestException):
+    """Could not authenticate to wlanpi-core (token mint or clock)."""
+
+
+# Cached wlanpi-core bearer token. Per process: the service runs a single
+# gunicorn worker, and a fresh token is minted on demand after a 401.
+_token: dict[str, str | None] = {"value": None}
+
+# Last wlanpi-core authentication problem, surfaced by the navbar alert icon
+# and the /alerts page. Diagnostic state, not a ledger.
+_core_alert: dict[str, str | None] = {"value": None}
+
+
+def record_core_alert(message: str) -> None:
+    """Remember a core authentication failure for the alerts page."""
+    _core_alert["value"] = message
+
+
+def clear_core_alert() -> None:
+    """Clear the remembered core authentication failure."""
+    _core_alert["value"] = None
 
 
 # shortcut: cached for the life of the process; the boot id only changes on
@@ -153,17 +168,64 @@ def get_safe_referrer_target() -> str:
     return get_safe_redirect_target(path)
 
 
-def generate_hmac_signature(
-    method: str, endpoint: str, query: str = "", body: str = ""
-) -> str | None:
+def get_core_token(force=False) -> str:
+    """Return a wlanpi-core JWT, minting one via the root-owned wrapper.
+
+    The shared HMAC secret is root-only, so the WebUI (which runs unprivileged
+    as ``wlanpi``) cannot sign requests. It runs the fixed, argument-free
+    wrapper in ``CORE_TOKEN_WRAPPER`` as root instead, which mints a token for
+    its own device id.
     """
-    Generates HMAC signature for the request using SHA256.
-    """
-    secret = get_shared_secret()
-    if not secret:
-        return None
-    canonical_string = f"{method}\n{endpoint}\n{query}\n{body}"
-    return hmac.new(secret, canonical_string.encode(), hashlib.sha256).hexdigest()
+    if _token["value"] and not force:
+        return _token["value"]
+
+    wrapper = current_app.config["CORE_TOKEN_WRAPPER"]
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", wrapper],
+            capture_output=True,
+            text=True,
+            timeout=TOKEN_TIMEOUT,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        current_app.logger.error("core token wrapper failed: %s", exc)
+        record_core_alert("Could not mint a wlanpi-core token.")
+        raise CoreAuthError("Could not mint a wlanpi-core token.") from exc
+
+    # getjwt prints a JSON object; tolerate any surrounding output.
+    start = result.stdout.find("{")
+    end = result.stdout.rfind("}")
+    token = ""
+    if start != -1 and end > start:
+        try:
+            token = str(
+                json.loads(result.stdout[start : end + 1]).get("access_token") or ""
+            )
+        except ValueError:
+            token = ""
+    if not token:
+        current_app.logger.error(
+            "core token wrapper returned no token: %s", result.stdout
+        )
+        record_core_alert("Could not mint a wlanpi-core token.")
+        raise CoreAuthError("Could not mint a wlanpi-core token.")
+
+    clear_core_alert()
+    _token["value"] = token
+    return token
+
+
+def reset_core_token() -> None:
+    """Forget the cached token so the next request mints a fresh one."""
+    _token["value"] = None
+
+
+def _clock_not_set(response: requests.Response) -> bool:
+    try:
+        return bool(response.json().get("error") == "AUTH_CLOCK_NOT_SET")
+    except ValueError:
+        return False
 
 
 def make_api_request(
@@ -173,35 +235,65 @@ def make_api_request(
     headers: dict | None = None,
     json_body: dict | None = None,
 ) -> requests.Response:
-    try:
-        query_string = urllib.parse.urlencode(params) if params else ""
-        endpoint = urllib.parse.urlparse(url).path
-        body = json.dumps(json_body) if json_body is not None else ""
+    """Call wlanpi-core with a bearer token, re-minting once on 401."""
+    body = json.dumps(json_body) if json_body is not None else ""
+    request_headers = dict(headers or {})
+    request_headers["accept"] = "application/json"
+    if json_body is not None:
+        request_headers["Content-Type"] = "application/json"
 
-        signature = generate_hmac_signature(method, endpoint, query_string, body)
-
-        headers = {
-            "X-Request-Signature": signature,
-            "accept": "application/json",
-        }
-        if json_body is not None:
-            headers["Content-Type"] = "application/json"
-
-        response = requests.request(
+    def _send(token: str) -> requests.Response:
+        return requests.request(
             method=method,
             url=url,
-            headers=headers,
+            headers={**request_headers, "Authorization": f"Bearer {token}"},
             params=params,
             data=body,
             verify=CA_CERT,
             timeout=10,
         )
-        response.raise_for_status()
-        return response
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None:
-            print(f"Error response: {e.response.text}")
-        raise
+
+    response = _send(get_core_token())
+    if response.status_code == 401:
+        # the token expired or was revoked; mint a fresh one and retry once
+        response = _send(get_core_token(force=True))
+
+    if response.status_code == 503 and _clock_not_set(response):
+        record_core_alert("NTP needs set; cannot proceed")
+        raise CoreAuthError("NTP needs set; cannot proceed")
+
+    response.raise_for_status()
+    clear_core_alert()
+    return response
+
+
+def active_alerts(core_running: bool) -> list[dict[str, str]]:
+    """Conditions worth surfacing in the navbar bell and on the alerts page."""
+    alerts: list[dict[str, str]] = []
+
+    if not core_running:
+        alerts.append(
+            {
+                "key": "core-down",
+                "title": "wlanpi-core is not running",
+                "detail": "Login and most WebUI features depend on wlanpi-core.",
+                "fix": "sudo systemctl start wlanpi-core",
+            }
+        )
+
+    message = _core_alert["value"]
+    if message:
+        alerts.append(
+            {
+                "key": "core-auth",
+                "title": "wlanpi-core authentication failed",
+                "detail": message,
+                "fix": "Check the clock (sudo timedatectl set-ntp true), then "
+                "mint a token: sudo getjwt wlanpi-webui",
+            }
+        )
+
+    return alerts
 
 
 CORE_API_BASE = f"https://{SERVER}:{PORT}"
@@ -214,13 +306,6 @@ def get_core_json(path: str, params: dict | None = None) -> dict | None:
     except (requests.RequestException, ValueError):
         return None
     return data if isinstance(data, dict) else None
-
-
-wlanpi_core_warning = """
-<script>
-wlanpiToast('<span uk-icon="icon: warning; ratio: 2"></span> wlanpi-core not running.', 'danger');
-</script>
-"""
 
 
 def is_htmx(request):
@@ -257,21 +342,25 @@ def system_service_exists(service):
     return False
 
 
-def system_service_running_state(service):
+def system_service_running_state(service, quiet=False):
     """
     Checks the status of the systemd service.
     Returns true if systemd service is running, false otherwise.
+
+    ``quiet`` suppresses the INFO logs, for callers that poll frequently.
     """
     try:
         # this cmd fails if service not installed
         cmd = ["/bin/systemctl", "is-active", "--quiet", service]
-        current_app.logger.info("subprocess is running %s", cmd)
+        if not quiet:
+            current_app.logger.info("subprocess is running %s", cmd)
         # check_returncode(): If returncode is non-zero, raise a CalledProcessError.
         subprocess.run(cmd).check_returncode()
     except subprocess.CalledProcessError as exc:
-        current_app.logger.info(
-            "service %s is not running (error code: %s)", service, exc.returncode
-        )
+        if not quiet:
+            current_app.logger.info(
+                "service %s is not running (error code: %s)", service, exc.returncode
+            )
         return False
     return True
 
@@ -335,54 +424,80 @@ def systemd_service_message(service):
         return f"{service} is not running"
 
 
+def service_friendly_name(service_name):
+    """Human-readable name for a systemd service."""
+    friendly_name = service_name
+    # Clean up some common systemd service suffixes/prefixes for friendly display
+    if friendly_name.endswith(".service"):
+        friendly_name = friendly_name[:-8]
+    if friendly_name.startswith("wlanpi-grafana-"):
+        friendly_name = friendly_name.replace("wlanpi-grafana-", "Grafana ")
+        friendly_name = friendly_name.replace("-", " ").title()
+    elif friendly_name == "grafana-server":
+        friendly_name = "Grafana"
+    elif friendly_name == "wlanpi-profiler":
+        friendly_name = "Profiler"
+    elif friendly_name == "cockpit":
+        friendly_name = "Cockpit"
+    elif friendly_name == "kismet":
+        friendly_name = "Kismet"
+    else:
+        friendly_name = friendly_name.replace("-", " ").title()
+    return friendly_name
+
+
+def queue_toast(message, status="primary"):
+    """Queue a one-shot toast, delivered by the after_request hook.
+
+    Survives the redirect that start/stop returns, so the toast lands on the
+    page the user is sent back to.
+    """
+    session["wlanpi_toast"] = {"message": message, "status": status}
+
+
 def start_stop_service(task, service):
     """
-    Starts or stops a service using wlanpi-core API.
-    With HMAC authentication support.
+    Starts or stops a service using wlanpi-core API, queuing a toast with the
+    result.
     """
+    name = service_friendly_name(service)
+
     if task == "start" and not system_service_exists(service):
-        return service_not_installed_warning(service)
-
-    params = {
-        "name": f"{service}",
-    }
-    try:
-        if task == "start":
-            current_app.logger.info("starting %s", service)
-            url = "https://127.0.0.1:31415/api/v1/system/service/start"
-        elif task == "stop":
-            current_app.logger.info("stopping %s", service)
-            url = "https://127.0.0.1:31415/api/v1/system/service/stop"
-        else:
-            current_app.logger.error("Invalid task: %s", task)
-            return redirect(get_safe_referrer_target())
-
-        response = make_api_request(method="POST", url=url, params=params)
-
-        current_app.logger.info("Response status: %s", response.status_code)
-
-        if response.status_code != 200:
-            current_app.logger.error(
-                "Request failed with status %s. Response body: %s",
-                response.status_code,
-                response.text,
-            )
-            current_app.logger.info(
-                "systemd_service_message: %s",
-                systemd_service_message("wlanpi-core"),
-            )
-            current_app.logger.info("%s generated %s response", url, response)
-
-            # Add additional error context
-            if response.status_code == 401:
-                current_app.logger.error(
-                    "Authentication failed. Verify HMAC configuration and shared secret access."
-                )
-            current_app.logger.info("%s generated %s response", url, response)
+        queue_toast(f"{name} is not installed.", "warning")
         return redirect(get_safe_referrer_target())
+
+    if not system_service_running_state("wlanpi-core"):
+        queue_toast("wlanpi-core is not running.", "danger")
+        return redirect(get_safe_referrer_target())
+
+    if task not in ("start", "stop"):
+        current_app.logger.error("Invalid task: %s", task)
+        return redirect(get_safe_referrer_target())
+
+    current_app.logger.info("%sing %s", task, service)
+    url = f"https://127.0.0.1:31415/api/v1/system/service/{task}"
+    params = {"name": service}
+
+    try:
+        response = make_api_request(method="POST", url=url, params=params)
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
+        queue_toast(f"Could not {task} {name}.", "warning")
         return redirect(get_safe_referrer_target())
+
+    if response.status_code != 200:
+        current_app.logger.error(
+            "Request failed with status %s. Response body: %s",
+            response.status_code,
+            response.text,
+        )
+        if response.status_code == 401:
+            current_app.logger.error("Authentication failed. Verify core credentials.")
+        queue_toast(f"Could not {task} {name}.", "warning")
+        return redirect(get_safe_referrer_target())
+
+    queue_toast(f"{name} {'started' if task == 'start' else 'stopped'}.", "success")
+    return redirect(get_safe_referrer_target())
 
 
 def package_installed(package):
@@ -440,27 +555,114 @@ def get_apt_package_version(package) -> str:
     return version
 
 
-def service_not_installed_warning(service_name):
-    friendly_name = service_name
-    # Clean up some common systemd service suffixes/prefixes for friendly display
-    if friendly_name.endswith(".service"):
-        friendly_name = friendly_name[:-8]
-    if friendly_name.startswith("wlanpi-grafana-"):
-        friendly_name = friendly_name.replace("wlanpi-grafana-", "Grafana ")
-        friendly_name = friendly_name.replace("-", " ").title()
-    elif friendly_name == "grafana-server":
-        friendly_name = "Grafana"
-    elif friendly_name == "wlanpi-profiler":
-        friendly_name = "Profiler"
-    elif friendly_name == "cockpit":
-        friendly_name = "Cockpit"
-    elif friendly_name == "kismet":
-        friendly_name = "Kismet"
-    else:
-        friendly_name = friendly_name.replace("-", " ").title()
+SPEEDTEST_RESULT_LIMIT = 20
+SPEEDTEST_NOTE_MAX = 200
 
-    return f"""
-<script>
-wlanpiToast('<span uk-icon="icon: warning; ratio: 2"></span> {friendly_name} is not installed.', 'warning');
-</script>
-"""
+SPEEDTEST_NUMBER_FIELDS = (
+    "download_mbps",
+    "upload_mbps",
+    "ping_ms",
+    "jitter_ms",
+    "loaded_ping_ms",
+    "loaded_jitter_ms",
+    "download_min_mbps",
+    "download_max_mbps",
+    "upload_min_mbps",
+    "upload_max_mbps",
+    "download_mb",
+    "upload_mb",
+    "duration_s",
+)
+
+
+def _speedtest_number(value) -> float | None:
+    """Coerce a client-supplied number, or None if it is not usable."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number) or number < 0:
+        return None
+    return round(number, 3)
+
+
+def load_speedtest_results() -> list[dict]:
+    """Read the stored speedtest results, newest first."""
+    path = current_app.config.get("SPEEDTEST_RESULTS_PATH")
+    if not path:
+        return []
+    try:
+        data = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return []
+    return data if isinstance(data, list) else []
+
+
+def save_speedtest_result(payload) -> dict | None:
+    """Validate and store a speedtest result. None if the payload is unusable."""
+    if not isinstance(payload, dict):
+        return None
+
+    result: dict = {
+        "id": f"{int(time())}-{secrets.token_hex(3)}",
+        "tested_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "client_ip": str(payload.get("client_ip") or "")[:64],
+        "note": "",
+    }
+    for field in SPEEDTEST_NUMBER_FIELDS:
+        value = _speedtest_number(payload.get(field))
+        if value is not None:
+            result[field] = value
+
+    # a result with no throughput at all is not worth keeping
+    if "download_mbps" not in result and "upload_mbps" not in result:
+        return None
+
+    path = current_app.config.get("SPEEDTEST_RESULTS_PATH")
+    if not path:
+        return None
+
+    results = load_speedtest_results()
+    results.insert(0, result)
+    del results[SPEEDTEST_RESULT_LIMIT:]
+
+    try:
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps(results))
+        tmp.replace(target)
+    except OSError:
+        current_app.logger.warning("could not store speedtest result: %s", path)
+        return None
+    return result
+
+
+def get_speedtest_result(result_id: str) -> dict | None:
+    """Return one stored result by id, or None."""
+    return next((r for r in load_speedtest_results() if r.get("id") == result_id), None)
+
+
+def set_speedtest_note(result_id: str, note: str) -> bool:
+    """Attach a short note to a stored result. False if the result is unknown."""
+    path = current_app.config.get("SPEEDTEST_RESULTS_PATH")
+    if not path:
+        return False
+
+    results = load_speedtest_results()
+    for result in results:
+        if result.get("id") == result_id:
+            result["note"] = note[:SPEEDTEST_NOTE_MAX]
+            break
+    else:
+        return False
+
+    try:
+        target = Path(path)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps(results))
+        tmp.replace(target)
+    except OSError:
+        current_app.logger.warning("could not store speedtest note: %s", path)
+        return False
+    return True

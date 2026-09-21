@@ -1,0 +1,134 @@
+{# Out-of-band: keep the service bar in step with the polled session. #}
+<div id="profiler-service-status" hx-swap-oob="true">
+  <p class="app-status {{ service.state_class }}">{{ service.state_label }}</p>
+  <p class="uk-text-meta uk-margin-remove">{{ service.message }}</p>
+</div>
+{% if session.live %}
+{# Polled marker read by profiler.js to toast newly profiled clients. #}
+<div id="profiler-session-events" hidden data-profile-count="{{ session.profile_count }}"
+  data-last-profile="{{ session.last_profile }}"></div>
+<div class="session-status">
+  <span class="app-status {{ session.state_class }}">{{ session.state | capitalize }}</span>
+  {% if session.uptime %}<span class="uk-text-meta">up {{ session.uptime }}</span>{% endif %}
+  {% if session.profiler_version %}<span class="uk-text-meta">profiler {{ session.profiler_version }}</span>{% endif %}
+</div>
+<div class="cap-summary session-metrics">
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.profile_count }}</span>
+    <span class="cap-stat-label">Profiled</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.failed_profile_count }}</span>
+    <span class="cap-stat-label">Failed</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.total_clients_seen }}</span>
+    <span class="cap-stat-label">Clients seen</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.invalid_frame_count }}</span>
+    <span class="cap-stat-label">Invalid frames</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.bad_fcs_count }}</span>
+    <span class="cap-stat-label">Bad FCS</span>
+  </div>
+</div>
+<dl class="session-facts">
+  <div>
+    <dt>Mode</dt>
+    <dd>{{ session.mode or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Channel</dt>
+    <dd>{{ session.channel or 'n/a' }}{% if session.frequency %} ({{ session.frequency }} MHz){% endif %}</dd>
+  </div>
+  <div>
+    <dt>Country</dt>
+    <dd>{{ session.country_code or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>PHY</dt>
+    <dd>{{ session.phy or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>AP interface</dt>
+    <dd>{{ session.ap_interface or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Monitor interface</dt>
+    <dd>{{ session.monitor_interface or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>SSID</dt>
+    <dd>{{ session.ssid or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Passphrase</dt>
+    <dd>{{ session.passphrase or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>BSSID</dt>
+    <dd>{{ session.bssid or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Started</dt>
+    <dd>{{ session.started_at or 'n/a' }}</dd>
+  </div>
+  <div class="session-fact-wide">
+    <dt>Last profile</dt>
+    <dd>{% if session.last_profile %}{{ session.last_profile }}{% if session.last_profile_timestamp %} ({{ session.last_profile_timestamp }}){% endif %}{% else %}n/a{% endif %}</dd>
+  </div>
+</dl>
+{% elif session.has_last_session %}
+<div class="session-status">
+  <span class="app-status {{ session.state_class }}">{{ session.last.status | capitalize or 'Stopped' }}</span>
+  {% if session.last.ended_at %}<span class="uk-text-meta">ended {{ session.last.ended_at }}</span>{% endif %}
+  {% if session.last.duration %}<span class="uk-text-meta">ran {{ session.last.duration }}</span>{% endif %}
+</div>
+{% if session.last.reason or session.last.message %}
+<p class="uk-text-meta">{{ session.last.reason or 'n/a' }}{% if session.last.message %}: {{ session.last.message }}{% endif %}</p>
+{% endif %}
+<div class="cap-summary session-metrics">
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.last.profile_count }}</span>
+    <span class="cap-stat-label">Profiled</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.last.failed_profile_count }}</span>
+    <span class="cap-stat-label">Failed</span>
+  </div>
+  <div class="cap-stat">
+    <span class="cap-stat-num">{{ session.last.total_clients_seen }}</span>
+    <span class="cap-stat-label">Clients seen</span>
+  </div>
+</div>
+<dl class="session-facts">
+  <div>
+    <dt>Mode</dt>
+    <dd>{{ session.last.mode or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Channel</dt>
+    <dd>{{ session.last.channel or 'n/a' }}{% if session.last.frequency %} ({{ session.last.frequency }} MHz){% endif %}</dd>
+  </div>
+  <div>
+    <dt>SSID</dt>
+    <dd>{{ session.last.ssid or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Started</dt>
+    <dd>{{ session.last.started_at or 'n/a' }}</dd>
+  </div>
+  <div>
+    <dt>Ended</dt>
+    <dd>{{ session.last.ended_at or 'n/a' }}</dd>
+  </div>
+  <div class="session-fact-wide">
+    <dt>Last profile</dt>
+    <dd>{{ session.last.last_profile or 'n/a' }}</dd>
+  </div>
+</dl>
+{% else %}
+<p class="uk-text-meta">No profiler session recorded yet. Start the profiler to begin.</p>
+{% endif %}

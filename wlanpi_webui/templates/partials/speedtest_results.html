@@ -1,0 +1,45 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Analysis</p>
+    <h2 class="page-title">Speedtest results</h2>
+    <p class="page-lede">Stored runs, newest first. Open one for its card.</p>
+  </div>
+
+  {% if rows %}
+  <div class="uk-overflow-auto">
+    <table class="uk-table uk-table-small uk-table-divider uk-table-hover">
+      <thead>
+        <tr>
+          <th>Tested</th>
+          <th>Download (Mbps)</th>
+          <th>Upload (Mbps)</th>
+          <th>Ping (ms)</th>
+          <th>Jitter (ms)</th>
+          <th>Note</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.tested_at }}</td>
+          <td>{{ r.download }}</td>
+          <td>{{ r.upload }}</td>
+          <td>{{ r.ping }}</td>
+          <td>{{ r.jitter }}</td>
+          <td class="speedtest-note-cell" title="{{ r.note }}">{{ r.note }}</td>
+          <td>
+            <a href="/app/librespeed/results/{{ r.id }}" hx-get="/app/librespeed/results/{{ r.id }}"
+              hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">Result</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="uk-alert" uk-alert>
+    <p>No speedtest results yet. <a href="/speedtest/librespeed">Run a test</a>.</p>
+  </div>
+  {% endif %}
+</div>

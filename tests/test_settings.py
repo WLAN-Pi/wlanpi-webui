@@ -57,24 +57,28 @@ class TestSettings:
         assert b"Signed in as" in resp.data
         assert b"Toggle dark mode" in resp.data
         assert b"Diagnostics" in resp.data
-        assert b"wlanpiToast" in resp.data
+        assert b"/alerts" in resp.data
         assert b"Log out" in resp.data
         assert b"/debug" not in resp.data
-        assert b"/notifications" in resp.data
+        assert b"/notifications" not in resp.data
 
 
-class TestNotifications:
-    def test_requires_login(self, client):
-        assert client.get("/notifications").status_code == 302
+class TestAlertsHistory:
+    """Alerts and the toast history share one page."""
 
-    def test_renders(self, client, monkeypatch):
+    def test_notifications_route_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.get("/notifications")
+        assert client.get("/notifications").status_code == 404
+
+    def test_alerts_page_carries_the_message_history(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/alerts")
         assert resp.status_code == 200
         assert b"notifications-list" in resp.data
 
-    def test_htmx_returns_partial(self, client, monkeypatch):
+    def test_alerts_partial_has_the_history(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.get("/notifications", headers={"hx-request": "true"})
+        resp = client.get("/alerts", headers={"hx-request": "true"})
         assert resp.status_code == 200
         assert b"<html" not in resp.data
+        assert b"notifications-list" in resp.data
