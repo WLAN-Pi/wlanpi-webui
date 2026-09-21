@@ -1,20 +1,20 @@
 {% macro tile(href, icon, label) %}
-<a class="flipper-tile" href="{{ href }}" hx-get="{{ href }}" hx-target="#content" hx-swap="innerHTML"
+<a class="launcher-tile" href="{{ href }}" hx-get="{{ href }}" hx-target="#content" hx-swap="innerHTML"
   hx-push-url="true" hx-indicator=".progress">
-  <span class="flipper-tile-icon" uk-icon="icon: {{ icon }}; ratio: 1.8"></span>
-  <span class="flipper-tile-label">{{ label }}</span>
+  <span class="launcher-tile-icon" uk-icon="icon: {{ icon }}; ratio: 1.8"></span>
+  <span class="launcher-tile-label">{{ label }}</span>
 </a>
 {% endmacro %}
 {% macro launch(href, icon, label, new_tab=False) %}
-<a class="flipper-tile" href="{{ href }}"{% if new_tab %} target="_blank" rel="noopener"{% endif %}>
-  <span class="flipper-tile-icon" uk-icon="icon: {{ icon }}; ratio: 1.8"></span>
-  <span class="flipper-tile-label">{{ label }}</span>
+<a class="launcher-tile" href="{{ href }}"{% if new_tab %} target="_blank" rel="noopener"{% endif %}>
+  <span class="launcher-tile-icon" uk-icon="icon: {{ icon }}; ratio: 1.8"></span>
+  <span class="launcher-tile-label">{{ label }}</span>
 </a>
 {% endmacro %}
-{% macro packetstorm_tile() %}
-<a class="flipper-tile" href="/packetstorm" hx-get="/packetstorm" hx-target="#content"
-  hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">
-  <span class="flipper-tile-icon">
+{% macro packetstorm_tile(hidden=False) %}
+<a id="packetstorm-tile" class="launcher-tile" href="/packetstorm" hx-get="/packetstorm" hx-target="#content"
+  hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress"{% if hidden %} hidden{% endif %}>
+  <span class="launcher-tile-icon">
     <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
       <defs>
         <mask id="ps-bolt-mask">
@@ -34,22 +34,38 @@
       <path d="M13.5 2.5 L7.5 12.5 L11.5 12.5 L9.5 19.5 L16.5 9.5 L12.5 9.5 Z" fill="currentColor" />
     </svg>
   </span>
-  <span class="flipper-tile-label">&#9889;</span>
+  <span class="launcher-tile-label">&#9889;</span>
 </a>
 {% endmacro %}
-<div class="flipper-screen">
+{% macro beacon_tile(hidden=False) %}
+<a id="beacon-tile" class="launcher-tile" href="/beacon" hx-get="/beacon" hx-target="#content" hx-swap="innerHTML"
+  hx-push-url="true" hx-indicator=".progress"{% if hidden %} hidden{% endif %}>
+  <span class="launcher-tile-icon">
+    <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" />
+        <circle cx="12" cy="12" r="2.2" />
+      </g>
+    </svg>
+  </span>
+  <span class="launcher-tile-label">&#127918;</span>
+</a>
+{% endmacro %}
+<div class="launcher-screen">
   <h1 class="visually-hidden">WLAN Pi</h1>
-  <div class="flipper-foot">{{ hostname }} &middot; {{ mode }}</div>
-  <div class="flipper-grid">
+  <div class="launcher-foot">{{ hostname }} &middot; {{ mode }}<button type="button" class="launcher-egg" id="launcher-egg" aria-label="Easter egg">&#10022;</button></div>
+  <div class="launcher-grid">
     {{ launch("/speedtest/librespeed", "download", "Speedtest") }}
     {{ tile("/network", "server", "Network") }}
     {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
-    {% if kismet_installed %}<a class="flipper-tile" href="/kismet" onclick="wlanpiLaunchKismet(event)">
-      <span class="flipper-tile-icon" uk-icon="icon: receiver; ratio: 1.8"></span>
-      <span class="flipper-tile-label">Kismet</span>
+    {% if kismet_installed %}<a class="launcher-tile" href="/kismet" onclick="wlanpiLaunchKismet(event)">
+      <span class="launcher-tile-icon" uk-icon="icon: receiver; ratio: 1.8"></span>
+      <span class="launcher-tile-label">Kismet</span>
     </a>{% endif %}
     {% if grafana_installed %}{{ launch("/grafana_url", "database", "Grafana", new_tab=True) }}{% endif %}
     {% if cockpit_installed %}{{ launch("/app/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
-    {{ packetstorm_tile() }}
+    {{ packetstorm_tile(hidden=True) }}
+    {% if beacon_armed %}{{ beacon_tile(hidden=True) }}{% endif %}
   </div>
 </div>

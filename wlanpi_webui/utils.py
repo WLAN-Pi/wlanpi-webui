@@ -59,6 +59,50 @@ def load_or_create_session_key(path: str) -> bytes:
         return secrets.token_bytes(32)
 
 
+def is_beacon_armed() -> bool:
+    """True when the hidden page is armed on this device.
+
+    Reads the flag at call time so deleting the file disarms it with no
+    restart. A missing or unreadable flag degrades to disarmed, never an error.
+    """
+    if current_app.config.get("BEACON_FORCE_UNLOCK"):
+        return True
+    path = current_app.config.get("BEACON_FLAG_PATH")
+    if not path:
+        return False
+    try:
+        return Path(path).is_file()
+    except OSError:
+        current_app.logger.warning("beacon flag path unreadable: %s", path)
+        return False
+
+
+def set_beacon_armed() -> bool:
+    """Write the arm flag. Returns True on success, False if unwritable."""
+    path = current_app.config.get("BEACON_FLAG_PATH")
+    if not path:
+        return False
+    try:
+        flag = Path(path)
+        flag.parent.mkdir(parents=True, exist_ok=True)
+        flag.write_text("armed\n")
+        return True
+    except OSError:
+        current_app.logger.warning("could not write beacon flag: %s", path)
+        return False
+
+
+def beacon_data_path() -> str | None:
+    """Return the configured game data path if it exists on disk, else None."""
+    path = current_app.config.get("BEACON_DATA_PATH")
+    if not path:
+        return None
+    try:
+        return path if Path(path).is_file() else None
+    except OSError:
+        return None
+
+
 def get_safe_redirect_target(target: str | None) -> str:
     """
     Return a safe redirect target derived from the given URL-like string.

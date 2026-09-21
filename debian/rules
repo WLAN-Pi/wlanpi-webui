@@ -19,6 +19,13 @@ PKG_PREFIX=debian/wlanpi-webui
 # define destination for librespeed speedtest files
 PKG_WWW_DIR=$(PKG_PREFIX)/var/www/librespeed
 
+# Game data for the hidden page. Not committed to git: the 1997 GPL source
+# release covered the engine only, not game data. Pinned by release URL and
+# zip sha256; skip with BEACON_SKIP_DATA=1 for a local dev build.
+BEACON_DATA_URL=https://github.com/freedoom/freedoom/releases/download/v0.13.0/freedoom-0.13.0.zip
+BEACON_DATA_SHA256=3f9b264f3e3ce503b4fb7f6bdcb1f419d93c7b546f4df3e874dd878db9688f59
+BEACON_DATA_DIR=$(PKG_PREFIX)/usr/share/wlanpi-webui/beacon
+
 %:
 	dh $@ --with python3,python-virtualenv --buildsystem=pybuild
 
@@ -34,6 +41,19 @@ override_dh_installexamples:
 override_dh_virtualenv:
 	mkdir -p $(PKG_WWW_DIR)
 	cp -ra ./install/var/www/librespeed/* $(PKG_WWW_DIR)
+	@if [ "$$BEACON_SKIP_DATA" = "1" ]; then \
+		echo "BEACON_SKIP_DATA=1: building without game data"; \
+	else \
+		set -e; \
+		mkdir -p $(BEACON_DATA_DIR); \
+		tmp=$$(mktemp -d); \
+		trap "rm -rf $$tmp" EXIT; \
+		echo "Fetching Freedoom Phase 1 ..."; \
+		curl -fsSL -o $$tmp/freedoom.zip "$(BEACON_DATA_URL)"; \
+		echo "$(BEACON_DATA_SHA256)  $$tmp/freedoom.zip" | sha256sum -c -; \
+		unzip -p $$tmp/freedoom.zip 'freedoom-0.13.0/freedoom1.wad' > $(BEACON_DATA_DIR)/data.wad; \
+		echo "Installed game data"; \
+	fi
 	dh_virtualenv \
 		--install-suffix "wlanpi-webui" \
 		--builtin-venv \

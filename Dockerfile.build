@@ -14,6 +14,8 @@ FROM debian:${SUITE}
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    ca-certificates \
+    curl \
     debhelper \
     dh-python \
     dh-virtualenv \
@@ -23,6 +25,7 @@ RUN apt-get update && \
     python3-venv \
     devscripts \
     equivs \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work

@@ -132,7 +132,7 @@ sequentially after #99 and #101.
 
 ### Phase 3 — dashboard at `/` (done; #108 folded in)
 - Reclaim `/`: remove `@bp.route("/")` from the librespeed blueprint.
-- New dashboard blueprint at `/`: a Flipper Zero-style tile launcher
+- New dashboard blueprint at `/`: a tile launcher
   (hostname/mode status strip, app tiles, version footer). Tiles are
   launchers — Speed Test same-tab, Kismet/Grafana/Cockpit new tab,
   Profiler/Network in-app.

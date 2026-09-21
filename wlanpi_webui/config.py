@@ -86,3 +86,16 @@ class Config:
     SESSION_KEY_PATH = os.environ.get(
         "WLANPI_WEBUI_SESSION_KEY", "/var/lib/wlanpi-webui/session_key"
     )
+    # Hidden easter egg. Arming it is a device-wide flag file, written by
+    # POST /beacon/arm and read at request time, so deleting the file disarms
+    # it without a restart. It lives beside the session key.
+    BEACON_FLAG_PATH = os.environ.get(
+        "WLANPI_WEBUI_BEACON_FLAG", "/var/lib/wlanpi-webui/beacon"
+    )
+    # Game data, installed by the package (never committed to git).
+    BEACON_DATA_PATH = os.environ.get(
+        "WLANPI_WEBUI_BEACON_DATA", "/usr/share/wlanpi-webui/beacon/data.wad"
+    )
+    # Development overrides; never set these in production.
+    BEACON_FORCE_UNLOCK = bool(os.environ.get("WLANPI_WEBUI_BEACON_FORCE_UNLOCK"))
+    GAME_DEBUG = bool(os.environ.get("WLANPI_WEBUI_GAME_DEBUG"))

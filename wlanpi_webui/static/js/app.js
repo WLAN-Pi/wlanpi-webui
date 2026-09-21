@@ -419,4 +419,68 @@
       }
     });
   })();
+
+  // ---- Hidden launcher tiles ------------------------------------------
+  // Packet Storm is hidden until the faint glyph in the launcher footer is
+  // tapped. The hidden game's tile additionally needs the device unlock (the
+  // server only renders it when armed), so it appears once Packet Storm is
+  // visible AND the level-8 unlock has happened. The reveal is permanent.
+  (function () {
+    var KEY = "wlanpi:packetstorm:found";
+
+    function isFound() {
+      try {
+        return window.localStorage.getItem(KEY) === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    var revealed = false;
+
+    function setRevealed(on) {
+      revealed = on;
+      var storm = document.getElementById("packetstorm-tile");
+      if (storm) {
+        storm.hidden = !on;
+      }
+      var doom = document.getElementById("beacon-tile");
+      if (doom) {
+        doom.hidden = !on;
+      }
+    }
+
+    function setupEgg() {
+      setRevealed(isFound());
+      var egg = document.getElementById("launcher-egg");
+      if (!egg || egg.getAttribute("data-wired") === "1") {
+        return;
+      }
+      egg.setAttribute("data-wired", "1");
+      egg.addEventListener("click", function () {
+        // Tapping the glyph again hides them, and vice versa.
+        var next = !revealed;
+        try {
+          if (next) {
+            window.localStorage.setItem(KEY, "1");
+          } else {
+            window.localStorage.removeItem(KEY);
+          }
+        } catch (e) {
+          /* storage unavailable; toggle for this page only */
+        }
+        if (next) {
+          var storm = document.getElementById("packetstorm-tile");
+          if (storm) {
+            storm.classList.add("revealed");
+          }
+        }
+        setRevealed(next);
+      });
+    }
+
+    document.addEventListener("htmx:afterSwap", setupEgg);
+    window.addEventListener("load", setupEgg);
+    setupEgg();
+  })();
 })();
