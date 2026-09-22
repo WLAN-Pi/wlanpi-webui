@@ -157,7 +157,15 @@ class TestSystemDiag:
         resp = client.get("/system")
         assert b"Resource usage" in resp.data
         assert b"system-health" in resp.data
-        for card in (b"status", b"temperatures", b"radios", b"facts", b"usb", b"pci"):
+        for card in (
+            b"status",
+            b"temperatures",
+            b"radios",
+            b"facts",
+            b"usb",
+            b"pci",
+            b"bluetooth",
+        ):
             assert b"/system/card/" + card in resp.data
         assert b"Device Health" not in resp.data
         # System facts is the first card.
@@ -304,3 +312,83 @@ class TestSystemNtp:
         resp = client.get("/system/card/ntp")
         assert resp.status_code == 200
         assert b"NTP data unavailable" in resp.data
+
+
+_BLUETOOTH_STATUS = {
+    "name": "wlanpi",
+    "alias": "wlanpi-bt",
+    "addr": "00:11:22:33:44:55",
+    "power": "Off",
+    "blocked": True,
+    "paired_devices": [],
+}
+
+
+class TestSystemBluetooth:
+    def _patch(self, monkeypatch, bt, post=None):
+        from wlanpi_webui.system import system as s
+
+        monkeypatch.setattr(
+            s,
+            "get_core_json",
+            lambda path, params=None: bt if path.endswith("/bluetooth/status") else {},
+        )
+        monkeypatch.setattr(s, "post_core_json", lambda *a, **k: post)
+
+    def _csrf(self, client):
+        with client.session_transaction() as sess:
+            return sess["csrf_token"]
+
+    def test_bluetooth_card_blocked(self, client, monkeypatch):
+        self._patch(monkeypatch, _BLUETOOTH_STATUS)
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/bluetooth")
+        assert resp.status_code == 200
+        assert b"00:11:22:33:44:55" in resp.data
+        assert b"RF kill: Blocked" in resp.data
+        assert b"Power on" in resp.data
+
+    def test_bluetooth_card_unavailable(self, client, monkeypatch):
+        self._patch(monkeypatch, {})
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/bluetooth")
+        assert resp.status_code == 200
+        assert b"Bluetooth unavailable" in resp.data
+
+    def test_bluetooth_power_route(self, client, monkeypatch):
+        self._patch(
+            monkeypatch, _BLUETOOTH_STATUS, post={"status": "success", "action": "on"}
+        )
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/system/bluetooth/power/on", data={"csrf_token": self._csrf(client)}
+        )
+        assert resp.status_code == 200
+        assert b"00:11:22:33:44:55" in resp.data
+
+    def test_bluetooth_power_route_rejects_bad_action(self, client, monkeypatch):
+        self._patch(
+            monkeypatch, _BLUETOOTH_STATUS, post={"status": "success", "action": "on"}
+        )
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/system/bluetooth/power/sideways", data={"csrf_token": self._csrf(client)}
+        )
+        assert resp.status_code == 400
+
+    def test_bluetooth_pair_route(self, client, monkeypatch):
+        self._patch(
+            monkeypatch,
+            _BLUETOOTH_STATUS,
+            post={
+                "status": "discoverable",
+                "alias": "wlanpi-bt",
+                "message": 'Bluetooth is on. Discoverable as "wlanpi-bt"',
+            },
+        )
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/system/bluetooth/pair", data={"csrf_token": self._csrf(client)}
+        )
+        assert resp.status_code == 200
+        assert b"Discoverable" in resp.data
