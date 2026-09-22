@@ -135,3 +135,35 @@ class TestCli:
         assert client.get("/cli/output").get_json()["alive"] is True
         assert client.post("/cli/stop", headers=headers).status_code == 204
         assert client.get("/cli/output").get_json()["alive"] is False
+
+    def test_session_resumes_across_remount(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        headers = {"X-CSRF-Token": csrf}
+
+        started = client.post("/cli/start", headers=headers).get_json()
+        assert started == {"ok": True, "resumed": False}
+
+        client.post(
+            "/cli/input",
+            json={"data": base64.b64encode(b"echo wlanpi-resume\n").decode()},
+            headers=headers,
+        )
+        _read_until(client, b"wlanpi-resume", 2)
+
+        # Re-mounting /cli attaches to the live shell instead of replacing it.
+        resumed = client.post("/cli/start", headers=headers).get_json()
+        assert resumed == {"ok": True, "resumed": True}
+
+        body = client.get("/cli/output?since=0").get_json()
+        assert body["alive"] is True
+        assert b"wlanpi-resume" in base64.b64decode(body["data"])
+
+    def test_no_idle_banner(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        assert (
+            client.post("/cli/start", headers={"X-CSRF-Token": csrf}).status_code == 200
+        )
+        body = client.get("/cli/output?since=0").get_json()
+        assert b"no sudo" not in base64.b64decode(body["data"])

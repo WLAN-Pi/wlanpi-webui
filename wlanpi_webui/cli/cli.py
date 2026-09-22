@@ -27,11 +27,7 @@ from wlanpi_webui.utils import is_htmx
 
 SHELL = "/bin/bash"
 OUTPUT_LIMIT = 200_000  # bytes of scrollback kept per session
-IDLE_TIMEOUT = 600  # seconds without input before the shell is reaped
-BANNER = (
-    b"\r\nRuns as the wlanpi user with no sudo. "
-    b"The shell ends after 10 minutes idle.\r\n\r\n"
-)
+IDLE_TIMEOUT = 600  # seconds without input or output before the shell is reaped
 
 
 def _child_setup() -> None:
@@ -58,11 +54,9 @@ class Session:
         )
         os.close(slave)
         os.set_blocking(self.fd, False)
-        # Seed the banner into the read buffer: writing it to the fd would type
-        # it into the shell instead.
-        self.buffer = bytearray(BANNER)
+        self.buffer = bytearray()
         self.start = 0  # absolute offset of buffer[0]
-        self.total = len(BANNER)  # absolute offset of the end
+        self.total = 0  # absolute offset of the end
         self.last = time.time()
 
     def write(self, data: bytes) -> None:
@@ -90,6 +84,9 @@ class Session:
                 break
             self.buffer.extend(chunk)
             self.total += len(chunk)
+            # Output is activity too, so a long-running command is not reaped
+            # out from under the user while it is still printing.
+            self.last = time.time()
         if len(self.buffer) > OUTPUT_LIMIT:
             drop = len(self.buffer) - OUTPUT_LIMIT
             del self.buffer[:drop]
@@ -135,13 +132,17 @@ def cli():
 @bp.route("/cli/start", methods=["POST"])
 @csrf_required
 def start():
-    """Start a fresh shell, replacing any existing one (single session)."""
+    """Attach to the live shell, or start one (single session).
+
+    Re-mounting /cli reuses the existing PTY so navigating away and back keeps
+    the shell and its scrollback, which the browser replays from offset 0.
+    """
     global _session
-    if _session is not None:
-        _session.close()
+    if _current() is not None:
+        return jsonify({"ok": True, "resumed": True})
     _session = Session()
     _session.drain()
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "resumed": False})
 
 
 @bp.route("/cli/input", methods=["POST"])

@@ -35,6 +35,11 @@
     } catch (e) {
       /* ignore */
     }
+    // Let components that cannot use CSS variables directly (the xterm
+    // terminal) recolor themselves.
+    document.dispatchEvent(
+      new CustomEvent("wlanpi:theme", { detail: { theme: theme } })
+    );
   }
 
   window.wlanpiToggleTheme = function () {

@@ -47,31 +47,41 @@
     );
   }
 
-  function stopCurrent() {
+  // Leaving the page stops this terminal's polling, but the PTY stays on the
+  // server so returning to /cli resumes it. Only a full page unload asks the
+  // server to reap it (`kill`).
+  function stopCurrent(kill) {
     if (current) {
       var teardown = current.teardown;
       current = null;
-      teardown();
+      teardown(kill);
     }
   }
 
-  function start(stage) {
-    var csrf = stage.getAttribute("data-csrf") || "";
+  // xterm cannot use CSS variables directly, so read the theme tokens off the
+  // document and hand them to it. Called again on every theme toggle.
+  function termTheme() {
     var style = getComputedStyle(document.documentElement);
 
     function token(name, fallback) {
       return (style.getPropertyValue(name) || "").trim() || fallback;
     }
 
+    return {
+      background: token("--bg-surface", "#ffffff"),
+      foreground: token("--text", "#222222"),
+      cursor: token("--brand", "#f45625"),
+    };
+  }
+
+  function start(stage) {
+    var csrf = stage.getAttribute("data-csrf") || "";
+
     var term = new Terminal({
       cursorBlink: true,
       fontSize: 13,
       scrollback: 5000,
-      theme: {
-        background: token("--bg-surface", "#ffffff"),
-        foreground: token("--text", "#222222"),
-        cursor: token("--brand", "#f45625"),
-      },
+      theme: termTheme(),
     });
     var fit = new FitAddon.FitAddon();
     term.loadAddon(fit);
@@ -116,8 +126,9 @@
       post("/cli/resize", { rows: term.rows, cols: term.cols });
     }
 
-    // The server reaps the shell after a spell with no input, so a long idle
-    // leaves the terminal dead. Start a new one instead of going quiet.
+    // The server reaps the shell after a spell with no input or output, so a
+    // long idle leaves the terminal dead. Start a new one instead of going
+    // quiet.
     function revive() {
       term.writeln("\r\n[session ended, starting a new shell]");
       offset = 0;
@@ -157,18 +168,24 @@
       post("/cli/input", { data: bytesToBase64(new TextEncoder().encode(data)) });
     });
 
-    function teardown() {
+    function onThemeChange() {
+      term.options.theme = termTheme();
+    }
+
+    function teardown(kill) {
       if (stopped) return;
       stopped = true;
       clearTimeout(timer);
       window.removeEventListener("resize", sendResize);
-      if (navigator.sendBeacon) {
+      document.removeEventListener("wlanpi:theme", onThemeChange);
+      if (kill && navigator.sendBeacon) {
         navigator.sendBeacon("/cli/stop", new URLSearchParams({ csrf_token: csrf }));
       }
     }
 
     current = { teardown: teardown };
     window.addEventListener("resize", sendResize);
+    document.addEventListener("wlanpi:theme", onThemeChange);
 
     post("/cli/start").then(
       function () {
@@ -189,9 +206,11 @@
       target &&
       (target.id === "content" || (target.closest && target.closest("#content")))
     ) {
-      stopCurrent();
+      stopCurrent(false);
     }
   });
-  window.addEventListener("pagehide", stopCurrent);
+  window.addEventListener("pagehide", function () {
+    stopCurrent(true);
+  });
   window.addEventListener("load", init);
 })();
