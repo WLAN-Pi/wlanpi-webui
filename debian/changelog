@@ -1,3 +1,12 @@
+wlanpi-webui (1.21.7-1) unstable; urgency=medium
+
+  * Add a Bluetooth card to the System page. It shows the adapter, address,
+    power, rfkill blocked state, and paired device count from core
+    GET /bluetooth/status, with Power on/off and Pair actions. The card
+    renders "Bluetooth unavailable" when core returns 503.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 01:20:49 -0400
+
 wlanpi-webui (1.21.6-1) unstable; urgency=medium
 
   * Add WLAN management and NTP cards to the System page.  Facts card
