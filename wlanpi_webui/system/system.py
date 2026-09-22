@@ -106,6 +106,7 @@ def get_system_info() -> dict:
 
     return {
         "mode": info.get("mode") or _mode(),
+        "wlan_management": info.get("wlan_management") or "unknown",
         "hostname": info.get("name") or get_hostname(),
         "ip": stats.get("ip") or get_local_ip(),
         "hardware_model": info.get("model") or _hardware_model(),
@@ -154,6 +155,21 @@ def get_system_health() -> dict:
     }
 
 
+def get_system_ntp() -> dict:
+    """Clock/NTP state from wlanpi-core."""
+    ntp = get_core_json("/api/v1/system/ntp") or {}
+    fallback = ntp.get("fallback_servers") or []
+    return {
+        "ntp_available": bool(ntp),
+        "ntp_synchronized": bool(ntp.get("synchronized")),
+        "ntp_service": bool(ntp.get("ntp_service")),
+        "ntp_server": ntp.get("server_name") or ntp.get("server_address") or "n/a",
+        "ntp_source": ntp.get("source") or "unknown",
+        "ntp_fallback": ", ".join(fallback),
+        "ntp_poll_interval": ntp.get("poll_interval"),
+    }
+
+
 @bp.route("/system")
 def system():
     """Render the system shell; the cards load individually."""
@@ -170,6 +186,7 @@ SYSTEM_CARDS = {
     "facts": ("/partials/system_facts.html", get_system_info),
     "usb": ("/partials/system_usb.html", get_system_usb),
     "pci": ("/partials/system_pci.html", get_system_pci),
+    "ntp": ("/partials/system_ntp.html", get_system_ntp),
 }
 
 

@@ -1,0 +1,12 @@
+<h3 class="uk-card-title">Time / NTP</h3>
+{% if not ntp_available %}
+<p class="uk-text-meta">NTP data unavailable. wlanpi-core 2.3.0 or newer is required.</p>
+{% else %}
+<ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
+  <li>Clock: {% if ntp_synchronized %}Synchronised{% else %}Not synchronised{% endif %}</li>
+  <li>NTP service: {% if ntp_service %}Enabled{% else %}Disabled{% endif %}</li>
+  <li>Server: {{ ntp_server }}{% if ntp_source != 'unknown' %} ({{ ntp_source }}){% endif %}</li>
+  {% if ntp_fallback %}<li>Fallback: {{ ntp_fallback }}</li>{% endif %}
+  {% if ntp_poll_interval %}<li>Poll interval: {{ ntp_poll_interval }}</li>{% endif %}
+</ul>
+{% endif %}

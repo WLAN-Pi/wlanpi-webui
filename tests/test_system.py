@@ -105,6 +105,18 @@ class TestSystemFacts:
         resp = client.get("/system/card/facts")
         assert b"85% (Discharging)" in resp.data
 
+    def test_wlan_management_shown(self, client, monkeypatch):
+        self._patch(
+            monkeypatch,
+            _device_info(wlan_management="manual"),
+            {"ip": "10.0.0.5"},
+            {"present": False},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/facts")
+        assert b"Wi-Fi mgmt" in resp.data
+        assert b"manual" in resp.data
+
 
 class TestSystemDiag:
     def _patch(self, monkeypatch):
@@ -253,3 +265,42 @@ class TestStreamStats:
         resp = client.get("/stream/stats", headers={"hx-request": "true"})
         assert resp.status_code == 200
         assert b"unavailable" in resp.data
+
+
+class TestSystemNtp:
+    def _patch(self, monkeypatch, ntp):
+        from wlanpi_webui.system import system as s
+
+        monkeypatch.setattr(
+            s,
+            "get_core_json",
+            lambda path, params=None: ntp if path.endswith("/ntp") else {},
+        )
+
+    def test_ntp_card_synced(self, client, monkeypatch):
+        self._patch(
+            monkeypatch,
+            {
+                "synchronized": True,
+                "ntp_service": True,
+                "server_name": "192.168.2.123",
+                "server_address": "192.168.2.123",
+                "fallback_servers": ["0.debian.pool.ntp.org"],
+                "poll_interval": "32s",
+                "source": "dhcp",
+            },
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/ntp")
+        assert resp.status_code == 200
+        assert b"Synchronised" in resp.data
+        assert b"192.168.2.123" in resp.data
+        assert b"dhcp" in resp.data
+        assert b"32s" in resp.data
+
+    def test_ntp_card_unavailable(self, client, monkeypatch):
+        self._patch(monkeypatch, {})
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/ntp")
+        assert resp.status_code == 200
+        assert b"NTP data unavailable" in resp.data
