@@ -1,0 +1,31 @@
+<h3 class="uk-card-title">Bluetooth</h3>
+{% if not bt_available %}
+<p class="uk-text-meta">Bluetooth unavailable.</p>
+{% else %}
+<ul class="uk-list uk-list-divider data-list">
+  <li>Adapter: {{ bt_name }}{% if bt_alias and bt_alias != bt_name %} ({{ bt_alias }}){% endif %}</li>
+  <li>Address: {{ bt_addr or 'n/a' }}</li>
+  <li>Power: {{ bt_power or 'n/a' }}</li>
+  <li>RF kill: {% if bt_blocked %}Blocked{% else %}Unblocked{% endif %}</li>
+  <li>Paired devices: {{ bt_paired | length }}</li>
+</ul>
+{% if bt_notice %}<p class="uk-text-meta">{{ bt_notice }}</p>{% endif %}
+<div class="settings-actions">
+  {% if bt_power == 'On' %}
+  <form hx-post="/system/bluetooth/power/off" hx-target="closest .uk-card" hx-swap="innerHTML" hx-indicator=".progress">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="uk-button uk-button-default" type="submit">Power off</button>
+  </form>
+  {% else %}
+  <form hx-post="/system/bluetooth/power/on" hx-target="closest .uk-card" hx-swap="innerHTML" hx-indicator=".progress">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="uk-button uk-button-default" type="submit">Power on</button>
+  </form>
+  {% endif %}
+  <form hx-post="/system/bluetooth/pair" hx-target="closest .uk-card" hx-swap="innerHTML" hx-indicator=".progress"
+    hx-confirm="Put the WLAN Pi into pairing mode? Existing Bluetooth pairings will be removed.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="uk-button uk-button-default" type="submit">Pair</button>
+  </form>
+</div>
+{% endif %}

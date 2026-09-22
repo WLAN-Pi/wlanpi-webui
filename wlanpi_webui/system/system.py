@@ -4,12 +4,14 @@ import subprocess
 
 from flask import abort, render_template, request
 
+from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.config import Config, get_apt_package_version, get_hostname
 from wlanpi_webui.stream.stream import get_local_ip
 from wlanpi_webui.system import bp
 from wlanpi_webui.utils import (
     get_core_json,
     is_htmx,
+    post_core_json,
     run_pipeline,
     system_service_running_state,
 )
@@ -170,6 +172,20 @@ def get_system_ntp() -> dict:
     }
 
 
+def get_system_bluetooth() -> dict:
+    """Bluetooth adapter status from wlanpi-core."""
+    bt = get_core_json("/api/v1/bluetooth/status") or {}
+    return {
+        "bt_available": bool(bt),
+        "bt_name": bt.get("name") or "",
+        "bt_alias": bt.get("alias") or "",
+        "bt_addr": bt.get("addr") or "",
+        "bt_power": bt.get("power") or "",
+        "bt_blocked": bool(bt.get("blocked")),
+        "bt_paired": bt.get("paired_devices") or [],
+    }
+
+
 @bp.route("/system")
 def system():
     """Render the system shell; the cards load individually."""
@@ -187,6 +203,7 @@ SYSTEM_CARDS = {
     "usb": ("/partials/system_usb.html", get_system_usb),
     "pci": ("/partials/system_pci.html", get_system_pci),
     "ntp": ("/partials/system_ntp.html", get_system_ntp),
+    "bluetooth": ("/partials/system_bluetooth.html", get_system_bluetooth),
 }
 
 
@@ -198,3 +215,25 @@ def system_card(card):
         abort(404)
     template, build = entry
     return render_template(template, **build())
+
+
+@bp.route("/system/bluetooth/power/<action>", methods=["POST"])
+@csrf_required
+def system_bluetooth_power(action):
+    if action not in ("on", "off"):
+        abort(400)
+    result = post_core_json(f"/api/v1/bluetooth/power/{action}")
+    notice = None if result else f"Failed to turn Bluetooth {action}."
+    return render_template(
+        "/partials/system_bluetooth.html", **get_system_bluetooth(), bt_notice=notice
+    )
+
+
+@bp.route("/system/bluetooth/pair", methods=["POST"])
+@csrf_required
+def system_bluetooth_pair():
+    result = post_core_json("/api/v1/bluetooth/pair")
+    notice = (result or {}).get("message") or "Failed to start Bluetooth pairing."
+    return render_template(
+        "/partials/system_bluetooth.html", **get_system_bluetooth(), bt_notice=notice
+    )
