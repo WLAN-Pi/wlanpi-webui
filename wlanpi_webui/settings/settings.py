@@ -1,15 +1,36 @@
-from flask import render_template, request, session
+from flask import redirect, render_template, request, session
 
+from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.config import Config
 from wlanpi_webui.settings import bp
-from wlanpi_webui.utils import is_htmx
+from wlanpi_webui.utils import (
+    get_core_json,
+    get_safe_referrer_target,
+    is_htmx,
+    post_core_json,
+    queue_toast,
+)
 
 
 @bp.route("/settings")
 def settings():
+    datetime_info = get_core_json("/api/v1/system/datetime") or {}
+    tz_list = get_core_json("/api/v1/system/timezone/list") or {}
+    reg = get_core_json("/api/v1/system/reg-domain") or {}
+    reg_list = get_core_json("/api/v1/system/reg-domain/list") or {}
+
     resp_data = {
         "idle_timeout": Config.IDLE_TIMEOUT,
         "boot_id": session.get("boot_id"),
+        "current_datetime": (
+            datetime_info.get("display")
+            or datetime_info.get("datetime")
+            or "unavailable"
+        ),
+        "current_timezone": datetime_info.get("timezone") or "",
+        "timezones": tz_list.get("timezones") or [],
+        "reg_country": reg.get("country") or "unknown",
+        "reg_countries": reg_list.get("countries") or [],
     }
     if is_htmx(request):
         return render_template("/partials/settings.html", **resp_data)
@@ -22,3 +43,63 @@ def alerts():
     if is_htmx(request):
         return render_template("/partials/alerts.html")
     return render_template("/extends/alerts.html")
+
+
+@bp.route("/settings/timezone", methods=["POST"])
+@csrf_required
+def set_timezone():
+    timezone = (request.form.get("timezone") or "").strip()
+    if not timezone:
+        queue_toast("Choose a timezone first.", "warning")
+    elif post_core_json(
+        "/api/v1/system/timezone/set", json_body={"timezone": timezone}
+    ):
+        queue_toast(f"Timezone set to {timezone}.", "success")
+    else:
+        queue_toast("Could not set the timezone.", "warning")
+    return redirect(get_safe_referrer_target())
+
+
+@bp.route("/settings/ntp", methods=["POST"])
+@csrf_required
+def enable_ntp():
+    if post_core_json("/api/v1/system/timezone/auto"):
+        queue_toast("Automatic time sync enabled.", "success")
+    else:
+        queue_toast("Could not enable automatic time sync.", "warning")
+    return redirect(get_safe_referrer_target())
+
+
+@bp.route("/settings/reg-domain", methods=["POST"])
+@csrf_required
+def set_reg_domain():
+    country = (request.form.get("country") or "").strip().upper()
+    if len(country) != 2:
+        queue_toast("Choose a country first.", "warning")
+    elif post_core_json(
+        "/api/v1/system/reg-domain/set", json_body={"country": country}
+    ):
+        queue_toast(f"Regulatory domain set to {country}.", "success")
+    else:
+        queue_toast("Could not set the regulatory domain.", "warning")
+    return redirect(get_safe_referrer_target())
+
+
+@bp.route("/settings/reboot", methods=["POST"])
+@csrf_required
+def reboot_device():
+    if post_core_json("/api/v1/system/reboot"):
+        queue_toast("Rebooting the WLAN Pi…", "success")
+    else:
+        queue_toast("Could not reboot the device.", "warning")
+    return redirect(get_safe_referrer_target())
+
+
+@bp.route("/settings/shutdown", methods=["POST"])
+@csrf_required
+def shutdown_device():
+    if post_core_json("/api/v1/system/shutdown"):
+        queue_toast("Shutting down the WLAN Pi…", "success")
+    else:
+        queue_toast("Could not shut down the device.", "warning")
+    return redirect(get_safe_referrer_target())

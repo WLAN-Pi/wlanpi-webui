@@ -308,6 +308,20 @@ def get_core_json(path: str, params: dict | None = None) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def post_core_json(
+    path: str, json_body: dict | None = None, params: dict | None = None
+) -> dict | None:
+    """POST to a wlanpi-core API path, returning parsed JSON or None on failure."""
+    try:
+        response = make_api_request(
+            "POST", f"{CORE_API_BASE}{path}", params=params, json_body=json_body
+        )
+        data = response.json()
+    except (requests.RequestException, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def is_htmx(request):
     return request.headers.get("hx-request") == "true"
 

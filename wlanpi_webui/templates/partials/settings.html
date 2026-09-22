@@ -30,6 +30,70 @@
     </div>
   </div>
 
+  <h4>Time &amp; timezone</h4>
+  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h5>Clock</h5>
+        <ul class="uk-list uk-list-divider data-list">
+          <li>Current: {{ current_datetime }}</li>
+          <li>Timezone: {{ current_timezone or 'unknown' }}</li>
+        </ul>
+        <form hx-post="/settings/timezone" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="visually-hidden" for="timezone-select">Timezone</label>
+          <select id="timezone-select" name="timezone" class="uk-select">
+            {% for tz in timezones %}
+            <option value="{{ tz }}"{% if tz == current_timezone %} selected{% endif %}>{{ tz }}</option>
+            {% endfor %}
+          </select>
+          <div class="settings-actions">
+            <button class="uk-button uk-button-default" type="submit">Save timezone</button>
+          </div>
+        </form>
+        <form hx-post="/settings/ntp" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="uk-button uk-button-default" type="submit">Enable NTP</button>
+        </form>
+      </div>
+    </div>
+    <div>
+      <div class="uk-card uk-card-default uk-card-body">
+        <h5>Regulatory domain</h5>
+        <p class="uk-text-meta">Current: <strong>{{ reg_country }}</strong>. Changing this can briefly disrupt the radios.</p>
+        <form hx-post="/settings/reg-domain" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="visually-hidden" for="reg-domain-select">Country</label>
+          <select id="reg-domain-select" name="country" class="uk-select">
+            {% for c in reg_countries %}
+            <option value="{{ c.code }}"{% if c.code == reg_country %} selected{% endif %}>{{ c.name }} ({{ c.code }})</option>
+            {% endfor %}
+          </select>
+          <div class="settings-actions">
+            <button class="uk-button uk-button-default" type="submit">Save domain</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <h4>Power</h4>
+  <div class="uk-card uk-card-default uk-card-body">
+    <p class="uk-text-meta">Reboot or power off the WLAN Pi. The WebUI will disconnect.</p>
+    <div class="settings-actions">
+      <form hx-post="/settings/reboot" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="Reboot the WLAN Pi?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="uk-button uk-button-default" type="submit">Reboot</button>
+      </form>
+      <form hx-post="/settings/shutdown" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="Shut down the WLAN Pi?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="uk-button uk-button-danger" type="submit">Shut down</button>
+      </form>
+    </div>
+  </div>
+
   <h4>Diagnostics</h4>
   <div class="uk-card uk-card-default uk-card-body">
     <h5>Session state</h5>

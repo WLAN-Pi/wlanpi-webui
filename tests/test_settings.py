@@ -82,3 +82,78 @@ class TestAlertsHistory:
         assert resp.status_code == 200
         assert b"<html" not in resp.data
         assert b"notifications-list" in resp.data
+
+
+def _csrf(client):
+    with client.session_transaction() as sess:
+        return sess["csrf_token"]
+
+
+class TestSettingsCore:
+    def test_renders_clock_and_domain(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        def fake(path, params=None):
+            if "timezone/list" in path:
+                return {"timezones": ["UTC", "Europe/London"]}
+            if "reg-domain/list" in path:
+                return {"countries": [{"code": "GB", "name": "United Kingdom"}]}
+            if "reg-domain" in path:
+                return {"country": "GB"}
+            return {"display": "Sun 2026-09-21 20:00 UTC", "timezone": "UTC"}
+
+        monkeypatch.setattr(s, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/settings")
+        assert resp.status_code == 200
+        assert b"Europe/London" in resp.data
+        assert b"United Kingdom (GB)" in resp.data
+        assert b"Sun 2026-09-21 20:00 UTC" in resp.data
+
+    def test_set_timezone_queues_toast(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        monkeypatch.setattr(s, "post_core_json", lambda *a, **k: {"timezone": "UTC"})
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/settings/timezone",
+            data={"timezone": "UTC", "csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith("/settings")
+        with client.session_transaction() as sess:
+            assert sess["wlanpi_toast"]["message"] == "Timezone set to UTC."
+
+    def test_set_reg_domain_queues_toast(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        monkeypatch.setattr(s, "post_core_json", lambda *a, **k: {"country": "GB"})
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/settings/reg-domain",
+            data={"country": "gb", "csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert resp.status_code == 302
+        with client.session_transaction() as sess:
+            assert sess["wlanpi_toast"]["message"] == "Regulatory domain set to GB."
+
+    def test_reboot_failure_queues_warning(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        monkeypatch.setattr(s, "post_core_json", lambda *a, **k: None)
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/settings/reboot",
+            data={"csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert resp.status_code == 302
+        with client.session_transaction() as sess:
+            assert sess["wlanpi_toast"]["message"] == "Could not reboot the device."
+
+    def test_writes_require_csrf(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        assert client.post("/settings/ntp").status_code == 400
+        assert client.post("/settings/shutdown").status_code == 400
