@@ -26,8 +26,6 @@ function trw(t) {
 (trans.duration["en-US"] = "Duration"),
 (trans.speed = []),
 (trans.speed["en-US"] = "Speed"),
-(trans.show_advanced = []),
-(trans.show_advanced["en-US"] = "SHOW MORE DETAILS"),
 (trans.settings = []),
 (trans.settings["en-US"] = "Settings"),
 (trans.stats = []),
@@ -50,10 +48,6 @@ function trw(t) {
 (trans.total_download["en-US"] = "Total download:"),
 (trans.total_upload = []),
 (trans.total_upload["en-US"] = "Total upload:"),
-(trans.show_detailed_a = []),
-(trans.show_detailed_a["en-US"] = "Click here"),
-(trans.show_detailed_b = []),
-(trans.show_detailed_b["en-US"] = "to toggle details about how <a href='https://github.com/librespeed/speedtest' target='_blank'>LibreSpeed</a> works and the algorithms involved."),
 (trans.desc_ping = []),
 (trans.desc_ping["en-US"] =
     "Ping is measured as a response time for an HTTP request. Multiple requests are sent in 100 ms intervals. The graph shows response times for individual requests. The time values are preferably obtained from the JavaScript Performance API. If this API is not supported in the user's web browser, the JavaScript Date().getTime() function is used, which provides less precise values."),
@@ -74,9 +68,11 @@ var chart1,
     meterBk = "#dadada",
     dlColor = "#6060aa",
     ulColor = "#309030",
-    pingColor = "#ffcc00",
+    pingColor = "#b8860b",
     jitColor = "#cc0000",
     progColor = "#EEEEEE",
+    surfaceColor = "#ffffff",
+    textColor = "#222222",
     w = null,
     sampling = false,
     data = [],
@@ -129,6 +125,8 @@ function applyMeterTheme() {
         ulColor = get("--ls-ul", ulColor);
         pingColor = get("--ls-ping", pingColor);
         jitColor = get("--ls-jitter", jitColor);
+        surfaceColor = get("--bg-surface", surfaceColor);
+        textColor = get("--text", textColor);
         if (window.Chart) {
             Chart.defaults.global.defaultFontColor = get("--text-muted", "#666");
             if (Chart.defaults.scale && Chart.defaults.scale.gridLines) {
@@ -140,13 +138,27 @@ function applyMeterTheme() {
 applyMeterTheme();
 
 
+function alpha(color, a) {
+    var h = String(color).trim().replace("#", "");
+    if (h.length === 3) { h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; }
+    var n = parseInt(h, 16);
+    if (h.length !== 6 || isNaN(n)) { return color; }
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+}
+
 function drawMeter(c, amount, bk, fg, progress, prog) {
+    // Remember how to redraw this meter: a resize or a device pixel ratio
+    // change (dragging the window to another display) would otherwise leave a
+    // stale canvas until the next sample arrives.
+    c.redraw = function () { drawMeter(c, amount, bk, fg, progress, prog); };
     var ctx = c.getContext("2d");
     var dp = window.devicePixelRatio || 1;
-    var cw = c.clientWidth * dp,
-        ch = c.clientHeight * dp;
+    // Round: c.width is an integer, so a fractional comparison would resize
+    // (and clear) the canvas on every single draw.
+    var cw = Math.round(c.clientWidth * dp),
+        ch = Math.round(c.clientHeight * dp);
     var sizScale = ch * 0.0055;
-    if (c.width == cw && c.height == ch) {
+    if (c.width === cw && c.height === ch) {
         ctx.clearRect(0, 0, cw, ch);
     } else {
         c.width = cw;
@@ -168,6 +180,14 @@ function drawMeter(c, amount, bk, fg, progress, prog) {
     }
 }
 
+window.addEventListener("resize", function () {
+    ["dl_meter", "ul_meter", "ping_meter", "jitter_meter"].forEach(function (id) {
+        var c = I(id);
+        if (c && c.redraw) c.redraw();
+    });
+});
+
+
 function mbpsToAmount(s) {
     return 1 - (1 / (Math.pow(1.3, Math.sqrt(s))));
 }
@@ -185,10 +205,10 @@ function initUI() {
     drawMeter(I("ul_meter"), 0, meterBk, ulColor, 0);
     drawMeter(I("ping_meter"), 0, meterBk, pingColor, 0);
     drawMeter(I("jitter_meter"), 0, meterBk, jitColor, 0);
-    I("dl_text").textContent = "";
-    I("ul_text").textContent = "";
-    I("ping_text").textContent = "";
-    I("jitter_text").textContent = "";
+    I("dl_text").textContent = "0.00";
+    I("ul_text").textContent = "0.00";
+    I("ping_text").textContent = "0.00";
+    I("jitter_text").textContent = "0.00";
 
 
     var chart1ctx = document.getElementById('chart_du_area').getContext('2d');
@@ -197,17 +217,17 @@ function initUI() {
         label: 'Download',
         fill: false,
         lineTension: 0.1,
-        backgroundColor: 'rgba(96,96,170,0.5)',
-        borderColor: 'rgba(96,96,170,1)',
+        backgroundColor: alpha(dlColor, 0.5),
+        borderColor: dlColor,
         borderCapStyle: 'butt',
         borderDash: [],
         borderDashOffset: 0.0,
         borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(96,96,170,1)',
-        pointBackgroundColor: '#fff',
+        pointBorderColor: dlColor,
+        pointBackgroundColor: surfaceColor,
         pointBorderWidth: 1,
         pointHoverRadius: 0,
-        pointHoverBackgroundColor: 'rgba(96,96,170,1)',
+        pointHoverBackgroundColor: dlColor,
         pointHoverBorderColor: 'rgba(220,220,220,1)',
         pointHoverBorderWidth: 2,
         pointRadius: 1,
@@ -219,17 +239,17 @@ function initUI() {
         label: 'Upload',
         fill: false,
         lineTension: 0.1,
-        backgroundColor: 'rgba(48,144,48,0.5)',
-        borderColor: 'rgba(48,144,48,1)',
+        backgroundColor: alpha(ulColor, 0.5),
+        borderColor: ulColor,
         borderCapStyle: 'butt',
         borderDash: [],
         borderDashOffset: 0.0,
         borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(48,144,48,1)',
-        pointBackgroundColor: '#fff',
+        pointBorderColor: ulColor,
+        pointBackgroundColor: surfaceColor,
         pointBorderWidth: 1,
         pointHoverRadius: 0,
-        pointHoverBackgroundColor: 'rgba(48,144,48,1)',
+        pointHoverBackgroundColor: ulColor,
         pointHoverBorderColor: 'rgba(220,220,220,1)',
         pointHoverBorderWidth: 2,
         pointRadius: 1,
@@ -241,17 +261,17 @@ function initUI() {
         label: 'Ping',
         fill: false,
         lineTension: 0.1,
-        backgroundColor: 'rgba(255,204,0,0.5)',
-        borderColor: 'rgba(255,204,0,1)',
+        backgroundColor: alpha(pingColor, 0.5),
+        borderColor: pingColor,
         borderCapStyle: 'butt',
         borderDash: [],
         borderDashOffset: 0.0,
         borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(255,204,0,1)',
-        pointBackgroundColor: '#fff',
+        pointBorderColor: pingColor,
+        pointBackgroundColor: surfaceColor,
         pointBorderWidth: 1,
         pointHoverRadius: 0,
-        pointHoverBackgroundColor: 'rgba(75,220,75,1)',
+        pointHoverBackgroundColor: pingColor,
         pointHoverBorderColor: 'rgba(220,220,220,1)',
         pointHoverBorderWidth: 2,
         pointRadius: 1,
@@ -263,17 +283,17 @@ function initUI() {
         label: 'Jitter',
         fill: false,
         lineTension: 0.1,
-        backgroundColor: 'rgba(204,0,0,0.5)',
-        borderColor: 'rgba(204,0,0,1)',
+        backgroundColor: alpha(jitColor, 0.5),
+        borderColor: jitColor,
         borderCapStyle: 'butt',
         borderDash: [],
         borderDashOffset: 0.0,
         borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(204,0,0,1)',
-        pointBackgroundColor: '#fff',
+        pointBorderColor: jitColor,
+        pointBackgroundColor: surfaceColor,
         pointBorderWidth: 1,
         pointHoverRadius: 0,
-        pointHoverBackgroundColor: 'rgba(220,75,75,1)',
+        pointHoverBackgroundColor: jitColor,
         pointHoverBorderColor: 'rgba(220,220,220,1)',
         pointHoverBorderWidth: 2,
         pointRadius: 1,
@@ -383,14 +403,6 @@ function initUI() {
     updateStats();
 }
 
-$(document).ready(function() {
-    $("#show_advanced").click(function() {
-        $("#advanced").slideToggle(300);
-    });
-    $("#show_speedtest_info").click(function() {
-        $("#speedtest_info").slideToggle(300);
-    });
-});
 
 
 
@@ -539,10 +551,10 @@ function showResultCard(result, url) {
     var el = I("result_card");
     if (!el) return;
     el.innerHTML =
-        "<h3>Result</h3>" +
-        '<p class="result_line">' +
-        fmtStat(result.download_mbps, "Mbps") + " down &middot; " +
-        fmtStat(result.upload_mbps, "Mbps") + " up &middot; " +
+        "<h2>Result</h2>" +
+        '<p class="visually-hidden">' +
+        fmtStat(result.download_mbps, "Mbps") + " down, " +
+        fmtStat(result.upload_mbps, "Mbps") + " up, " +
         fmtStat(result.ping_ms, "ms") + " ping</p>" +
         '<p><a class="btn" href="' + url + '">View result</a> ' +
         '<a class="btn" href="/app/librespeed/results">All results</a></p>';
@@ -571,6 +583,7 @@ function startStop() {
         w.postMessage('start ' + JSON.stringify(parameters)); //run the test with custom parameters
         loadPingStart();
         I("startStopBtn").className = "btn disabled";
+        I("startStopBtn").disabled = true;
         I("startStopBtn").innerHTML = tr("abort");
         setTimeout(function() {
             I("startStopBtn").className = "btn running";
@@ -619,6 +632,7 @@ function startStop() {
 
 function resetUI() {
     I("startStopBtn").className = "btn";
+    I("startStopBtn").disabled = false;
     I("startStopBtn").innerHTML = tr("start");
     w = null;
     sampling = false;

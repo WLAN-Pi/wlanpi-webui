@@ -6,6 +6,7 @@ from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.librespeed import bp
 from wlanpi_webui.utils import (
     SPEEDTEST_NOTE_MAX,
+    format_speedtest_tested_at,
     get_speedtest_result,
     is_htmx,
     load_speedtest_results,
@@ -67,6 +68,12 @@ def _result_context(result: dict | None) -> dict:
     latency = []
     details = []
     if result:
+        # Display copy: the lede, the Details row, and the canvas all read from
+        # this, so the stored UTC value never reaches the page.
+        result = {
+            **result,
+            "tested_at": format_speedtest_tested_at(result.get("tested_at")) or "n/a",
+        }
         headline = [
             ("Download (Mbps)", _num(result.get("download_mbps"))),
             ("Upload (Mbps)", _num(result.get("upload_mbps"))),
@@ -107,7 +114,7 @@ def _result_rows(results: list[dict]) -> list[dict]:
     return [
         {
             "id": r.get("id"),
-            "tested_at": r.get("tested_at") or "n/a",
+            "tested_at": format_speedtest_tested_at(r.get("tested_at")) or "n/a",
             "download": _num(r.get("download_mbps")),
             "upload": _num(r.get("upload_mbps")),
             "ping": _num(r.get("ping_ms")),

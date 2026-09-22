@@ -182,3 +182,23 @@ class TestSpeedtestReport:
         for _ in range(25):
             client.post("/app/librespeed/results", json=PAYLOAD)
         assert len(json.loads(results_path.read_text())) == 20
+
+    def test_results_page_formats_the_timestamp(
+        self, client, monkeypatch, results_path
+    ):
+        from wlanpi_webui.utils import format_speedtest_tested_at
+
+        _login(client, monkeypatch)
+        client.post("/app/librespeed/results", json=PAYLOAD)
+        raw = json.loads(results_path.read_text())[0]["tested_at"]
+        resp = client.get("/app/librespeed/results")
+        assert raw.encode() not in resp.data
+        assert format_speedtest_tested_at(raw).encode() in resp.data
+
+    def test_result_page_formats_the_timestamp(self, client, monkeypatch, results_path):
+        _login(client, monkeypatch)
+        rid = client.post("/app/librespeed/results", json=PAYLOAD).get_json()["id"]
+        raw = json.loads(results_path.read_text())[0]["tested_at"]
+        resp = client.get(f"/app/librespeed/results/{rid}")
+        # The lede and the canvas payload both carry the display value.
+        assert raw.encode() not in resp.data

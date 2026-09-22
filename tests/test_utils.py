@@ -257,3 +257,28 @@ class TestGetCoreJson:
 
         monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: R())
         assert utils.get_core_json("/x") is None
+
+
+class TestFormatSpeedtestTestedAt:
+    def test_converts_utc_to_local(self):
+        from datetime import datetime
+
+        from wlanpi_webui.utils import format_speedtest_tested_at
+
+        stored = "2026-09-21T20:14:31+00:00"
+        expected = (
+            datetime.fromisoformat(stored).astimezone().strftime("%Y-%m-%d %H:%M")
+        )
+        assert format_speedtest_tested_at(stored) == expected
+        assert format_speedtest_tested_at(stored) != stored
+
+    def test_passes_through_what_it_cannot_parse(self):
+        from wlanpi_webui.utils import format_speedtest_tested_at
+
+        assert format_speedtest_tested_at("not a timestamp") == "not a timestamp"
+
+    def test_handles_missing_values(self):
+        from wlanpi_webui.utils import format_speedtest_tested_at
+
+        assert format_speedtest_tested_at(None) == ""
+        assert format_speedtest_tested_at("") == ""

@@ -702,6 +702,18 @@ def _speedtest_number(value) -> float | None:
     return round(number, 3)
 
 
+def format_speedtest_tested_at(value) -> str:
+    """Render a stored ISO timestamp as local 'YYYY-MM-DD HH:MM'.
+
+    Results are stored in UTC, and older ones in that same shape, so this
+    formats at display time and returns anything it cannot parse untouched.
+    """
+    try:
+        return datetime.fromisoformat(value).astimezone().strftime("%Y-%m-%d %H:%M")
+    except (AttributeError, TypeError, ValueError):
+        return str(value) if value else ""
+
+
 def load_speedtest_results() -> list[dict]:
     """Read the stored speedtest results, newest first."""
     path = current_app.config.get("SPEEDTEST_RESULTS_PATH")

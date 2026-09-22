@@ -24,7 +24,7 @@
     --ls-meter-progress: #eeeeee;
     --ls-dl: #6060aa;
     --ls-ul: #309030;
-    --ls-ping: #ffcc00;
+    --ls-ping: #b8860b;
     --ls-jitter: #cc0000;
 }
 
@@ -63,14 +63,22 @@ body {
     font-weight: normal;
 }
 
-h1 img {
-    vertical-align: middle;
-}
-
-h3 {
+h2 {
     margin: 1.5em 0 0.5em;
     font-weight: normal;
     color: var(--text);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 th {
@@ -109,6 +117,7 @@ a {
 
 .btn {
     display: inline-block;
+    font: inherit;
     margin: 0 auto;
     color: var(--brand-ink);
     background-color: rgba(0, 0, 0, 0);
@@ -135,7 +144,8 @@ a {
     color: #ffffff;
 }
 
-#startStopBtn.disabled {
+#startStopBtn.disabled,
+#startStopBtn:disabled {
     background-color: rgba(0, 0, 0, 0);
     border-color: var(--line-strong);
     color: var(--text-muted);
@@ -205,10 +215,6 @@ div.meter_text {
     z-index: 9;
 }
 
-div.meter_text:empty:before {
-    content: "0.00";
-}
-
 div.unit {
     position: absolute;
     bottom: 2em;
@@ -256,7 +262,10 @@ div.test_area canvas {
     display: flex;
     align-items: center;
     margin-left: auto;
-    margin-right: 30px;
+    /* Measured against the WebUI navbar: the settings icon is 30px wide with
+       its right edge 30px from the viewport, so its centre sits 45px in. A
+       24px arrow needs 45 - 12 to line up with it. */
+    margin-right: 33px;
     color: var(--navbar-text);
     text-decoration: none;
 }
@@ -308,12 +317,6 @@ div.test_group {
     vertical-align: top;
 }
 
-@media all and (max-width: 65em) {
-    /*body{
-        font-size:1.5vw;
-    }*/
-}
-
 @media all and (max-width: 40em) {
     body {
         font-size: 0.8em;
@@ -322,16 +325,6 @@ div.test_group {
     div.test_group {
         display: block;
         margin: 0 auto;
-    }
-
-    #logo {
-        width: 15em;
-    }
-}
-
-@media all and (max-width: 28em) {
-    #logo {
-        width: 10em;
     }
 }
 
@@ -347,7 +340,7 @@ div.test_group {
     text-align: center;
 }
 
-.result_card h3 {
+.result_card h2 {
     margin: 0 0 6px;
     font-size: 1.1rem;
 }

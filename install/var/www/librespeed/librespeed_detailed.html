@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 <meta charset="UTF-8" />
+<meta name="theme-color" content="#222222" />
 <title>WLAN Pi: Speedtest</title>
 <script>
 // Follow the WebUI theme: same origin, so localStorage / cookie are shared.
@@ -17,6 +18,8 @@
     t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
   }
   document.documentElement.setAttribute("data-theme", t);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) { meta.setAttribute("content", t === "dark" ? "#0b0f13" : "#222222"); }
 })();
 </script>
 <link rel="stylesheet" href="librespeed_detailed_style.css">
@@ -26,6 +29,7 @@
 </head>
 <body>
 <header class="ls-topbar">
+  <h1 class="visually-hidden">WLAN Pi Speedtest</h1>
   <a class="ls-brand" href="/"><img src="/static/img/wlanpi-sticker.png" alt="WLAN Pi logo" width="96" height="37"></a>
   <a class="ls-back" href="/" aria-label="Back to the dashboard">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
@@ -35,7 +39,7 @@
     </svg>
   </a>
 </header>
-<div class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></div>
+<button type="button" class="btn" id="startStopBtn" onclick="startStop()"><script>trw('start');</script></button>
 	<div id="settings_top">
 		<label><script>trw('test_length');</script> <input id="length" type="number" step=1 min=4 max=60> seconds</label>
 	</div>
@@ -72,18 +76,18 @@
 		<canvas id="chart_du_area"></canvas>
 	</div>
 </div>
-<div id="result_card" class="result_card" style="display:none"></div>
+<div id="result_card" class="result_card" role="status" style="display:none"></div>
 <div class="results-row">
 	<div class="test_group" id="stats_block">
-		<h3><script>trw('stats');</script></h3>
+		<h2><script>trw('stats');</script></h2>
 		<table id="stats_table" class="left_tables"></table>
 	</div>
 	<div class="test_group">
-		<h3>Download</h3>
+		<h2>Download</h2>
 		<table id="results_table_download" class="right_tables"></table>
 	</div>
 	<div class="test_group">
-		<h3>Upload</h3>
+		<h2>Upload</h2>
 		<table id="results_table_upload" class="right_tables"></table>
 	</div>
 </div>
@@ -101,6 +105,6 @@
 		</ul>
 	</div>
 </div>
-<script type="text/javascript">setTimeout(initUI,100);</script>
+<script type="text/javascript">document.addEventListener("DOMContentLoaded", initUI);</script>
 </body>
 </html>
