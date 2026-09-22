@@ -1,0 +1,15 @@
+# Keep vendored third-party assets out of CodeQL results.
+#
+# These files are checked in for offline use and updated wholesale; see
+# wlanpi_webui/static/ASSETS.md. Findings in them are not actionable here
+# (no upstream fix, not reachable from untrusted input), so scan first-party
+# code only. Minified files are also auto-skipped by CodeQL, but the
+# unminified UIkit build is what raised js/xss and js/incomplete-sanitization.
+name: "wlanpi-webui CodeQL config"
+paths-ignore:
+  - "wlanpi_webui/static/vendor/**"
+  - "wlanpi_webui/static/js/uikit*.js"
+  - "wlanpi_webui/static/js/htmx.min.js"
+  - "wlanpi_webui/static/js/_hyperscript.min.js"
+  - "wlanpi_webui/static/js/qrcode.min.js"
+  - "wlanpi_webui/static/js/Chart.bundle.min.js"
