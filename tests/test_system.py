@@ -155,8 +155,9 @@ class TestSystemDiag:
     def test_shell_has_card_hooks(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/system")
-        assert b"Resource usage" in resp.data
+        # Resource usage loads lazily (header included) from /stream/stats.
         assert b"system-health" in resp.data
+        assert b'hx-get="/stream/stats"' in resp.data
         for card in (
             b"status",
             b"temperatures",

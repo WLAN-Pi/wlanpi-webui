@@ -1,10 +1,8 @@
 # stats for homepage
 import socket
 
-from flask import request
-
 from wlanpi_webui.stream import bp
-from wlanpi_webui.utils import get_core_json, is_htmx
+from wlanpi_webui.utils import get_core_json
 
 
 def get_local_ip() -> str:
@@ -43,8 +41,9 @@ def get_stats():
 @bp.route("/stream/stats")
 def stream_stats():
     stats = get_stats()
-    if is_htmx(request):
-        html = """
+    return """
+<h3 class="uk-card-title">Resource usage</h3>
+<div class="sys-live">
 <div class="stat-container">
 <div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
 <div class="stat-label">CPU</div>
@@ -67,5 +66,5 @@ def stream_stats():
 <div class="stat-label">Uptime</div>
 <div class="stat-text">{UPTIME}</div>
 </div>
+</div>
 """.format(**stats)
-        return html

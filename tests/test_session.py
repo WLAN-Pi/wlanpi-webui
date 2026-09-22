@@ -114,8 +114,8 @@ class TestSystemPage:
         resp = client.get("/stream/stats", headers={"hx-request": "true"})
         assert resp.status_code == 200
         assert b'class="stat-container"' in resp.data
-        # The card title lives in the System page, not the fragment.
-        assert b"uk-card-title" not in resp.data
+        # The card title now loads lazily with the rows.
+        assert b'uk-card-title">Resource usage<' in resp.data
 
     def test_debug_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)

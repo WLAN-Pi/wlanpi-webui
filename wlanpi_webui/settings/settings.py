@@ -16,8 +16,10 @@ from wlanpi_webui.utils import (
 def settings():
     datetime_info = get_core_json("/api/v1/system/datetime") or {}
     tz_list = get_core_json("/api/v1/system/timezone/list") or {}
+    tz_info = get_core_json("/api/v1/system/timezone") or {}
     reg = get_core_json("/api/v1/system/reg-domain") or {}
     reg_list = get_core_json("/api/v1/system/reg-domain/list") or {}
+    ntp = get_core_json("/api/v1/system/ntp") or {}
 
     resp_data = {
         "idle_timeout": Config.IDLE_TIMEOUT,
@@ -27,10 +29,15 @@ def settings():
             or datetime_info.get("datetime")
             or "unavailable"
         ),
-        "current_timezone": datetime_info.get("timezone") or "",
+        # /system/timezone reads systemd's authoritative value; /system/datetime's
+        # timezone can lag because it prefers a stale /etc/timezone.
+        "current_timezone": tz_info.get("timezone")
+        or datetime_info.get("timezone")
+        or "",
         "timezones": tz_list.get("timezones") or [],
         "reg_country": reg.get("country") or "unknown",
         "reg_countries": reg_list.get("countries") or [],
+        "ntp_enabled": bool(ntp.get("ntp_service")),
     }
     if is_htmx(request):
         return render_template("/partials/settings.html", **resp_data)
@@ -62,11 +69,17 @@ def set_timezone():
 
 @bp.route("/settings/ntp", methods=["POST"])
 @csrf_required
-def enable_ntp():
-    if post_core_json("/api/v1/system/timezone/auto"):
-        queue_toast("Automatic time sync enabled.", "success")
+def set_ntp():
+    enabled = (request.form.get("enabled") or "true").lower() != "false"
+    if post_core_json("/api/v1/system/ntp", json_body={"enabled": enabled}):
+        queue_toast(
+            "Automatic time sync enabled."
+            if enabled
+            else "Automatic time sync disabled.",
+            "success",
+        )
     else:
-        queue_toast("Could not enable automatic time sync.", "warning")
+        queue_toast("Could not change automatic time sync.", "warning")
     return redirect(get_safe_referrer_target())
 
 

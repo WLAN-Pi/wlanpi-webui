@@ -62,6 +62,14 @@ class TestSettings:
         assert b"/debug" not in resp.data
         assert b"/notifications" not in resp.data
 
+    def test_power_confirm_modal(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/settings")
+        assert b'id="power-confirm"' in resp.data
+        assert b"Are you sure?" in resp.data
+        assert b"wlanpiConfirmPower('reboot')" in resp.data
+        assert b"wlanpiConfirmPower('shutdown')" in resp.data
+
 
 class TestAlertsHistory:
     """Alerts and the toast history share one page."""
@@ -157,3 +165,61 @@ class TestSettingsCore:
         _login(client, monkeypatch)
         assert client.post("/settings/ntp").status_code == 400
         assert client.post("/settings/shutdown").status_code == 400
+
+    def test_disable_ntp_posts_enabled_false(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        calls = {}
+
+        def fake_post(path, json_body=None, params=None):
+            calls["path"] = path
+            calls["json_body"] = json_body
+            return {"ntp_service": False}
+
+        monkeypatch.setattr(s, "post_core_json", fake_post)
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/settings/ntp",
+            data={"enabled": "false", "csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert resp.status_code == 302
+        assert calls == {
+            "path": "/api/v1/system/ntp",
+            "json_body": {"enabled": False},
+        }
+        with client.session_transaction() as sess:
+            assert sess["wlanpi_toast"]["message"] == "Automatic time sync disabled."
+
+    def test_enable_ntp_defaults_true(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        calls = {}
+
+        def fake_post(path, json_body=None, params=None):
+            calls["json_body"] = json_body
+            return {"ntp_service": True}
+
+        monkeypatch.setattr(s, "post_core_json", fake_post)
+        _login(client, monkeypatch)
+        client.post(
+            "/settings/ntp",
+            data={"csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert calls["json_body"] == {"enabled": True}
+
+    def test_clock_toggle_reflects_ntp_state(self, client, monkeypatch):
+        from wlanpi_webui.settings import settings as s
+
+        def fake(path, params=None):
+            if "system/ntp" in path:
+                return {"ntp_service": True}
+            return {}
+
+        monkeypatch.setattr(s, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/settings")
+        assert b"Clock" in resp.data
+        assert b"Disable NTP" in resp.data
+        assert b"Enable NTP" not in resp.data

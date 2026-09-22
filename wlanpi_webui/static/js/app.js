@@ -419,6 +419,46 @@
     return done(fallbackCopyText(text));
   };
 
+  // ---- Power confirmation ---------------------------------------------
+  // Reboot/shutdown open a UIkit "Are you sure?" modal; confirming submits the
+  // matching form so htmx still performs the POST with its CSRF token.
+  window.wlanpiConfirmPower = function (action) {
+    var form = document.getElementById(action + "-form");
+    if (!form) return;
+
+    function submit() {
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit();
+      } else if (window.htmx) {
+        window.htmx.trigger(form, "submit");
+      } else {
+        form.submit();
+      }
+    }
+
+    var modalEl = document.getElementById("power-confirm");
+    if (!window.UIkit || !modalEl) {
+      if (window.confirm("Are you sure?")) submit();
+      return;
+    }
+
+    var text = document.getElementById("power-confirm-text");
+    if (text) {
+      text.textContent =
+        action === "reboot"
+          ? "The WLAN Pi will reboot and the WebUI will disconnect. Are you sure?"
+          : "The WLAN Pi will shut down and the WebUI will disconnect. Are you sure?";
+    }
+    var ok = document.getElementById("power-confirm-ok");
+    if (ok) {
+      ok.onclick = function () {
+        window.UIkit.modal(modalEl).hide();
+        submit();
+      };
+    }
+    window.UIkit.modal(modalEl).show();
+  };
+
   var ALERTS_SEEN_KEY = "wlanpi-alerts-seen";
 
   function alertsSeen() {

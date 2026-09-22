@@ -1,3 +1,25 @@
+wlanpi-webui (1.21.9-1) unstable; urgency=medium
+
+  * Settings: read the current timezone from GET /system/timezone (systemd's
+    authoritative value) rather than /system/datetime, whose timezone field can
+    lag after a change.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 02:30:00 -0400
+
+wlanpi-webui (1.21.8-1) unstable; urgency=medium
+
+  * System: load the Resource usage card (header included) from /stream/stats
+    like the other cards, instead of rendering its header up front.
+  * Settings: fold the Clock and Regulatory domain cards into the Appearance
+    and Session grid (dropping the "Time & timezone" heading), and put Save
+    timezone and the NTP toggle on one row.
+  * Settings: offer Disable NTP when time sync is on, via wlanpi-core
+    POST /system/ntp.
+  * Settings: reboot and shut down now open an "Are you sure?" dialog before
+    running, instead of submitting straight away.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 02:00:00 -0400
+
 wlanpi-webui (1.21.7-1) unstable; urgency=medium
 
   * Add a Bluetooth card to the System page. It shows the adapter, address,

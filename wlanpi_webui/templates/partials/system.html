@@ -31,14 +31,12 @@
       <p class="skel" style="height: 0.85em; width: 65%;"></p>
     </div>
 
-    <div class="uk-card uk-card-default uk-card-body">
-      <h3 class="uk-card-title">Resource usage</h3>
-      <div class="sys-live" id="system-health" hx-get="/stream/stats" hx-swap="innerHTML" hx-target="this"
-        hx-trigger="load, refresh-system" aria-busy="true" aria-label="Loading">
-        {% for _ in range(4) %}
-        <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
-        {% endfor %}
-      </div>
+    <div class="uk-card uk-card-default uk-card-body" id="system-health" hx-get="/stream/stats"
+      hx-trigger="load, refresh-system" hx-target="this" hx-swap="innerHTML" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 40%;"></p>
+      {% for _ in range(4) %}
+      <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
+      {% endfor %}
     </div>
 
     <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/status" hx-trigger="load" hx-target="this"
