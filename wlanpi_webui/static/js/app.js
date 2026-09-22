@@ -50,6 +50,15 @@
     applyTheme(current === "dark" ? "light" : "dark");
   };
 
+  window.addEventListener("storage", function (evt) {
+    if (
+      evt.key === "wlanpi-theme" &&
+      (evt.newValue === "dark" || evt.newValue === "light")
+    ) {
+      applyTheme(evt.newValue);
+    }
+  });
+
   try {
     var stored = localStorage.getItem("wlanpi-theme");
     if (stored === "dark" || stored === "light") {

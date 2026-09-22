@@ -1,3 +1,12 @@
+wlanpi-webui (1.21.10-1) unstable; urgency=medium
+
+  * Complete light and dark theme support for shared controls, alerts, forms,
+    navigation, tables, and the dashboard launcher.
+  * Keep WebUI and LibreSpeed charts and result canvases synchronized when the
+    selected theme changes.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 15:30:00 -0400
+
 wlanpi-webui (1.21.9-1) unstable; urgency=medium
 
   * Settings: read the current timezone from GET /system/timezone (systemd's

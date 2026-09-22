@@ -137,6 +137,39 @@ function applyMeterTheme() {
 }
 applyMeterTheme();
 
+function applyLiveTheme(theme) {
+    if (theme !== "dark" && theme !== "light") return;
+    document.documentElement.setAttribute("data-theme", theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "dark" ? "#0b0f13" : "#f8f8f8");
+    applyMeterTheme();
+
+    [[chart1, [dlColor, ulColor]], [chart2, [pingColor, jitColor]]].forEach(function (entry) {
+        var chart = entry[0];
+        if (!chart) return;
+        chart.data.datasets.forEach(function (dataset, i) {
+            var color = entry[1][i];
+            dataset.backgroundColor = alpha(color, 0.5);
+            dataset.borderColor = color;
+            dataset.pointBorderColor = color;
+            dataset.pointBackgroundColor = surfaceColor;
+            dataset.pointHoverBackgroundColor = color;
+            dataset.pointHoverBorderColor = surfaceColor;
+        });
+        chart.options.legend.labels.fontColor = textColor;
+        chart.options.scales.xAxes.concat(chart.options.scales.yAxes).forEach(function (axis) {
+            axis.ticks.fontColor = textColor;
+            axis.gridLines = axis.gridLines || {};
+            axis.gridLines.color = getComputedStyle(document.documentElement).getPropertyValue("--border").trim();
+            axis.scaleLabel.fontColor = textColor;
+        });
+    });
+
+    if (data) updateUI(true);
+    if (chart1) chart1.update();
+    if (chart2) chart2.update();
+}
+
 
 function alpha(color, a) {
     var h = String(color).trim().replace("#", "");
@@ -685,7 +718,12 @@ function loadPingFire() {
     xhr.send();
 }
 
+window.addEventListener("storage", function (event) {
+    if (event.key === "wlanpi-theme") applyLiveTheme(event.newValue);
+});
+
 window.addEventListener("focus", function(event) {
+    try { applyLiveTheme(localStorage.getItem("wlanpi-theme")); } catch (e) {}
     if (!data) data = ["0", "", "", "", "", "", "0", "0", "0", 0];
     updateUI(true)
     chart1.update();

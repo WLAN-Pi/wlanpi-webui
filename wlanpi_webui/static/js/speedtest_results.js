@@ -225,5 +225,6 @@
   });
 
   document.addEventListener("htmx:afterSwap", renderAll);
+  document.addEventListener("wlanpi:theme", renderAll);
   window.addEventListener("load", renderAll);
 })();

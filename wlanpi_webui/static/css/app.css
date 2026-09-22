@@ -47,6 +47,12 @@
     --warning: #f9a825;
     --warn-bg: #fef6e0;
     --warn-fg: #7a5b00;
+    --info-bg: #e3f2fd;
+    --info-fg: #01579b;
+    --success-bg: #e8f5e9;
+    --success-fg: #1b5e20;
+    --danger-bg: #fdebed;
+    --danger-fg: #9b1c2b;
     --success: #2e7d32;
     --info: #0277bd;
     --focus-ring: rgba(168, 58, 18, 0.45);
@@ -93,12 +99,19 @@
     --navbar-bg: #0b0f13;
     --brand-ink: #ff8a5c;
     --brand-ink-hover: #ffa07a;
+    --brand-contrast: #0b0f13;
     --text: #e6eaee;
     --text-muted: #9aa5b1;
     --border: #2a343d;
     --line-strong: #3a4753;
     --warn-bg: #3a3320;
     --warn-fg: #f3e2b0;
+    --info-bg: #173349;
+    --info-fg: #b9dcf5;
+    --success-bg: #1e3524;
+    --success-fg: #bfe6c8;
+    --danger-bg: #3a1f22;
+    --danger-fg: #f3c2c7;
     --focus-ring: rgba(255, 138, 92, 0.5);
 
     /* Dark theme controls: translucent dark surface, lighter brand ink. */
@@ -114,6 +127,12 @@
 /* ==========================================================================
    Base elements
    ========================================================================== */
+
+html,
+body {
+    background: var(--bg-page);
+    color: var(--text);
+}
 
 body {
     font-family: var(--font-sans);
@@ -304,6 +323,15 @@ h6 {
     color: var(--navbar-text);
 }
 
+.uk-navbar-nav > li:hover > a,
+.uk-navbar-nav > li > a[aria-expanded="true"],
+.uk-navbar-nav > li > a:active,
+.uk-navbar-toggle,
+.uk-navbar-toggle:hover,
+.uk-navbar-toggle[aria-expanded="true"] {
+    color: var(--navbar-text);
+}
+
 .uk-navbar-dropdown,
 .uk-dropdown {
     background: var(--bg-surface);
@@ -359,7 +387,9 @@ h6 {
 }
 
 .uk-button-default:hover,
-.uk-button-default:focus {
+.uk-button-default:focus,
+.uk-button-default:active,
+.uk-button-default.uk-active {
     background-color: var(--surface-2);
     color: var(--text);
     border-color: var(--line-strong);
@@ -371,7 +401,9 @@ h6 {
 }
 
 .uk-button-primary:hover,
-.uk-button-primary:focus {
+.uk-button-primary:focus,
+.uk-button-primary:active,
+.uk-button-primary.uk-active {
     background-color: var(--brand-ink-hover);
     color: var(--brand-contrast);
 }
@@ -382,15 +414,32 @@ h6 {
 }
 
 .uk-button-secondary:hover,
-.uk-button-secondary:focus {
+.uk-button-secondary:focus,
+.uk-button-secondary:active,
+.uk-button-secondary.uk-active {
     background-color: var(--brand-ink-hover);
     color: var(--brand-contrast);
 }
 
-.uk-button:disabled,
+.uk-button-default:disabled,
+.uk-button-primary:disabled,
+.uk-button-secondary:disabled,
+.uk-button-danger:disabled,
 .uk-button[aria-disabled="true"] {
+    background-color: var(--surface-2);
+    color: var(--text-muted);
+    border-color: var(--border);
     opacity: 0.45;
     cursor: not-allowed;
+}
+
+.uk-button-danger,
+.uk-button-danger:hover,
+.uk-button-danger:focus,
+.uk-button-danger:active,
+.uk-button-danger.uk-active {
+    background-color: var(--danger);
+    color: #fff;
 }
 
 .uk-input,
@@ -405,11 +454,35 @@ h6 {
 .uk-input:focus,
 .uk-select:focus,
 .uk-textarea:focus {
+    background: var(--bg-surface);
+    color: var(--text);
     border-color: var(--brand-ink);
+}
+
+.uk-input:disabled,
+.uk-select:disabled,
+.uk-textarea:disabled {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border-color: var(--border);
+}
+
+.uk-select:not([multiple]):not([size]) option {
+    background: var(--bg-surface);
+    color: var(--text);
+}
+
+[data-theme="dark"] .uk-select:not([multiple]):not([size]) {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2224%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2016%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpolygon%20fill%3D%22%239aa5b1%22%20points%3D%2212%201%209%206%2015%206%22%2F%3E%3Cpolygon%20fill%3D%22%239aa5b1%22%20points%3D%2212%2013%209%208%2015%208%22%2F%3E%3C%2Fsvg%3E");
 }
 
 .uk-input::placeholder,
 .uk-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.uk-form-icon,
+.uk-form-icon:hover {
     color: var(--text-muted);
 }
 
@@ -421,6 +494,12 @@ h6 {
 .uk-table th,
 .uk-table td {
     border-color: var(--border);
+}
+
+.uk-table-divider > tr:not(:first-child),
+.uk-table-divider > :not(:first-child) > tr,
+.uk-table-divider > :first-child > tr:not(:first-child) {
+    border-top-color: var(--border);
 }
 
 .uk-table th {
@@ -442,13 +521,31 @@ h6 {
 }
 
 .uk-alert {
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
+}
+
+.uk-alert-primary {
+    background: var(--info-bg);
+    color: var(--info-fg);
+}
+
+.uk-alert-success {
+    background: var(--success-bg);
+    color: var(--success-fg);
 }
 
 /* Light-theme warning callout: UIKit's default fails contrast here */
 .uk-alert-warning {
     background: var(--warn-bg);
     color: var(--warn-fg);
+}
+
+.uk-alert-danger {
+    background: var(--danger-bg);
+    color: var(--danger-fg);
 }
 
 /* Notifications: UIkit's default is bulky and off-brand, so restyle it */
@@ -565,6 +662,14 @@ h6 {
     transform: scale(0.92);
 }
 
+.uk-icon-button:hover,
+.uk-icon-button:focus,
+.uk-icon-button:active {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: var(--line-strong);
+}
+
 .uk-icon-button.copy-ok,
 .uk-button.copy-ok {
     border-color: var(--success);
@@ -594,23 +699,16 @@ h6 {
    Dark-theme specifics (colours that are not a simple token swap)
    ========================================================================== */
 
-[data-theme="dark"] .uk-alert-danger {
-    background: #3a1f22;
-    color: #f3c2c7;
-}
-
-[data-theme="dark"] .uk-alert-warning {
-    background: #3a3320;
-    color: #f3e2b0;
-}
-
-[data-theme="dark"] .uk-alert-success {
-    background: #1e3524;
-    color: #bfe6c8;
-}
-
-[data-theme="dark"] .uk-offcanvas-bar {
+.uk-offcanvas-bar {
     background: var(--navbar-bg);
+}
+
+.uk-offcanvas-bar .uk-nav > li > a {
+    color: var(--navbar-text);
+}
+
+.uk-offcanvas-bar .uk-nav > li.uk-active > a {
+    color: #ff8a5c;
 }
 
 /* clip.svg is a black stroke; invert it on the dark icon button */
@@ -625,6 +723,10 @@ h6 {
 
 [data-theme="dark"] .sys-live img {
     filter: none;
+}
+
+[data-theme="dark"] .teapot-image {
+    filter: invert(1);
 }
 
 /* UIKit gives inline <kbd>/<samp> a near-white background */
@@ -1228,12 +1330,13 @@ h6 {
 
 /* App actions use the signature brand orange */
 .app-card .uk-button-primary {
-    background-color: var(--brand);
+    background-color: var(--brand-ink);
 }
 
 .app-card .uk-button-primary:hover,
-.app-card .uk-button-primary:focus {
-    background-color: var(--brand-hover);
+.app-card .uk-button-primary:focus,
+.app-card .uk-button-primary:active {
+    background-color: var(--brand-ink-hover);
 }
 
 /* UIkit's disabled buttons are a fixed #999 on a transparent background, which
@@ -1288,21 +1391,21 @@ h6 {
 }
 
 .logout-button {
-    background-color: var(--brand);
-    color: #fff;
+    background-color: var(--brand-ink);
+    color: var(--brand-contrast);
 }
 
 .logout-button:hover,
-.logout-button:focus {
-    background-color: var(--brand-hover);
-    color: #fff;
+.logout-button:focus,
+.logout-button:active {
+    background-color: var(--brand-ink-hover);
+    color: var(--brand-contrast);
 }
 
 /* ==========================================================================
    Dashboard: tile launcher
-   A deliberate always-dark "device screen" (orange on near-black, monospace,
-   chunky bordered tiles) so it reads as the WLAN Pi's home screen rather than
-   another info page. Colours are fixed on purpose, not tokenised.
+   A compact monospace "device screen" that follows the selected theme while
+   retaining the launcher's chunky bordered-tile identity.
    ========================================================================== */
 
 .launcher-screen {
@@ -1311,12 +1414,12 @@ h6 {
     align-self: center;
     margin: auto;
     padding: var(--space-4);
-    background: #0b0f13;
-    border: 2px solid #2a343d;
+    background: var(--bg-surface);
+    border: 2px solid var(--border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
-    color: #e6eaee;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    color: var(--text);
+    font-family: var(--font-mono);
 }
 
 .launcher-grid {
@@ -1344,10 +1447,10 @@ h6 {
     gap: var(--space-2);
     min-height: 108px;
     padding: var(--space-4) var(--space-2);
-    background: #101417;
-    border: 2px solid #2a343d;
+    background: var(--bg-page);
+    border: 2px solid var(--border);
     border-radius: var(--radius-sm);
-    color: #e6eaee !important;
+    color: var(--text) !important;
     font-size: 0.78rem;
     letter-spacing: 0.06em;
     text-align: center;
@@ -1358,9 +1461,9 @@ h6 {
 
 .launcher-tile:hover,
 .launcher-tile:focus {
-    background: var(--brand);
-    border-color: var(--brand);
-    color: #0b0f13 !important;
+    background: var(--brand-ink);
+    border-color: var(--brand-ink);
+    color: var(--brand-contrast) !important;
     transform: translateY(-2px);
 }
 
@@ -1417,7 +1520,7 @@ h6 {
 
 .launcher-foot {
     margin: 0 0 var(--space-4);
-    color: #9aa5b1;
+    color: var(--text-muted);
     font-size: 0.72rem;
     letter-spacing: 0.06em;
     text-align: center;

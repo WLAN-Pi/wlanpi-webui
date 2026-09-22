@@ -52,6 +52,25 @@ class TestManifest:
             assert (static / icon["src"].removeprefix("/static/")).exists()
 
 
+class TestThemes:
+    def test_launcher_and_interactive_states_use_theme_tokens(self, app):
+        css = (Path(app.root_path) / "static" / "css" / "app.css").read_text()
+        launcher = css[css.index(".launcher-screen {") : css.index(".game-stage {")]
+
+        assert "background: var(--bg-surface);" in launcher
+        assert "background: var(--bg-page);" in launcher
+        assert "color: var(--text) !important;" in launcher
+        assert ".uk-input:focus" in css
+        assert ".uk-button-primary:active" in css
+        assert ".uk-alert-primary" in css
+
+    def test_canvas_redraws_on_theme_change(self, app):
+        js = (
+            Path(app.root_path) / "static" / "js" / "speedtest_results.js"
+        ).read_text()
+        assert 'document.addEventListener("wlanpi:theme", renderAll);' in js
+
+
 class TestModernization:
     def test_login_has_fixed_icon_path(self, client):
         resp = client.get("/login")
