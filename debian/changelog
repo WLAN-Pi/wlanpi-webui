@@ -1,3 +1,141 @@
+wlanpi-webui (1.21.5-1) unstable; urgency=medium
+
+  * Speedtest results: show timestamps as local YYYY-MM-DD HH:MM on the results
+    table, the result page, and the result image. Stored values are untouched,
+    so runs recorded earlier render correctly too.
+  * Speedtest page: draw the charts from the theme tokens so they follow light
+    and dark mode, and darken the ping colour, which was 1.42:1 against the
+    light background.
+  * Speedtest page: make start/stop a real button so it can be focused and
+    activated from the keyboard, allow pinch zoom again, add a heading and a
+    live region for the finished result, and set the theme-color meta tag.
+  * Speedtest page: drop two toggle handlers for elements that do not exist,
+    start the meters on DOMContentLoaded instead of a fixed timer, and redraw
+    them on resize.
+  * Grafana: satisfy the return type check in the readiness probe.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 20:10:00 -0400
+
+wlanpi-webui (1.21.4-1) unstable; urgency=medium
+
+  * System: show the System facts card first, and drop the Firewall (UFW)
+    card.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 00:30:00 -0400
+
+wlanpi-webui (1.21.3-1) unstable; urgency=medium
+
+  * System: split the Device Health card into Resource usage, Device status,
+    Temperatures, and Radios cards, and load every System card individually
+    into one masonry so USB, PCI, Firewall, and System facts pack around them
+    instead of leaving a gap below.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 23:59:00 -0400
+
+wlanpi-webui (1.21.2-1) unstable; urgency=medium
+
+  * Network: put the latency card, the main cards, and the detail cards in one
+    masonry so nothing is stranded in a gap above Routing or the link cards,
+    and the latency card (two columns) has a card beside it. The latency chart
+    is preserved across refreshes.
+  * Network: apply the masonry synchronously after each swap so a refresh no
+    longer redraws the cards into the fallback grid and jumps.
+  * System: Device Health and Firewall are normal-width cards again.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 23:59:00 -0400
+
+wlanpi-webui (1.21.1-1) unstable; urgency=medium
+
+  * Cards: replace the CSS-columns layout with a grid that packs cards by
+    natural height, so the Network page no longer leaves vertical gaps and the
+    System page fills the space instead of scrolling.
+  * System: the Device Health and Firewall cards span the full width, and the
+    Device Health sections sit in two columns.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 23:59:00 -0400
+
+wlanpi-webui (1.21.0-1) unstable; urgency=medium
+
+  * Network: lay the cards out as a masonry grid so they keep their natural
+    height and pack, instead of being stretched to match the tallest in a row.
+    Capitalise "DHCP Leases".
+  * System: merge the two Health cards into one "Device Health" card with
+    "Resource usage" and "Device status" groups (throttle, NTP, load, swap,
+    temperatures, radios), and drop the failed-services list from it; the
+    failed-units alert remains.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 23:55:00 -0400
+
+wlanpi-webui (1.20.0-1) unstable; urgency=medium
+
+  * Network: drop the TCP/UDP connection cards, show routing, DHCP leases, and
+    per-interface link info automatically, and name the interface and link
+    cards ("wlan0 Interface", "eth0 Link", "wlan0 Link"). Wireless links now
+    report the association (SSID, BSSID, frequency, signal, rx/tx bitrate)
+    from wlanpi-core.
+  * System: add a PCI card next to USB and a Health card covering throttling
+    and under-voltage, temperatures, NTP sync, load, swap, rfkill, and failed
+    systemd units.
+  * Alerts: surface under-voltage/throttling, an unsynchronised clock, and
+    failed systemd units in the navbar bell and the alerts page.
+  * Requires wlanpi-core 2.3.0 for the new data; the UI degrades gracefully
+    against older cores.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 23:30:00 -0400
+
+wlanpi-webui (1.19.0-1) unstable; urgency=medium
+
+  * System: source device info and stats from wlanpi-core instead of shelling
+    out, add a battery row (says "Not detected" when there is no battery), and
+    add USB and UFW diagnostics cards.
+  * Settings: add time & timezone (with NTP) and regulatory-domain cards, and
+    reboot / shut down actions.
+  * Network: add an on-demand details panel with routing, DHCP leases, TCP/UDP
+    connections, and per-interface link statistics.
+  * Speedtest: redraw the result image at 1200x630 with the WLAN Pi mark and
+    centred Unloaded/Loaded columns.
+  * Grafana: use the real lowercase interface names for the scanner streams.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 22:30:00 -0400
+
+wlanpi-webui (1.18.2-1) unstable; urgency=medium
+
+  * Grafana: capitalise the data stream names (Internet monitoring, Scanner
+    WLAN0…) and write "WebUI" in the waiting status.
+  * Apps: give disabled action buttons a legible, theme-aware colour in both
+    light and dark mode.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 21:40:00 -0400
+
+wlanpi-webui (1.18.1-1) unstable; urgency=medium
+
+  * Grafana page: fix the service start/stop control swapping the whole page
+    into the button, and poll the service so it shows Starting, Waiting for
+    web UI, and Running, only enabling Launch once Grafana answers.
+  * Grafana: gate the Launch buttons on the Apps card and the Grafana page on
+    the same check, instead of opening a 502 while it boots.
+  * Apps: drop the redundant left margin on the action buttons so they space
+    evenly and wrap flush.
+  * CLI: follow the light/dark theme while the terminal is open.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 21:15:00 -0400
+
+wlanpi-webui (1.18.0-1) unstable; urgency=medium
+
+  * Grafana: move the data streams to a dedicated /grafana page with the
+    service status, its start/stop control, and a launch button. The Apps
+    card keeps only the service status and a link to the new page.
+  * Apps: let the cards size independently and show the Grafana card last.
+  * Grafana: name the full data stream and say "data stream" in start/stop
+    toasts, and say "service" for service start/stop toasts.
+  * Dashboard: gate the Grafana tile on the service running and its web UI
+    answering, toasting why instead of opening a dead tab.
+  * CLI: drop the usage banner, keep the shell and its scrollback when
+    navigating away and back, and count command output as activity so a
+    long-running command is not reaped mid-run.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Mon, 21 Sep 2026 20:30:00 -0400
+
 wlanpi-webui (1.17.0-1) unstable; urgency=medium
 
   * CLI: open the shell in the wlanpi user's home directory, print the usage
