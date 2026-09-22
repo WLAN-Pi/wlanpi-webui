@@ -4,7 +4,7 @@ import socket
 from flask import request
 
 from wlanpi_webui.stream import bp
-from wlanpi_webui.utils import is_htmx, run_pipeline
+from wlanpi_webui.utils import get_core_json, is_htmx
 
 
 def get_local_ip() -> str:
@@ -21,70 +21,23 @@ def get_local_ip() -> str:
 
 
 def get_stats():
-    # determine CPU load
-    try:
-        CPU_USAGE = run_pipeline(
-            ["top", "-bn1"], ["awk", r"/Cpu\(s\):/ {print $2 + $4}"]
-        )
-        CPU = f"{float(CPU_USAGE):.0f}%"
-        if float(CPU_USAGE) == 0:
-            CPU = "0%"
-        elif float(CPU_USAGE) >= 99.99:
-            CPU = "100%"
-    except Exception:
-        CPU = "unknown"
+    """Device health from wlanpi-core, which owns the platform quirks.
 
-    # determine mem useage
-    try:
-        MemUsage = run_pipeline(
-            ["free", "-m"],
-            ["awk", 'NR==2{printf "%s/%sMB %.0f%%", $3,$2,$3*100/$2 }'],
-        )
-    except Exception:
-        MemUsage = "unknown"
+    Falls back to "unavailable" per field rather than shelling out here, so the
+    numbers match what core reports elsewhere.
+    """
+    stats = get_core_json("/api/v1/system/device/stats") or {}
 
-    # determine disk util
-    try:
-        Disk = run_pipeline(
-            ["df", "-h"], ["awk", '$NF=="/"{printf "%d/%dGB %s", $3,$2,$5}']
-        )
-    except Exception:
-        Disk = "unknown"
+    def value(key):
+        return str(stats.get(key) or "unavailable")
 
-    # determine temp
-    try:
-        tempI = int(open("/sys/class/thermal/thermal_zone0/temp").read())
-    except Exception:
-        tempI = "unknown"
-
-    if tempI > 1000:
-        tempI = tempI / 1000
-    tempStr = f"{round(tempI, 1)}C"
-
-    # determine uptime
-    try:
-        uptime = run_pipeline(
-            ["uptime", "-p"],
-            ["sed", "-r", "s/up|,//g"],
-            ["sed", "-r", r"s/\s*week[s]?/w/g"],
-            ["sed", "-r", r"s/\s*day[s]?/d/g"],
-            ["sed", "-r", r"s/\s*hour[s]?/h/g"],
-            ["sed", "-r", r"s/\s*minute[s]?/m/g"],
-        ).strip()
-    except Exception:
-        uptime = "unknown"
-
-    uptimeStr = f"{uptime}"
-
-    results = {
-        "CPU": str(CPU),
-        "RAM": str(MemUsage),
-        "DISK": str(Disk),
-        "CPU_TEMP": tempStr,
-        "UPTIME": uptimeStr,
+    return {
+        "CPU": value("cpu"),
+        "RAM": value("ram"),
+        "DISK": value("disk"),
+        "CPU_TEMP": value("cpu_temp"),
+        "UPTIME": value("uptime"),
     }
-
-    return results
 
 
 @bp.route("/stream/stats")
@@ -92,7 +45,6 @@ def stream_stats():
     stats = get_stats()
     if is_htmx(request):
         html = """
-<h3 class="uk-card-title">Health</h3>
 <div class="stat-container">
 <div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
 <div class="stat-label">CPU</div>

@@ -1,0 +1,12 @@
+<h3 class="uk-card-title">Device status</h3>
+{% if not health_available %}
+<p class="uk-text-meta">Health data unavailable. wlanpi-core 2.3.0 or newer is required.</p>
+{% else %}
+<ul class="uk-list uk-list-divider data-list">
+  <li>Throttling: {{ throttle_state }}</li>
+  <li>Past throttling: {{ throttle_occurred }}</li>
+  <li>NTP: {% if ntp_synced %}Synchronised{% elif ntp_enabled %}Enabled, not synchronised{% else %}Disabled{% endif %}</li>
+  <li>Load: {{ load.one }} / {{ load.five }} / {{ load.fifteen }}</li>
+  <li>Swap: {{ swap.used_mb }} / {{ swap.total_mb }} MB</li>
+</ul>
+{% endif %}

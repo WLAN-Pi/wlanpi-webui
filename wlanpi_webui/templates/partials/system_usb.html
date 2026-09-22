@@ -1,0 +1,4 @@
+<h3 class="uk-card-title">USB</h3>
+<ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
+  {% for item in usb_interfaces %}<li>{{ item }}</li>{% else %}<li class="uk-text-meta">No USB interfaces detected.</li>{% endfor %}
+</ul>

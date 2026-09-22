@@ -97,23 +97,25 @@ class TestSystemPage:
         _login(client, monkeypatch)
         resp = client.get("/system")
         assert resp.status_code == 200
-        # The Health title loads with the stats fragment, not in the shell.
+        # Cards load individually from /system/card/<name>, not in the shell.
         assert b"system-health" in resp.data
-        assert b"system/facts" in resp.data
+        assert b"/system/card/facts" in resp.data
         assert b"Hostname" not in resp.data
 
     def test_facts_render(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.get("/system/facts")
+        resp = client.get("/system/card/facts")
         assert resp.status_code == 200
         assert b"Hostname" in resp.data
         assert b"Core" in resp.data
 
-    def test_stats_fragment_has_health_title(self, client, monkeypatch):
+    def test_stats_fragment_has_stat_rows(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/stream/stats", headers={"hx-request": "true"})
         assert resp.status_code == 200
-        assert b'uk-card-title">Health<' in resp.data
+        assert b'class="stat-container"' in resp.data
+        # The card title lives in the System page, not the fragment.
+        assert b"uk-card-title" not in resp.data
 
     def test_debug_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)

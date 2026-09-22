@@ -21,26 +21,59 @@
     </div>
   </div>
   <script>wlanpiInitPoll('system-health', 'refresh-system', 5)</script>
-  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid
-    uk-height-match="target: > div > .uk-card">
-    <div>
-      <div class="uk-card uk-card-default uk-card-body">
-        <div class="sys-live" id="system-health" hx-get="/stream/stats" hx-swap="innerHTML" hx-target="this"
-          hx-trigger="load, refresh-system" aria-busy="true" aria-label="Loading">
-          <p class="skel" style="height: 1.1em; width: 40%; margin-bottom: var(--space-3);"></p>
-          {% for _ in range(4) %}
-          <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
-          {% endfor %}
-        </div>
+
+  <div class="card-masonry card-masonry--two">
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/facts" hx-trigger="load" hx-target="this"
+      hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 40%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 80%;"></p>
+      <p class="skel" style="height: 0.85em; width: 65%;"></p>
+    </div>
+
+    <div class="uk-card uk-card-default uk-card-body">
+      <h3 class="uk-card-title">Resource usage</h3>
+      <div class="sys-live" id="system-health" hx-get="/stream/stats" hx-swap="innerHTML" hx-target="this"
+        hx-trigger="load, refresh-system" aria-busy="true" aria-label="Loading">
+        {% for _ in range(4) %}
+        <div class="sys-live-skel"><span class="skel sys-live-skel-icon"></span><span class="skel sys-live-skel-label"></span><span class="skel sys-live-skel-value"></span></div>
+        {% endfor %}
       </div>
     </div>
-    <div hx-get="/system/facts" hx-trigger="load" hx-swap="innerHTML" hx-indicator=".progress">
-      <div class="uk-card uk-card-default uk-card-body" aria-busy="true" aria-label="Loading">
-        <p class="skel" style="height: 1.1em; width: 40%;"></p>
-        <p class="skel" style="height: 0.85em;"></p>
-        <p class="skel" style="height: 0.85em; width: 80%;"></p>
-        <p class="skel" style="height: 0.85em; width: 65%;"></p>
-      </div>
+
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/status" hx-trigger="load" hx-target="this"
+      hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 40%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 80%;"></p>
+    </div>
+
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/temperatures" hx-trigger="load"
+      hx-target="this" hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 50%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 70%;"></p>
+    </div>
+
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/radios" hx-trigger="load" hx-target="this"
+      hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 50%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 70%;"></p>
+    </div>
+
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/usb" hx-trigger="load" hx-target="this"
+      hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 40%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 70%;"></p>
+    </div>
+
+    <div class="uk-card uk-card-default uk-card-body" hx-get="/system/card/pci" hx-trigger="load" hx-target="this"
+      hx-swap="innerHTML" hx-indicator=".progress" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 40%;"></p>
+      <p class="skel" style="height: 0.85em;"></p>
+      <p class="skel" style="height: 0.85em; width: 70%;"></p>
     </div>
   </div>
 </div>

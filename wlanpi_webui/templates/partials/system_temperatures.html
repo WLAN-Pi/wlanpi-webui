@@ -1,0 +1,8 @@
+<h3 class="uk-card-title">Temperatures</h3>
+{% if not health_available %}
+<p class="uk-text-meta">Health data unavailable.</p>
+{% else %}
+<ul class="uk-list uk-list-divider data-list">
+  {% for t in temperatures %}<li>{{ t.name }}: {{ t.celsius }} &deg;C</li>{% else %}<li class="uk-text-meta">No temperature sensors.</li>{% endfor %}
+</ul>
+{% endif %}

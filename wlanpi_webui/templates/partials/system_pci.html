@@ -1,0 +1,4 @@
+<h3 class="uk-card-title">PCI</h3>
+<ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
+  {% for item in pci_devices %}<li>{{ item }}</li>{% else %}<li class="uk-text-meta">No PCI devices detected.</li>{% endfor %}
+</ul>
