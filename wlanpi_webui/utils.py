@@ -267,6 +267,82 @@ def make_api_request(
     return response
 
 
+# Health-derived alerts are refreshed at most once per TTL so the navbar bell
+# and the after_request hook do not probe wlanpi-core on every request.
+_health_cache: list[dict[str, str]] = []
+_health_cache_at = 0.0
+HEALTH_CACHE_TTL = 60
+
+
+def _health_alerts() -> list[dict[str, str]]:
+    """Throttling, clock, and failed-unit alerts from wlanpi-core, cached."""
+    global _health_cache, _health_cache_at
+
+    now = time()
+    if now - _health_cache_at < HEALTH_CACHE_TTL:
+        return list(_health_cache)
+
+    alerts: list[dict[str, str]] = []
+
+    health = get_core_json("/api/v1/system/health")
+    if health:
+        throttled = health.get("throttled") or {}
+        if throttled.get("undervoltage"):
+            alerts.append(
+                {
+                    "key": "throttle-undervoltage",
+                    "title": "Under-voltage detected",
+                    "detail": "The WLAN Pi is being under-powered, which can "
+                    "cause instability and data loss.",
+                    "fix": "Use the supplied power supply and cable.",
+                }
+            )
+        elif (
+            throttled.get("throttled")
+            or throttled.get("frequency_capped")
+            or throttled.get("soft_temperature_limit")
+        ):
+            alerts.append(
+                {
+                    "key": "throttle",
+                    "title": "Device is throttling",
+                    "detail": "The CPU is throttled, frequency-capped, or "
+                    "hitting the soft temperature limit.",
+                    "fix": "Check cooling and power.",
+                }
+            )
+
+        ntp = health.get("ntp") or {}
+        if ntp.get("enabled") and not ntp.get("synchronized"):
+            alerts.append(
+                {
+                    "key": "ntp-unsynced",
+                    "title": "Clock is not synchronised",
+                    "detail": "NTP is enabled but the clock has not synced "
+                    "(timedatectl reports NTP=yes, NTPSynchronized=no).",
+                    "fix": "sudo timedatectl set-ntp true",
+                }
+            )
+
+    failed = get_core_json("/api/v1/system/services/failed")
+    if failed:
+        units = failed.get("units") or []
+        if units:
+            names = ", ".join(str(unit.get("unit", "")) for unit in units)
+            alerts.append(
+                {
+                    "key": "failed-services",
+                    "title": f"{len(units)} failed systemd unit(s)",
+                    "detail": names,
+                    "fix": "systemctl --failed",
+                }
+            )
+
+    _health_cache = alerts
+    _health_cache_at = now
+    return list(alerts)
+
+
 def active_alerts(core_running: bool) -> list[dict[str, str]]:
     """Conditions worth surfacing in the navbar bell and on the alerts page."""
     alerts: list[dict[str, str]] = []
@@ -292,6 +368,9 @@ def active_alerts(core_running: bool) -> list[dict[str, str]]:
                 "mint a token: sudo getjwt wlanpi-webui",
             }
         )
+
+    if core_running:
+        alerts.extend(_health_alerts())
 
     return alerts
 

@@ -38,6 +38,10 @@ def app(tmp_path, monkeypatch):
     from wlanpi_webui import utils
 
     utils.clear_core_alert()
+    utils._health_cache = []
+    utils._health_cache_at = 0.0
+    # Health alerts probe wlanpi-core; keep the default fixture offline.
+    monkeypatch.setattr(utils, "get_core_json", lambda *a, **k: None)
     return _make_app(tmp_path, monkeypatch)
 
 
@@ -91,3 +95,54 @@ class TestAlerts:
         resp = client.get("/alerts")
         assert b"wlanpi-core is not running" in resp.data
         assert resp.headers["X-Wlanpi-Alerts"] == "core-down"
+
+
+class TestHealthAlerts:
+    def _patch_health(self, monkeypatch, health, failed):
+        from wlanpi_webui import utils
+
+        utils._health_cache = []
+        utils._health_cache_at = 0.0
+        payloads = {
+            "/api/v1/system/health": health,
+            "/api/v1/system/services/failed": failed,
+        }
+        monkeypatch.setattr(
+            utils, "get_core_json", lambda path, params=None: payloads.get(path)
+        )
+
+    def test_undervoltage_alert(self, client, monkeypatch):
+        self._patch_health(
+            monkeypatch,
+            {"throttled": {"undervoltage": True}, "ntp": {"synchronized": True}},
+            {"units": []},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/alerts")
+        assert b"Under-voltage detected" in resp.data
+        assert resp.headers["X-Wlanpi-Alerts"] == "throttle-undervoltage"
+
+    def test_ntp_and_failed_units(self, client, monkeypatch):
+        self._patch_health(
+            monkeypatch,
+            {"throttled": {}, "ntp": {"enabled": True, "synchronized": False}},
+            {"units": [{"unit": "bt-agent.service"}]},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/alerts")
+        assert b"Clock is not synchronised" in resp.data
+        assert b"NTPSynchronized=no" in resp.data
+        assert b"bt-agent.service" in resp.data
+        assert "ntp-unsynced" in resp.headers["X-Wlanpi-Alerts"]
+        assert "failed-services" in resp.headers["X-Wlanpi-Alerts"]
+
+    def test_throttling_alert(self, client, monkeypatch):
+        self._patch_health(
+            monkeypatch,
+            {"throttled": {"throttled": True}, "ntp": {"synchronized": True}},
+            {"units": []},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/alerts")
+        assert b"Device is throttling" in resp.data
+        assert "throttle" in resp.headers["X-Wlanpi-Alerts"]
