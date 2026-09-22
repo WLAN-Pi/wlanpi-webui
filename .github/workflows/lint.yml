@@ -35,12 +35,13 @@ jobs:
 
       # Every tracked shell script, plus any tracked executable with a shell
       # shebang (the profile.d snippets and /usr/bin links are covered by the
-      # latter).
+      # latter). deployment/legacy-* is historical and not shipped, so it is
+      # excluded.
       - name: Run shellcheck (warning severity)
         run: |
           { git ls-files '*.sh'
             git ls-files -s | awk '$1 == "100755" {print $4}' | xargs -r grep -l '^#!.*sh'
-          } | sort -u | xargs -r shellcheck -S warning
+          } | sort -u | grep -v '^deployment/legacy-' | xargs -r shellcheck -S warning
 
   actionlint:
     name: actionlint
