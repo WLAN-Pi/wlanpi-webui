@@ -37,8 +37,13 @@ fi
 
 IMAGE="wlanpi-webui-builder:${SUITE}"
 
-# Clean up old build manifest
+# Clean up old build manifest, stale build trees, and previously built
+# packages. Without this, setuptools reuses build/lib and repackages files that
+# were deleted or renamed in the source tree, and stale .deb files in the repo
+# root get picked up by the manifest and deployed.
 rm -f .build-manifest.txt
+rm -rf build .pybuild
+rm -f wlanpi-webui*.deb
 
 echo "========================================="
 echo "Building wlanpi-webui Debian Package"
@@ -75,7 +80,10 @@ cp -v /*.deb /work/ 2>/dev/null || echo "No .deb files found in container root"
 
 echo ""
 echo "Creating build manifest..."
-cd /work && ls -1 wlanpi-webui*.deb 2>/dev/null | grep -v dbgsym > .build-manifest.txt || true
+# List only the packages built in this run. The container root holds just the
+# output of this build; globbing /work would also match stale .deb files from
+# earlier builds and deploy the wrong version.
+ls -1 /*.deb 2>/dev/null | grep -v dbgsym | xargs -r -n1 basename > /work/.build-manifest.txt || true
 
 echo ""
 echo "Build complete!"
