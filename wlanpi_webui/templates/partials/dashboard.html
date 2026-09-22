@@ -54,7 +54,7 @@
 {% endmacro %}
 <div class="launcher-screen">
   <h1 class="visually-hidden">WLAN Pi</h1>
-  <div class="launcher-foot">{{ hostname }} &middot; {{ mode }}<button type="button" class="launcher-egg" id="launcher-egg" aria-label="Easter egg">&#10022;</button></div>
+  <div class="launcher-foot">{{ hostname }} &middot; {{ mode }}{% if wlan_management == 'manual' %} &middot; Wi-Fi manual{% endif %}<button type="button" class="launcher-egg" id="launcher-egg" aria-label="Easter egg">&#10022;</button></div>
   <div class="launcher-grid">
     {{ launch("/speedtest/librespeed", "download", "Speedtest") }}
     {{ tile("/network", "server", "Network") }}
