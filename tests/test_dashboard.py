@@ -114,10 +114,65 @@ class TestRedirects:
         assert resp.status_code == 200
         assert resp.get_json() == {"running": True}
 
+    def test_grafana_status_reports_ready(self, client, monkeypatch):
+        from wlanpi_webui.grafana import grafana as g
+
+        monkeypatch.setattr(g, "system_service_active_state", lambda *a, **kw: "active")
+        monkeypatch.setattr(g, "_grafana_responding", lambda *a, **kw: True)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/status")
+        assert resp.status_code == 200
+        assert resp.get_json() == {
+            "state": "running",
+            "running": True,
+            "responding": True,
+        }
+
+    def test_grafana_status_reports_waiting(self, client, monkeypatch):
+        from wlanpi_webui.grafana import grafana as g
+
+        monkeypatch.setattr(g, "system_service_active_state", lambda *a, **kw: "active")
+        monkeypatch.setattr(g, "_grafana_responding", lambda *a, **kw: False)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/status")
+        assert resp.get_json() == {
+            "state": "waiting",
+            "running": True,
+            "responding": False,
+        }
+
+    def test_grafana_status_reports_starting(self, client, monkeypatch):
+        from wlanpi_webui.grafana import grafana as g
+
+        monkeypatch.setattr(
+            g, "system_service_active_state", lambda *a, **kw: "activating"
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/status")
+        assert resp.get_json() == {
+            "state": "starting",
+            "running": False,
+            "responding": False,
+        }
+
+    def test_grafana_status_reports_stopped(self, client, monkeypatch):
+        from wlanpi_webui.grafana import grafana as g
+
+        monkeypatch.setattr(
+            g, "system_service_active_state", lambda *a, **kw: "inactive"
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/status")
+        assert resp.get_json() == {
+            "state": "stopped",
+            "running": False,
+            "responding": False,
+        }
+
 
 class TestNoIframes:
     @pytest.mark.parametrize(
-        "path", ["/", "/apps", "/settings", "/about", "/network", "/system"]
+        "path", ["/", "/apps", "/grafana", "/settings", "/about", "/network", "/system"]
     )
     def test_pages_have_no_iframe(self, client, monkeypatch, path):
         _login(client, monkeypatch)

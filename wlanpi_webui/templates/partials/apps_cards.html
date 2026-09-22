@@ -1,5 +1,4 @@
-<div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid
-    uk-height-match="target: > div > .uk-card">
+<div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
 
     <div>
       <div class="uk-card uk-card-default uk-card-body app-card">
@@ -53,8 +52,25 @@
         <p class="app-actions">
           {{ kismet_toggle|safe }}
           {% if kismet_running %}
-          <a class="uk-button uk-button-primary uk-margin-left" href="/kismet" target="_blank">Launch Kismet</a>
+          <a class="uk-button uk-button-primary" href="/kismet" target="_blank">Launch Kismet</a>
           {% endif %}
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if cockpit_installed %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body app-card">
+        <div class="app-card-head">
+          <span class="app-icon" uk-icon="icon: desktop; ratio: 1.6"></span>
+          <div>
+            <h3 class="uk-card-title uk-margin-remove-bottom">Cockpit</h3>
+          </div>
+        </div>
+        <p class="uk-text-meta">System management console.</p>
+        <p class="app-actions">
+          <a class="uk-button uk-button-primary" href="/app/cockpit" target="_blank">Launch</a>
         </p>
       </div>
     </div>
@@ -73,34 +89,12 @@
         <p class="uk-text-meta">Dashboards and graphs from collected telemetry.</p>
         <p class="app-actions">
           {{ grafana_toggle|safe }}
+          <a class="uk-button uk-button-default" href="/grafana" hx-get="/grafana" hx-target="#content"
+            hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">Data streams</a>
           {% if grafana_running %}
-          <a class="uk-button uk-button-primary uk-margin-left" href="/grafana_url" target="_blank">Launch Grafana</a>
+          <a class="uk-button uk-button-primary" href="/grafana_url" target="_blank"
+            onclick="wlanpiLaunchGrafana(event)">Launch Grafana</a>
           {% endif %}
-        </p>
-        {% if grafana_data_streams %}
-        <h4 class="uk-margin-small-bottom">Data streams</h4>
-        <ul class="uk-list uk-list-divider uk-margin-remove-top">
-          {% for stream in grafana_data_streams %}
-          <li>{{ stream.anchor|safe }} {{ stream.name }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    {% if cockpit_installed %}
-    <div>
-      <div class="uk-card uk-card-default uk-card-body app-card">
-        <div class="app-card-head">
-          <span class="app-icon" uk-icon="icon: desktop; ratio: 1.6"></span>
-          <div>
-            <h3 class="uk-card-title uk-margin-remove-bottom">Cockpit</h3>
-          </div>
-        </div>
-        <p class="uk-text-meta">System management console.</p>
-        <p class="app-actions">
-          <a class="uk-button uk-button-primary" href="/app/cockpit" target="_blank">Launch</a>
         </p>
       </div>
     </div>

@@ -2,7 +2,6 @@ from flask import render_template, request
 
 from wlanpi_webui.apps import bp
 from wlanpi_webui.auth.auth import service_toggle_anchor
-from wlanpi_webui.grafana.grafana import get_data_streams
 from wlanpi_webui.utils import (
     is_htmx,
     system_service_running_state,
@@ -45,7 +44,6 @@ def apps_cards():
         "grafana_toggle": service_toggle_anchor(
             grafana_running, "/startgrafana", "/stopgrafana"
         ),
-        "grafana_data_streams": get_data_streams(),
     }
 
     return render_template("/partials/apps_cards.html", **resp_data)

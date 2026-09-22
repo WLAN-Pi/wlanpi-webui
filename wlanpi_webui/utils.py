@@ -365,6 +365,23 @@ def system_service_running_state(service, quiet=False):
     return True
 
 
+def system_service_active_state(service, timeout=5) -> str:
+    """Return the raw ``systemctl is-active`` state for a service.
+
+    Unlike ``system_service_running_state`` this distinguishes the transitional
+    states (``activating``/``deactivating``) from ``inactive``, so a UI can say
+    "starting" instead of "stopped" while a slow service boots.
+    """
+    cmd = ["/bin/systemctl", "is-active", service]
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+    return (result.stdout or "").strip() or "unknown"
+
+
 def run_command(cmd: list, suppress_output=False) -> str:
     """Run a single CLI command with subprocess and return stdout or stderr response"""
     cp = subprocess.run(
@@ -455,15 +472,19 @@ def queue_toast(message, status="primary"):
     session["wlanpi_toast"] = {"message": message, "status": status}
 
 
-def start_stop_service(task, service):
+def start_stop_service(task, service, label=None, noun="service"):
     """
     Starts or stops a service using wlanpi-core API, queuing a toast with the
     result.
+
+    ``label`` overrides the friendly name (used for Grafana data streams, whose
+    systemd unit name is not the name shown to the user) and ``noun`` names what
+    is being toggled, e.g. "service" or "data stream".
     """
-    name = service_friendly_name(service)
+    name = label or service_friendly_name(service)
 
     if task == "start" and not system_service_exists(service):
-        queue_toast(f"{name} is not installed.", "warning")
+        queue_toast(f"{name} {noun} is not installed.", "warning")
         return redirect(get_safe_referrer_target())
 
     if not system_service_running_state("wlanpi-core"):
@@ -482,7 +503,7 @@ def start_stop_service(task, service):
         response = make_api_request(method="POST", url=url, params=params)
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
-        queue_toast(f"Could not {task} {name}.", "warning")
+        queue_toast(f"Could not {task} {name} {noun}.", "warning")
         return redirect(get_safe_referrer_target())
 
     if response.status_code != 200:
@@ -493,10 +514,12 @@ def start_stop_service(task, service):
         )
         if response.status_code == 401:
             current_app.logger.error("Authentication failed. Verify core credentials.")
-        queue_toast(f"Could not {task} {name}.", "warning")
+        queue_toast(f"Could not {task} {name} {noun}.", "warning")
         return redirect(get_safe_referrer_target())
 
-    queue_toast(f"{name} {'started' if task == 'start' else 'stopped'}.", "success")
+    queue_toast(
+        f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
+    )
     return redirect(get_safe_referrer_target())
 
 

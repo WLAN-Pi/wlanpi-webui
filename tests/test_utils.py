@@ -109,6 +109,26 @@ class TestServiceFriendlyName:
         assert service_friendly_name("kismet.service") == "Kismet"
 
 
+class TestSystemServiceActiveState:
+    def test_returns_raw_state(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        class _Result:
+            stdout = "activating\n"
+
+        monkeypatch.setattr(utils.subprocess, "run", lambda *a, **k: _Result())
+        assert utils.system_service_active_state("x") == "activating"
+
+    def test_unknown_when_systemctl_missing(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        def boom(*a, **k):
+            raise OSError("no systemctl")
+
+        monkeypatch.setattr(utils.subprocess, "run", boom)
+        assert utils.system_service_active_state("x") == "unknown"
+
+
 class TestStartStopServiceToast:
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_start_uninstalled_queues_warning(self, mock_exists, app):
@@ -117,7 +137,7 @@ class TestStartStopServiceToast:
             res = start_stop_service("start", "kismet")
             assert res.status_code == 302
             assert session["wlanpi_toast"] == {
-                "message": "Kismet is not installed.",
+                "message": "Kismet service is not installed.",
                 "status": "warning",
             }
 
@@ -133,7 +153,7 @@ class TestStartStopServiceToast:
         with app.test_request_context():
             start_stop_service("start", "wlanpi-profiler")
             assert session["wlanpi_toast"] == {
-                "message": "Profiler started.",
+                "message": "Profiler service started.",
                 "status": "success",
             }
 
@@ -148,7 +168,7 @@ class TestStartStopServiceToast:
         mock_api.return_value = _Resp(200)
         with app.test_request_context():
             start_stop_service("stop", "kismet")
-            assert session["wlanpi_toast"]["message"] == "Kismet stopped."
+            assert session["wlanpi_toast"]["message"] == "Kismet service stopped."
 
     @patch("wlanpi_webui.utils.system_service_running_state")
     @patch("wlanpi_webui.utils.system_service_exists")
@@ -172,8 +192,27 @@ class TestStartStopServiceToast:
         with app.test_request_context():
             start_stop_service("start", "kismet")
             assert session["wlanpi_toast"] == {
-                "message": "Could not start Kismet.",
+                "message": "Could not start Kismet service.",
                 "status": "warning",
+            }
+
+    @patch("wlanpi_webui.utils.make_api_request")
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_data_stream_label_and_noun(self, mock_exists, mock_running, mock_api, app):
+        mock_exists.return_value = True
+        mock_running.return_value = True
+        mock_api.return_value = _Resp(200)
+        with app.test_request_context():
+            start_stop_service(
+                "stop",
+                "wlanpi-grafana-internet",
+                label="Grafana Internet monitoring",
+                noun="data stream",
+            )
+            assert session["wlanpi_toast"] == {
+                "message": "Grafana Internet monitoring data stream stopped.",
+                "status": "success",
             }
 
 

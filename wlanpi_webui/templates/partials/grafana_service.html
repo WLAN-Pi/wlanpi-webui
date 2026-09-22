@@ -1,0 +1,19 @@
+<div class="uk-card uk-card-default uk-card-body app-card">
+  <div class="app-card-head">
+    <span class="app-icon" uk-icon="icon: database; ratio: 1.6"></span>
+    <div>
+      <h3 class="uk-card-title uk-margin-remove-bottom">Grafana service</h3>
+      <p class="app-status {{ state_class }}">{{ state_label }}</p>
+    </div>
+  </div>
+  <p class="uk-text-meta uk-margin-remove-top">{{ state_message }}</p>
+  <p class="app-actions">
+    {{ toggle|safe }}
+    {% if state == 'running' %}
+    <a class="uk-button uk-button-primary" href="/grafana_url" target="_blank" rel="noopener"
+      onclick="wlanpiLaunchGrafana(event)">Launch Grafana</a>
+    {% else %}
+    <button class="uk-button uk-button-primary" type="button" disabled>Launch Grafana</button>
+    {% endif %}
+  </p>
+</div>

@@ -1,0 +1,35 @@
+<div class="page uk-flex uk-flex-1 uk-flex-column">
+  <div class="page-head">
+    <p class="page-eyebrow">Tools</p>
+    <h2 class="page-title">Grafana</h2>
+    <p class="page-lede">Dashboards and graphs from collected telemetry.</p>
+  </div>
+
+  <div id="grafana-service" hx-get="/grafana/service" hx-trigger="load, every 3s" hx-swap="innerHTML"
+    class="uk-margin-bottom">
+    <div class="uk-card uk-card-default uk-card-body app-card" aria-busy="true" aria-label="Loading">
+      <p class="app-status is-off">Checking&hellip;</p>
+    </div>
+  </div>
+
+  <h3>Data streams</h3>
+  {% if grafana_data_streams %}
+  <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
+    {% for stream in grafana_data_streams %}
+    <div>
+      <div class="uk-card uk-card-default uk-card-body app-card">
+        <div class="card-head">
+          <h4 class="uk-card-title uk-margin-remove">{{ stream.name }}</h4>
+          <span class="app-status {% if stream.running %}is-on{% else %}is-off{% endif %}">{% if stream.running %}Running{% else %}Stopped{% endif %}</span>
+        </div>
+        <p class="app-actions">{{ stream.anchor|safe }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="uk-alert-primary" uk-alert>
+    <p>No Grafana data streams are installed.</p>
+  </div>
+  {% endif %}
+</div>

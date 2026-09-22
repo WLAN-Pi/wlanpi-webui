@@ -86,7 +86,11 @@ class TestApps:
         assert b'href="/kismet"' in resp.data
         assert b'href="/grafana_url"' in resp.data
         assert b'href="/app/cockpit"' in resp.data
-        assert b"Internet Monitoring" in resp.data
+        assert b'href="/grafana"' in resp.data
+        # Grafana is the last card, after Cockpit
+        assert resp.data.index(b"Grafana") > resp.data.index(b"Cockpit")
+        # data streams moved to their own page
+        assert b"Internet monitoring" not in resp.data
 
     def test_shell_loads_without_services(self, client, monkeypatch):
         _login(client, monkeypatch)
@@ -122,3 +126,66 @@ class TestApps:
         )
         assert resp.status_code == 302
         assert resp.headers["Location"].endswith("/apps")
+
+
+class TestGrafanaPage:
+    def test_requires_login(self, client):
+        assert client.get("/grafana").status_code == 302
+
+    def test_lists_data_streams(self, client, monkeypatch):
+        _everything_installed(monkeypatch)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana")
+        assert resp.status_code == 200
+        assert b'hx-get="/grafana/service"' in resp.data
+        assert b"Internet monitoring" in resp.data
+        assert b"WLAN Pi health" in resp.data
+        assert b'hx-post="/startgrafanainternet"' in resp.data
+
+    def test_htmx_returns_partial(self, client, monkeypatch):
+        _everything_installed(monkeypatch)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana", headers={"hx-request": "true"})
+        assert resp.status_code == 200
+        assert b"<html" not in resp.data
+        assert b"Data streams" in resp.data
+
+
+class TestGrafanaServiceFragment:
+    def _patch(self, monkeypatch, active, responding):
+        from wlanpi_webui.grafana import grafana as g
+
+        monkeypatch.setattr(g, "system_service_active_state", lambda *a, **kw: active)
+        monkeypatch.setattr(g, "_grafana_responding", lambda *a, **kw: responding)
+
+    def test_running_enables_launch(self, client, monkeypatch):
+        self._patch(monkeypatch, "active", True)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/service")
+        assert resp.status_code == 200
+        assert b"Running" in resp.data
+        assert b'href="/grafana_url"' in resp.data
+        assert b'hx-post="/stopgrafana"' in resp.data
+
+    def test_waiting_disables_launch(self, client, monkeypatch):
+        self._patch(monkeypatch, "active", False)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/service")
+        assert b"Waiting for WebUI" in resp.data
+        assert b"disabled" in resp.data
+        assert b'href="/grafana_url"' not in resp.data
+
+    def test_starting_hides_toggle(self, client, monkeypatch):
+        self._patch(monkeypatch, "activating", False)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/service")
+        assert b"Starting" in resp.data
+        assert b'hx-post="/startgrafana"' not in resp.data
+        assert b'hx-post="/stopgrafana"' not in resp.data
+
+    def test_stopped_offers_start(self, client, monkeypatch):
+        self._patch(monkeypatch, "inactive", False)
+        _login(client, monkeypatch)
+        resp = client.get("/grafana/service")
+        assert b"Stopped" in resp.data
+        assert b'hx-post="/startgrafana"' in resp.data

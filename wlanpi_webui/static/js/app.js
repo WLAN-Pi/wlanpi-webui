@@ -535,6 +535,42 @@
       });
   };
 
+  // Grafana opens in a new tab, but only once its service is up and the web UI
+  // is answering; otherwise toast the reason instead of a dead tab.
+  window.wlanpiLaunchGrafana = function (evt) {
+    if (evt) {
+      evt.preventDefault();
+    }
+    fetch("/grafana/status", { headers: { Accept: "application/json" } })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        var state = data && data.state;
+        if (state === "running") {
+          window.open("/grafana_url", "_blank", "noopener");
+        } else if (state === "starting" || state === "waiting") {
+          window.wlanpiToast(
+            "Grafana is still starting. Try again in a moment.",
+            "warning"
+          );
+        } else if (state === "stopping") {
+          window.wlanpiToast(
+            "Grafana is stopping. Try again in a moment.",
+            "warning"
+          );
+        } else {
+          window.wlanpiToast(
+            "Grafana is not running. Start it from Applications.",
+            "warning"
+          );
+        }
+      })
+      .catch(function () {
+        window.wlanpiToast("Grafana status is unavailable.", "warning");
+      });
+  };
+
   // ---- Konami code ----------------------------------------------------
   // Hidden shortcut to /packetstorm. Ignores keystrokes in form fields,
   // never preventDefaults, and stays quiet when already there.
