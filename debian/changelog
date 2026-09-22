@@ -1,3 +1,14 @@
+wlanpi-webui (1.21.6-1) unstable; urgency=medium
+
+  * Add WLAN management and NTP cards to the System page.  Facts card
+    shows WLAN_MANAGEMENT (auto/manual) from core device info, and a new
+    Time / NTP card sources core GET /system/ntp (sync state, service,
+    server and source, fallback servers, poll interval). The dashboard
+    foot shows Wi-Fi manual when core is in manual mode. Both degrade
+    gracefully when core lacks the data.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 22 Sep 2026 00:23:07 -0400
+
 wlanpi-webui (1.21.5-1) unstable; urgency=medium
 
   * Speedtest results: show timestamps as local YYYY-MM-DD HH:MM on the results
