@@ -83,8 +83,9 @@ class TestNetwork:
         _login(client, monkeypatch)
         resp = client.get("/network/cards")
         assert resp.status_code == 200
-        # Six generic cards, plus the reachability card with its own message.
-        assert resp.data.count(b"Unavailable.") == 6
+        # Six generic cards plus Routing and DHCP Leases; the reachability card
+        # carries its own message.
+        assert resp.data.count(b"Unavailable.") == 8
         assert b"wlanpi-core API is not responding." in resp.data
 
     def test_renders_wlan_cards(self, client, monkeypatch):
@@ -116,7 +117,7 @@ class TestNetwork:
         _login(client, monkeypatch)
         resp = client.get("/network/cards")
         assert resp.status_code == 200
-        assert b"wlan0" in resp.data
+        assert b"wlan0 Interface" in resp.data
         assert b"Mode: managed" in resp.data
         assert b"SSID: HomeNet" in resp.data
         assert b"Channel 6 (2437 MHz)" in resp.data
@@ -135,3 +136,88 @@ class TestNetwork:
         assert b"Unavailable." not in resp.data
         assert b"latency-chart" in resp.data
         assert b"Chart.bundle.min.js" in resp.data
+        assert b'hx-get="/network/cards"' in resp.data
+        assert b"/network/detail" not in resp.data
+
+
+class TestNetworkDetail:
+    def test_detail_route_is_gone(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        assert client.get("/network/detail").status_code == 404
+
+    def test_renders_sections(self, client, monkeypatch):
+        from wlanpi_webui.network import network as n
+
+        def fake(path, params=None):
+            if "link-stats" in path:
+                return {
+                    "interface": "eth0",
+                    "link_detected": "yes",
+                    "speed_mbps": 1000,
+                    "duplex": "full",
+                    "driver": "bcmgenet",
+                }
+            if "wlan-link" in path:
+                return {
+                    "interface": "wlan0",
+                    "connected": True,
+                    "ssid": "HomeNet",
+                    "bssid": "aa:bb:cc:dd:ee:ff",
+                    "freq_mhz": 5200.0,
+                    "signal_dbm": -48.0,
+                    "rx_bitrate": "286.7 MBit/s",
+                    "tx_bitrate": "286.7 MBit/s",
+                    "rx_bytes": 1,
+                    "tx_bytes": 2,
+                }
+            if "routing" in path:
+                return {
+                    "routes": [
+                        {
+                            "dst": "default",
+                            "gateway": "192.168.6.1",
+                            "dev": "eth0",
+                            "protocol": "dhcp",
+                            "metric": 100,
+                        }
+                    ]
+                }
+            if "dhcp/leases" in path:
+                return {"leases": [{"ip": "192.168.6.63", "mac": "aa:bb"}]}
+            if "interfaces" in path:
+                return {
+                    "root": [{"ifname": "eth0"}, {"ifname": "wlan0"}, {"ifname": "lo"}]
+                }
+            return {}
+
+        monkeypatch.setattr(n, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert resp.status_code == 200
+        assert b"default via 192.168.6.1 dev eth0" in resp.data
+        assert b"Speed mbps: 1000" in resp.data
+        assert b"DHCP Leases" in resp.data
+        assert b"eth0 Link" in resp.data
+        assert b"wlan0 Link" in resp.data
+        assert b"SSID: HomeNet" in resp.data
+        assert b"Signal: -48.0 dBm" in resp.data
+        assert b"ip: 192.168.6.63" in resp.data
+        # The latency card ships in the same masonry so cards pack beside it.
+        assert b'id="latency-card"' in resp.data
+        assert b"card-wide" in resp.data
+
+    def test_wlan_link_not_connected(self, client, monkeypatch):
+        from wlanpi_webui.network import network as n
+
+        def fake(path, params=None):
+            if "wlan-link" in path:
+                return {"interface": "wlan0", "connected": False}
+            if "interfaces" in path:
+                return {"root": [{"ifname": "wlan0"}]}
+            return {}
+
+        monkeypatch.setattr(n, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert b"wlan0 Link" in resp.data
+        assert b"Not connected" in resp.data

@@ -21,8 +21,30 @@
   </div>
 </div>
 {% endmacro %}
-<div class="uk-grid-small uk-child-width-1-2@s uk-child-width-1-3@m" uk-grid
-  uk-height-match="target: > div > .uk-card">
+{% macro detail_card(title, lines, empty="Unavailable.") %}
+<div>
+  <div class="uk-card uk-card-default uk-card-body">
+    <h3 class="uk-card-title">{{ title }}</h3>
+    <ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
+      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endmacro %}
+<div class="card-masonry">
+  <div id="latency-card" class="uk-card uk-card-default uk-card-body latency-card card-wide" hx-preserve="true">
+    <div id="latency-live">
+      <h3 class="uk-card-title">Latency</h3>
+      <div class="latency-wrap">
+        <canvas id="latency-chart" aria-label="Latency over the last five minutes"></canvas>
+        <div class="latency-empty" id="latency-empty" hidden>Collecting latency samples...</div>
+      </div>
+    </div>
+    <div id="latency-skeleton" aria-busy="true" aria-label="Loading">
+      <p class="skel" style="height: 1.1em; width: 30%;"></p>
+      <p class="skel latency-skel-chart"></p>
+    </div>
+  </div>
   {{ card("reachability", "Reachability", reachability, reachability_empty) }}
   {{ card("publicip", "Public IP", publicip) }}
   {{ card("publicip6", "Public IPv6", publicip6) }}
@@ -30,4 +52,9 @@
   {% for w in wlan_cards %}{{ card(w.id, w.title, w.lines) }}{% else %}{{ card("wlan", "WLAN", []) }}{% endfor %}
   {{ card("lldp", "LLDP Neighbour", lldp) }}
   {{ card("cdp", "CDP Neighbour", cdp) }}
+  {{ detail_card("Routing", routing) }}
+  {{ detail_card("DHCP Leases", leases) }}
+  {% for stats in link_stats %}
+  {{ detail_card(stats.interface ~ " Link", stats.lines, "No link data.") }}
+  {% endfor %}
 </div>
