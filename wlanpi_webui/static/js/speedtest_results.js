@@ -6,8 +6,8 @@
 (function () {
   "use strict";
 
-  var WIDTH = 640;
-  var HEIGHT = 320;
+  var WIDTH = 1200;
+  var HEIGHT = 630;
 
   function token(name, fallback) {
     var value = getComputedStyle(document.documentElement).getPropertyValue(name);
@@ -22,30 +22,68 @@
     return num(value) === null ? "n/a" : value.toFixed(2) + (unit ? " " + unit : "");
   }
 
-  function drawStat(ctx, theme, cx, baseline, label, value) {
-    ctx.fillStyle = theme.text;
-    ctx.font = "600 44px " + theme.mono;
-    ctx.textAlign = "center";
-    ctx.fillText(fmt(value, ""), cx, baseline);
-
-    ctx.fillStyle = theme.muted;
-    ctx.font = "13px " + theme.sans;
-    ctx.fillText(label, cx, baseline + 26);
+  // The WLAN Pi mark, drawn from the same 24x24 bolt used on the dashboard, so
+  // it can be tinted with the theme text colour instead of a raster asset.
+  function drawBolt(ctx, x, y, size, color) {
+    var s = size / 24;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.beginPath();
+    ctx.moveTo(13.5, 2.5);
+    ctx.lineTo(7.5, 12.5);
+    ctx.lineTo(11.5, 12.5);
+    ctx.lineTo(9.5, 19.5);
+    ctx.lineTo(16.5, 9.5);
+    ctx.lineTo(12.5, 9.5);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
   }
 
-  function drawLatency(ctx, theme, y, label, ping, jitter) {
-    ctx.font = "13px " + theme.sans;
+  function drawHeader(ctx, theme, testedAt) {
+    drawBolt(ctx, 64, 64, 44, theme.text);
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = theme.text;
+    ctx.font = "700 34px " + theme.sans;
+    ctx.fillText("WLAN Pi", 124, 100);
+    var markWidth = ctx.measureText("WLAN Pi").width;
+
     ctx.fillStyle = theme.muted;
+    ctx.font = "400 22px " + theme.sans;
+    ctx.fillText("LibreSpeed", 124 + markWidth + 14, 100);
+
     ctx.textAlign = "right";
-    ctx.fillText(label, WIDTH / 2 - 12, y);
+    ctx.fillStyle = theme.muted;
+    ctx.font = "18px " + theme.sans;
+    ctx.fillText(testedAt || "", WIDTH - 64, 100);
+  }
+
+  function drawStat(ctx, theme, cx, label, value) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = theme.text;
+    ctx.font = "700 92px " + theme.mono;
+    ctx.fillText(fmt(value, ""), cx, 320);
+
+    ctx.fillStyle = theme.muted;
+    ctx.font = "20px " + theme.sans;
+    ctx.fillText(label, cx, 372);
+  }
+
+  function drawLatencyColumn(ctx, theme, cx, heading, ping, jitter) {
+    ctx.textAlign = "center";
 
     ctx.fillStyle = theme.text;
-    ctx.textAlign = "left";
-    ctx.fillText(
-      fmt(ping, "ms") + " ping   " + fmt(jitter, "ms") + " jitter",
-      WIDTH / 2 + 12,
-      y
-    );
+    ctx.font = "600 24px " + theme.sans;
+    ctx.fillText(heading, cx, 470);
+
+    ctx.fillStyle = theme.muted;
+    ctx.font = "20px " + theme.mono;
+    ctx.fillText(fmt(ping, "ms") + " ping", cx, 512);
+    ctx.fillText(fmt(jitter, "ms") + " jitter", cx, 546);
   }
 
   function draw(canvas) {
@@ -82,30 +120,41 @@
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, WIDTH - 2, HEIGHT - 2);
 
-    ctx.fillStyle = theme.text;
-    ctx.font = "600 18px " + theme.sans;
-    ctx.textAlign = "left";
-    ctx.fillText("WLAN Pi LibreSpeed", 24, 34);
+    drawHeader(ctx, theme, result.tested_at);
 
-    ctx.fillStyle = theme.muted;
-    ctx.font = "12px " + theme.sans;
-    ctx.textAlign = "right";
-    ctx.fillText(result.tested_at || "", WIDTH - 24, 34);
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(64, 140);
+    ctx.lineTo(WIDTH - 64, 140);
+    ctx.stroke();
 
-    // The two numbers that matter, centred.
-    drawStat(ctx, theme, WIDTH / 2 - 150, 150, "Download (Mbps)", result.download_mbps);
-    drawStat(ctx, theme, WIDTH / 2 + 150, 150, "Upload (Mbps)", result.upload_mbps);
+    // The two numbers that matter, centred in their own columns.
+    var left = WIDTH * 0.3;
+    var right = WIDTH * 0.7;
+    drawStat(ctx, theme, left, "Download (Mbps)", result.download_mbps);
+    drawStat(ctx, theme, right, "Upload (Mbps)", result.upload_mbps);
 
-    // Latency, once. The gauges used to repeat the unloaded numbers.
-    drawLatency(ctx, theme, 232, "Unloaded", result.ping_ms, result.jitter_ms);
-    drawLatency(
+    // Latency as two centred columns so Unloaded and Loaded read as one block.
+    drawLatencyColumn(ctx, theme, left, "Unloaded", result.ping_ms, result.jitter_ms);
+    drawLatencyColumn(
       ctx,
       theme,
-      262,
+      right,
       "Loaded",
       result.loaded_ping_ms,
       result.loaded_jitter_ms
     );
+
+    ctx.beginPath();
+    ctx.moveTo(64, 578);
+    ctx.lineTo(WIDTH - 64, 578);
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = theme.muted;
+    ctx.font = "18px " + theme.sans;
+    ctx.fillText("wlanpi.com", WIDTH / 2, 612);
   }
 
   function renderAll() {
