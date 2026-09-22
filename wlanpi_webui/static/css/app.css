@@ -1236,6 +1236,57 @@ h6 {
     background-color: var(--brand-hover);
 }
 
+/* UIkit's disabled buttons are a fixed #999 on a transparent background, which
+   is hard to read in light mode. Give them a muted, theme-aware surface. */
+.app-actions .uk-button:disabled {
+    background-color: var(--surface-2);
+    color: var(--text-muted);
+    border-color: var(--border);
+    opacity: 1;
+}
+
+/* Masonry card grid: cards keep their natural height and pack into columns.
+   JS (wlanpiMasonry) sets each card's grid-row span so short cards backfill
+   the holes under taller ones; without JS this is a plain top-aligned grid. */
+.card-masonry {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.card-masonry.is-masonry {
+    grid-auto-rows: 8px;
+    grid-auto-flow: dense;
+}
+
+/* System page: two columns, with wide cards spanning the full width. */
+.card-masonry--two {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .card-masonry--two {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card-masonry .card-wide {
+        grid-column: span 2;
+    }
+}
+
+/* Device Health: sections sit side by side once the card is wide enough. */
+.device-health-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3) var(--space-5);
+}
+
+/* The swap target contributes no box, so its sections become grid cells. */
+.device-health-status {
+    display: contents;
+}
+
 .logout-button {
     background-color: var(--brand);
     color: #fff;

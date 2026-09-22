@@ -201,6 +201,60 @@
     wlanpiFire(id, evt);
   };
 
+  // ---- Card masonry -----------------------------------------------------
+  // CSS grid keeps cards at their natural height; each card spans as many 8px
+  // rows as it needs and grid-auto-flow: dense backfills the gaps under taller
+  // cards. Re-run on load, resize, font load, and after every htmx swap.
+  function layoutMasonry(container) {
+    var children = container.children;
+    if (!children.length) return;
+
+    // Measure before enabling the 8px row track, so no card overlaps before
+    // its span is applied.
+    var heights = [];
+    for (var i = 0; i < children.length; i++) {
+      heights.push(children[i].offsetHeight);
+    }
+
+    container.classList.add("is-masonry");
+    var styles = getComputedStyle(container);
+    var gap = parseFloat(styles.rowGap || styles.gap) || 16;
+    var row = 8;
+
+    for (var j = 0; j < children.length; j++) {
+      var span = Math.ceil((heights[j] + gap) / (row + gap));
+      children[j].style.gridRowEnd = "span " + Math.max(1, span);
+    }
+  }
+
+  window.wlanpiMasonry = function (root) {
+    var containers = (root || document).querySelectorAll(".card-masonry");
+    Array.prototype.forEach.call(containers, layoutMasonry);
+  };
+
+  var masonryTimer = 0;
+  function scheduleMasonry() {
+    clearTimeout(masonryTimer);
+    masonryTimer = setTimeout(function () {
+      window.wlanpiMasonry();
+    }, 50);
+  }
+
+  // Lay out synchronously after a swap, before the browser paints, so cards
+  // never flash in the row-aligned fallback grid; debounce only resize.
+  document.addEventListener("htmx:afterSwap", function () {
+    window.wlanpiMasonry();
+  });
+  window.addEventListener("load", function () {
+    window.wlanpiMasonry();
+  });
+  window.addEventListener("resize", scheduleMasonry);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      window.wlanpiMasonry();
+    });
+  }
+
   // ---- Toasts and notification history --------------------------------
   // Persisted in localStorage but keyed by the kernel boot id, so it
   // survives reloads and clears on device reboot. The /alerts page renders
