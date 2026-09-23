@@ -105,6 +105,13 @@ class TestSystemFacts:
         resp = client.get("/system/card/facts")
         assert b"85% (Discharging)" in resp.data
 
+    def test_battery_unknown_when_core_silent(self, client, monkeypatch):
+        self._patch(monkeypatch, _device_info(), {"ip": "10.0.0.5"}, None)
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/facts")
+        assert b"Unknown" in resp.data
+        assert b"Not detected" not in resp.data
+
     def test_wlan_management_shown(self, client, monkeypatch):
         self._patch(
             monkeypatch,
