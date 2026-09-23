@@ -1,3 +1,13 @@
+wlanpi-webui (1.21.12-1) unstable; urgency=medium
+
+  * Fix the wlanpi-core outage alert so its suggested command also
+    starts wlanpi-core.socket, which is needed to bring core back when
+    the socket is stopped.
+  * Show "Battery: Unknown" on the System page when wlanpi-core does not
+    answer, instead of reporting that no battery was detected.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 23 Sep 2026 03:35:16 -0400
+
 wlanpi-webui (1.21.11-1) unstable; urgency=medium
 
   * Show one consistent message when wlanpi-core is not running. The

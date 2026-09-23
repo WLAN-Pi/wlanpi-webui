@@ -45,8 +45,13 @@ def _mode() -> str:
         return "unknown"
 
 
-def _battery_text(battery: dict) -> str:
-    """Human-readable battery line; always says so when there is no battery."""
+def _battery_text(battery: dict | None) -> str:
+    """Human-readable battery line; always says so when there is no battery.
+
+    None means core did not answer, so absence is unknown, not "Not detected".
+    """
+    if battery is None:
+        return "Unknown"
     if not battery.get("present"):
         return "Not detected"
     capacity = battery.get("capacity_percent")
@@ -104,7 +109,7 @@ def get_system_info() -> dict:
     """Device identity from wlanpi-core, with local reads as a fallback."""
     info = get_core_json("/api/v1/system/device/info") or {}
     stats = get_core_json("/api/v1/system/device/stats") or {}
-    battery = get_core_json("/api/v1/system/battery") or {}
+    battery = get_core_json("/api/v1/system/battery")
 
     return {
         "mode": info.get("mode") or _mode(),

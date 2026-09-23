@@ -353,7 +353,7 @@ def active_alerts(core_running: bool) -> list[dict[str, str]]:
                 "key": "core-down",
                 "title": "wlanpi-core is not running",
                 "detail": "Login and most WebUI features depend on wlanpi-core.",
-                "fix": "sudo systemctl start wlanpi-core",
+                "fix": "sudo systemctl start wlanpi-core.socket wlanpi-core",
             }
         )
 

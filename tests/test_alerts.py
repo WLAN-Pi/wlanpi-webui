@@ -94,6 +94,8 @@ class TestAlerts:
         _login(client, monkeypatch)
         resp = client.get("/alerts")
         assert b"wlanpi-core is not running" in resp.data
+        # The socket re-activates the service, so the fix must start both.
+        assert b"sudo systemctl start wlanpi-core.socket wlanpi-core" in resp.data
         assert resp.headers["X-Wlanpi-Alerts"] == "core-down"
 
 
