@@ -1,6 +1,8 @@
 # stats for homepage
 import socket
 
+from flask import render_template
+
 from wlanpi_webui.stream import bp
 from wlanpi_webui.utils import get_core_json
 
@@ -21,13 +23,13 @@ def get_local_ip() -> str:
 def get_stats():
     """Device health from wlanpi-core, which owns the platform quirks.
 
-    Falls back to "unavailable" per field rather than shelling out here, so the
+    Falls back to "Unavailable" per field rather than shelling out here, so the
     numbers match what core reports elsewhere.
     """
     stats = get_core_json("/api/v1/system/device/stats") or {}
 
     def value(key):
-        return str(stats.get(key) or "unavailable")
+        return str(stats.get(key) or "Unavailable")
 
     return {
         "CPU": value("cpu"),
@@ -40,31 +42,4 @@ def get_stats():
 
 @bp.route("/stream/stats")
 def stream_stats():
-    stats = get_stats()
-    return """
-<h3 class="uk-card-title">Resource usage</h3>
-<div class="sys-live">
-<div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
-<div class="stat-label">CPU</div>
-<div class="stat-text">
-<span class="stat-text">{CPU} {CPU_TEMP}</span>
-</div>
-</div>
-<div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/ram.svg" alt=""></div>
-<div class="stat-label">RAM</div>
-<div class="stat-text">{RAM}</div>
-</div>
-<div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/storage.svg" alt=""></div>
-<div class="stat-label">Disk</div>
-<div class="stat-text">{DISK}</div>
-</div>
-<div class="stat-container">
-<div class="stat-icon"><img src="/static/icon/uptime.svg" alt=""></div>
-<div class="stat-label">Uptime</div>
-<div class="stat-text">{UPTIME}</div>
-</div>
-</div>
-""".format(**stats)
+    return render_template("partials/stream_stats.html", **get_stats())

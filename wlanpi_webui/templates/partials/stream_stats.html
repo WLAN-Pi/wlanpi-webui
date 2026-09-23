@@ -1,0 +1,29 @@
+<h3 class="uk-card-title">Resource usage</h3>
+{% if not core_running %}
+{% include "partials/core_down.html" %}
+{% else %}
+<div class="sys-live">
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/cpu.svg" alt=""></div>
+<div class="stat-label">CPU</div>
+<div class="stat-text">
+<span class="stat-text">{{ CPU }} {{ CPU_TEMP }}</span>
+</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/ram.svg" alt=""></div>
+<div class="stat-label">RAM</div>
+<div class="stat-text">{{ RAM }}</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/storage.svg" alt=""></div>
+<div class="stat-label">Disk</div>
+<div class="stat-text">{{ DISK }}</div>
+</div>
+<div class="stat-container">
+<div class="stat-icon"><img src="/static/icon/uptime.svg" alt=""></div>
+<div class="stat-label">Uptime</div>
+<div class="stat-text">{{ UPTIME }}</div>
+</div>
+</div>
+{% endif %}

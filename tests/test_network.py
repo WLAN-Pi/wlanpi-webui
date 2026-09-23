@@ -76,7 +76,21 @@ class TestNetwork:
         assert b"sw1" in resp.data
         assert b"1.2.3.4" in resp.data
 
-    def test_core_down_shows_unavailable(self, client, monkeypatch):
+    def test_core_down_shows_one_message(self, client, monkeypatch):
+        from wlanpi_webui.network import network as n
+
+        monkeypatch.setattr(n, "get_core_json", lambda *a, **k: None)
+        monkeypatch.setattr(
+            "wlanpi_webui.app.system_service_running_state", lambda *a, **k: False
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert resp.status_code == 200
+        assert resp.data.count(b"wlanpi-core isn't running") == 1
+        assert b"Unavailable." not in resp.data
+        assert b"Reachability" not in resp.data
+
+    def test_api_down_shows_unavailable(self, client, monkeypatch):
         from wlanpi_webui.network import network as n
 
         monkeypatch.setattr(n, "get_core_json", lambda *a, **k: None)
