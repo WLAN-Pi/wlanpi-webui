@@ -1,3 +1,13 @@
+wlanpi-webui (1.21.11-1) unstable; urgency=medium
+
+  * Show one consistent message when wlanpi-core is not running. The
+    Network page replaces its card grid with a single notice, and the
+    System cards no longer report "No USB/PCI devices detected" or
+    version errors during an outage. The notice links to the Alerts page
+    for the fix.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Wed, 23 Sep 2026 00:58:53 -0400
+
 wlanpi-webui (1.21.10-1) unstable; urgency=medium
 
   * Complete light and dark theme support for shared controls, alerts, forms,
