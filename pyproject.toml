@@ -1,6 +1,58 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "wlanpi_webui"
+description = "a custom web interface for the WLAN Pi"
+readme = {text = "a custom web interface for the WLAN Pi", content-type = "text/markdown"}
+requires-python = ">=3.13"
+dynamic = ["version"]
+authors = [
+    {name = "Josh Schmelzle", email = "josh@joshschmelzle.com"},
+]
+classifiers = [
+    "Natural Language :: English",
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: System Administrators",
+    "Topic :: Utilities",
+]
+# Loose names, as in wlanpi-core. The pinned versions live in the
+# pip-compile locks (requirements.txt from requirements.in, extras.txt from
+# extras.in); dh-virtualenv installs requirements.txt before the package, so
+# the .deb still ships the locked versions.
+dependencies = [
+    "flask",
+    "gunicorn",
+    "psutil",
+    "requests",
+]
+
+[project.license]
+text = "BSD-3-Clause"
+
+[project.optional-dependencies]
+testing = [
+    "tox",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "coverage-badge",
+    "pytest-mock",
+]
+
+[project.urls]
+Homepage = "https://github.com/wlan-pi/wlanpi-webui"
+Documentation = "https://docs.wlanpi.com"
+Source = "https://github.com/wlan-pi/wlanpi-webui"
+
+[tool.setuptools.dynamic]
+version = {attr = "wlanpi_webui.__version__.__version__"}
+
+# Flask blueprints are subpackages; templates and static ship via MANIFEST.in.
+[tool.setuptools.packages.find]
+include = ["wlanpi_webui*"]
 
 # ============================================================================
 # PYRIGHT (LSP) CONFIGURATION
