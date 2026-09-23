@@ -43,7 +43,7 @@ def clear_core_alert() -> None:
     _core_alert["value"] = None
 
 
-# shortcut: cached for the life of the process; the boot id only changes on
+# ponytail: cached for the life of the process; the boot id only changes on
 # reboot, which restarts this service.
 @lru_cache(maxsize=1)
 def read_boot_id() -> str | None:
