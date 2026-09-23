@@ -6,7 +6,8 @@ on:
 
   pull_request:
     paths:
-      - 'debian/changelog'
+      - 'debian/**'
+      - '.github/workflows/build-and-archive-debian-package.yml'
 
 permissions:
   contents: read
