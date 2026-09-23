@@ -1,6 +1,8 @@
 <h3 class="uk-card-title">Time / NTP</h3>
-{% if not ntp_available %}
-<p class="uk-text-meta">NTP data unavailable. wlanpi-core 2.3.0 or newer is required.</p>
+{% if not core_running %}
+{% include "partials/core_down.html" %}
+{% elif not ntp_available %}
+<p class="uk-text-meta">NTP data unavailable. Requires wlanpi-core 2.3.0 or newer.</p>
 {% else %}
 <ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
   <li>Clock: {% if ntp_synchronized %}Synchronised{% else %}Not synchronised{% endif %}</li>

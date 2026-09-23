@@ -31,6 +31,12 @@
   </div>
 </div>
 {% endmacro %}
+{% if not core_running %}
+<div class="uk-card uk-card-default uk-card-body" role="status">
+  <h3 class="uk-card-title">Network data unavailable</h3>
+  {% include "partials/core_down.html" %}
+</div>
+{% else %}
 <div class="card-masonry">
   <div id="latency-card" class="uk-card uk-card-default uk-card-body latency-card card-wide" hx-preserve="true">
     <div id="latency-live">
@@ -58,3 +64,4 @@
   {{ detail_card(stats.interface ~ " Link", stats.lines, "No link data.") }}
   {% endfor %}
 </div>
+{% endif %}

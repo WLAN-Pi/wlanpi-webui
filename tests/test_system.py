@@ -242,7 +242,19 @@ class TestSystemHealth:
         monkeypatch.setattr(s, "get_core_json", lambda *a, **k: None)
         _login(client, monkeypatch)
         resp = client.get("/system/card/status")
-        assert b"unavailable" in resp.data
+        assert b"Requires wlanpi-core 2.3.0" in resp.data
+
+    def test_core_down_usb(self, client, monkeypatch):
+        from wlanpi_webui.system import system as s
+
+        monkeypatch.setattr(s, "get_core_json", lambda *a, **k: None)
+        monkeypatch.setattr(
+            "wlanpi_webui.app.system_service_running_state", lambda *a, **k: False
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/usb")
+        assert b"wlanpi-core isn't running" in resp.data
+        assert b"No USB interfaces detected" not in resp.data
 
 
 class TestStreamStats:
@@ -270,10 +282,22 @@ class TestStreamStats:
         from wlanpi_webui.stream import stream as st
 
         monkeypatch.setattr(st, "get_core_json", lambda *a, **k: None)
+        monkeypatch.setattr(
+            "wlanpi_webui.app.system_service_running_state", lambda *a, **k: False
+        )
         _login(client, monkeypatch)
         resp = client.get("/stream/stats", headers={"hx-request": "true"})
         assert resp.status_code == 200
-        assert b"unavailable" in resp.data
+        assert b"wlanpi-core isn't running" in resp.data
+        assert b"Unavailable" not in resp.data
+
+    def test_stats_unavailable_when_api_empty(self, client, monkeypatch):
+        from wlanpi_webui.stream import stream as st
+
+        monkeypatch.setattr(st, "get_core_json", lambda *a, **k: None)
+        _login(client, monkeypatch)
+        resp = client.get("/stream/stats", headers={"hx-request": "true"})
+        assert b"Unavailable" in resp.data
 
 
 class TestSystemNtp:

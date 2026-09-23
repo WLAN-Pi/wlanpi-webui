@@ -1,5 +1,7 @@
 <h3 class="uk-card-title">Bluetooth</h3>
-{% if not bt_available %}
+{% if not core_running %}
+{% include "partials/core_down.html" %}
+{% elif not bt_available %}
 <p class="uk-text-meta">Bluetooth unavailable.</p>
 {% else %}
 <ul class="uk-list uk-list-divider data-list">
