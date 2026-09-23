@@ -10,6 +10,23 @@ You can find the official page [here](https://github.com/spotify/dh-virtualenv).
 Our goal is to use dh-virtualenv for packaging, symlinks (where we can), configuration files, systemd service installation, and virtualization at deployment.
 
 
+## Python metadata and dependencies
+
+Package metadata lives in `pyproject.toml` (PEP 621), matching wlanpi-core.
+`setup.py` is a three-line shim that pybuild/dh-virtualenv still need; don't
+add metadata to it. The version is read from `wlanpi_webui/__version__.py`.
+
+- `[project].dependencies` lists loose runtime names (same as
+  `requirements.in`).
+- `requirements.txt` is the pip-compile lock (`pip-compile requirements.in`).
+  dh-virtualenv installs it before the package, so the `.deb` ships these
+  pinned versions.
+- `extras.in` / `extras.txt` are the dev/test equivalents
+  (`[project.optional-dependencies].testing`).
+
+When adding a runtime dependency, add it to `requirements.in` and
+`[project].dependencies`, then re-run `pip-compile requirements.in`.
+
 ## Getting Started
 
 On your _build host_, install the build tools (these are only needed on your build host):
