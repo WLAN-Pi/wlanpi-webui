@@ -111,14 +111,19 @@ class TestLogin:
     def test_expired_password_redirects_to_change(self, client, monkeypatch):
         resp = _login(client, monkeypatch, status="password_change_required")
         assert resp.status_code == 302
-        assert "/change_password" in resp.headers["Location"]
-        assert "username=wlanpi" in resp.headers["Location"]
+        # The username rides the signed session, not the URL (audit #11).
+        assert resp.headers["Location"] == "/change_password"
 
-    def test_change_page_prefills_username(self, client):
-        resp = client.get("/change_password?username=wlanpi")
+    def test_change_page_prefills_username(self, client, monkeypatch):
+        _login(client, monkeypatch, status="password_change_required")
+        resp = client.get("/change_password")
         assert resp.status_code == 200
         assert b'value="wlanpi"' in resp.data
         assert b"new_password_confirm" in resp.data
+
+    def test_change_page_ignores_username_query(self, client):
+        resp = client.get("/change_password?username=wlanpi")
+        assert b'value="wlanpi"' not in resp.data
 
     def test_change_rejects_mismatched_confirm(self, client):
         csrf = _get_csrf(client)
@@ -185,10 +190,17 @@ class TestAuthCheck:
 class TestLogout:
     def test_logout_clears_session(self, client, monkeypatch):
         _login(client, monkeypatch)
-        resp = client.post("/logout", data={"csrf_token": "x"})
+        with client.session_transaction() as sess:
+            csrf = sess["csrf_token"]
+        resp = client.post("/logout", data={"csrf_token": csrf})
         assert resp.status_code == 302
         with client.session_transaction() as sess:
             assert "user" not in sess
+
+    def test_logout_requires_csrf(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        assert client.post("/logout", data={"csrf_token": "x"}).status_code == 400
+        assert client.get("/auth/check").status_code == 200
 
 
 class TestMutatingRoutes:
@@ -304,3 +316,253 @@ class TestCoreToken:
         with app.test_request_context():
             with pytest.raises(utils.CoreAuthError):
                 utils.make_api_request("GET", "https://127.0.0.1:31415/api/v1/x")
+
+
+def _post_login(client, username="wlanpi", ip="192.0.2.10"):
+    csrf = _get_csrf(client)
+    return client.post(
+        "/login",
+        data={"username": username, "password": "guess", "csrf_token": csrf},
+        headers={"X-Forwarded-For": ip},
+    )
+
+
+class TestLoginThrottle:
+    """Audit #4: failed logins back off per client IP and per username."""
+
+    def _core(self, monkeypatch, status="failure"):
+        from wlanpi_webui.auth import auth
+
+        calls = []
+
+        def fake(*args, **kwargs):
+            calls.append(kwargs["json_body"]["username"])
+            return FakeResponse({"status": status})
+
+        monkeypatch.setattr(auth, "make_api_request", fake)
+        return calls
+
+    def test_backs_off_after_free_attempts(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        calls = self._core(monkeypatch)
+        for _ in range(auth.FREE_ATTEMPTS):
+            assert _post_login(client).status_code == 401
+        resp = _post_login(client)
+        assert resp.status_code == 429
+        assert b"Too many failed attempts" in resp.data
+        assert len(calls) == auth.FREE_ATTEMPTS  # core never asked
+
+    def test_per_ip_across_usernames(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for i in range(auth.FREE_ATTEMPTS):
+            _post_login(client, username=f"user{i}")
+        assert _post_login(client, username="fresh").status_code == 429
+        assert _post_login(client, username="fresh", ip="192.0.2.99").status_code == 401
+
+    def test_per_username_across_ips(self, client, monkeypatch):
+        """Spread guessing is throttled after each new IP's first miss."""
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for i in range(auth.FREE_ATTEMPTS):
+            _post_login(client, ip=f"192.0.2.{i + 20}")
+        assert _post_login(client, ip="192.0.2.99").status_code == 401
+        assert _post_login(client, ip="192.0.2.99").status_code == 429
+
+    def test_username_backoff_does_not_lock_out_a_clean_client(
+        self, client, monkeypatch
+    ):
+        """Audit gate: hammering one username must not lock the admin out."""
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE_ATTEMPTS + 3):
+            _post_login(client, ip="192.0.2.66")
+        calls = self._core(monkeypatch, status="success")
+        assert _post_login(client, ip="192.0.2.5").status_code == 302
+        assert calls == ["wlanpi"]
+
+    def test_backoff_expires(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE_ATTEMPTS):
+            _post_login(client)
+        now = auth.boot_clock()
+        monkeypatch.setattr(auth, "boot_clock", lambda: now + 2)  # past the 1s delay
+        assert _post_login(client).status_code == 401
+
+    def test_success_clears_failures(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE_ATTEMPTS - 1):
+            _post_login(client)
+        self._core(monkeypatch, status="success")
+        assert _post_login(client).status_code == 302
+        assert not client.application.extensions["wlanpi_auth"]["failures"]
+
+    def test_core_errors_do_not_count(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        monkeypatch.setattr(
+            auth,
+            "make_api_request",
+            lambda *a, **k: (_ for _ in ()).throw(requests_module.ConnectionError),
+        )
+        for _ in range(auth.FREE_ATTEMPTS + 1):
+            assert _post_login(client).status_code == 401
+
+    def test_failure_is_logged_with_client_ip(self, client, monkeypatch, caplog):
+        self._core(monkeypatch)
+        _post_login(client, username="bad\nname", ip="192.0.2.77")
+        assert "failed login for 'bad\\nname' from 192.0.2.77" in caplog.text
+
+    def test_tracked_keys_are_bounded(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        monkeypatch.setattr(auth, "MAX_TRACKED", 4)
+        for i in range(5):
+            _post_login(client, username=f"u{i}", ip=f"192.0.2.{i + 1}")
+        assert len(client.application.extensions["wlanpi_auth"]["failures"]) <= 4
+
+    def test_change_password_is_throttled(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        calls = self._core(monkeypatch)
+        csrf = _get_csrf(client)
+        data = {
+            "username": "wlanpi",
+            "current_password": "guess",
+            "new_password": "n3w-Pass",
+            "new_password_confirm": "n3w-Pass",
+            "csrf_token": csrf,
+        }
+        for _ in range(auth.FREE_ATTEMPTS):
+            assert client.post("/change_password", data=data).status_code == 400
+        resp = client.post("/change_password", data=data)
+        assert resp.status_code == 429
+        assert b"Too many failed attempts" in resp.data
+        assert len(calls) == auth.FREE_ATTEMPTS  # core never asked
+
+
+class TestCoreErrorMessages:
+    """Audit #9: core errors get a message that matches the cause."""
+
+    def _http_error(self, monkeypatch, code):
+        from wlanpi_webui.auth import auth
+
+        def fake(*a, **k):
+            raise requests_module.HTTPError(response=_Resp(code))
+
+        monkeypatch.setattr(auth, "make_api_request", fake)
+
+    @pytest.mark.parametrize(
+        ("code", "text", "counted"),
+        [
+            (422, b"up to 128 characters", True),  # a flood of bad input
+            (429, b"wlanpi-core is busy", False),
+            (503, b"could not check the password", False),
+            (500, b"Unable to reach wlanpi-core", False),
+        ],
+    )
+    def test_login_maps_core_http_errors(
+        self, client, monkeypatch, code, text, counted
+    ):
+        self._http_error(monkeypatch, code)
+        resp = _post_login(client)
+        assert resp.status_code == 401
+        assert text in resp.data
+        failures = client.application.extensions["wlanpi_auth"]["failures"]
+        assert bool(failures) is counted
+
+    def test_rejected_new_password_explained(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        monkeypatch.setattr(
+            auth,
+            "make_api_request",
+            lambda *a, **k: FakeResponse({"status": "password_rejected"}),
+        )
+        csrf = _get_csrf(client)
+        resp = client.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "wlanpi",
+                "new_password": "a",
+                "new_password_confirm": "a",
+                "csrf_token": csrf,
+            },
+        )
+        assert resp.status_code == 400
+        assert b"too short, too simple" in resp.data
+        assert not client.application.extensions["wlanpi_auth"]["failures"]
+
+
+class TestRequestHardening:
+    def test_control_characters_in_username_never_reach_core(self, client, monkeypatch):
+        """PAM would cut at a NUL and check a different account (audit gate)."""
+        from wlanpi_webui.auth import auth
+
+        calls = []
+        monkeypatch.setattr(auth, "make_api_request", lambda *a, **k: calls.append(1))
+        resp = _post_login(client, username="wlanpi\x00junk")
+        assert resp.status_code == 401
+        assert b"Incorrect username or password" in resp.data
+        assert calls == []
+        assert client.application.extensions["wlanpi_auth"]["failures"]
+
+    def test_forwarded_for_and_proto_are_trusted(self, app, monkeypatch):
+        """The throttle keys on the client IP nginx appends (ProxyFix x_for)."""
+        seen = {}
+
+        @app.route("/_probe")
+        def _probe():
+            from flask import request
+
+            seen["addr"], seen["scheme"] = request.remote_addr, request.scheme
+            return ""
+
+        client = app.test_client()
+        _login(client, monkeypatch)
+        client.get(
+            "/_probe",
+            headers={"X-Forwarded-For": "192.0.2.8", "X-Forwarded-Proto": "https"},
+        )
+        assert seen == {"addr": "192.0.2.8", "scheme": "https"}
+
+    def test_nginx_sets_frame_options_everywhere(self):
+        from pathlib import Path
+
+        conf = (
+            Path(__file__).parent.parent / "install/etc/nginx/wlanpi_webui.conf"
+        ).read_text()
+        directives = [
+            line.strip()
+            for line in conf.splitlines()
+            if "X-Frame-Options" in line and not line.strip().startswith("#")
+        ]
+        # server level, plus the grafana and cockpit locations that override it
+        assert directives == ['add_header X-Frame-Options "SAMEORIGIN" always;'] * 3
+
+    def test_non_ascii_csrf_is_rejected_not_500(self, client):
+        _get_csrf(client)
+        resp = client.post(
+            "/login", data={"username": "wlanpi", "password": "x", "csrf_token": "é"}
+        )
+        assert resp.status_code == 400
+
+    def test_forwarded_prefix_and_host_are_ignored(self, client):
+        resp = client.get(
+            "/login",
+            headers={
+                "X-Forwarded-Prefix": "//evil.example",
+                "X-Forwarded-Host": "evil.example",
+            },
+        )
+        assert b"evil.example" not in resp.data

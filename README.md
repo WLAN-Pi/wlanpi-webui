@@ -36,6 +36,15 @@ Deployment:
 
 This package is included in the WLAN Pi image. You do not need to do anything special to use it other than point a web browser to the network address of the WLAN Pi.
 
+### Sign-in
+
+You sign in with a local account in the `sudo` group; wlanpi-core checks the password through PAM (the `wlanpi-webui` PAM service).
+
+- If the account's password has expired, the WebUI asks you to set a new one. The new password must pass the system PAM password policy, the same policy `passwd` applies over SSH.
+- Until the default password is changed, anyone who can reach ports 80/443 can sign in with it and choose the new password, which then also works for SSH and `sudo`. Do the first sign-in over a link only you can reach, such as USB (`usb0`) or Bluetooth (`pan0`), before you connect the WLAN Pi to a shared network.
+- After 5 failed attempts from one client address, each further attempt from it waits twice as long as the last, up to 5 minutes. The same limit applies per username, but only to a client address that has itself failed recently, so someone guessing the `wlanpi` password cannot lock out your browser. Failed attempts are logged to the `wlanpi-webui` journal with the client address.
+- A session ends when you log out, after 4 hours idle (`WLANPI_WEBUI_IDLE_TIMEOUT`), 12 hours after sign-in (`WLANPI_WEBUI_MAX_SESSION_AGE`), on reboot, and when the password is changed through the WebUI. Values are in seconds.
+
 ### The Gory Details
 
 For the curious, we are using systemd unit files to run and control the processes which make the web UI work.

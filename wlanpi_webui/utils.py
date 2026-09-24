@@ -9,7 +9,7 @@ import urllib.parse
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from time import time
+from time import CLOCK_BOOTTIME, clock_gettime, time
 
 import requests
 from flask import current_app, redirect, request, session
@@ -52,6 +52,16 @@ def read_boot_id() -> str | None:
         return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
     except OSError:
         return None
+
+
+def boot_clock() -> float:
+    """Seconds since boot, for session and backoff timing.
+
+    Unlike time(), wall-clock steps (NTP sync on a Pi with no RTC, ``date -s``)
+    cannot stretch it, and every process on the device shares it. Sessions end
+    at reboot anyway (boot id check), so restarting from 0 then is harmless.
+    """
+    return clock_gettime(CLOCK_BOOTTIME)
 
 
 def load_or_create_session_key(path: str) -> bytes:

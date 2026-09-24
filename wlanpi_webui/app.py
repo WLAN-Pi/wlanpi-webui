@@ -26,6 +26,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from wlanpi_webui.config import Config, get_hostname
 from wlanpi_webui.utils import (
     active_alerts,
+    boot_clock,
     get_dpkg_status_mtime,
     is_beacon_armed,
     is_htmx,
@@ -45,7 +46,10 @@ BACKGROUND_ENDPOINTS = {
 def create_app(config_class=Config):
     app = Flask(__name__)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    # nginx sets X-Forwarded-For and -Proto; it passes Host through and never
+    # sets X-Forwarded-Host/-Prefix, so trusting those would let a client
+    # rewrite generated URLs.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     app.config.from_object(config_class)
     # Persisted key: sessions survive a service restart. A reboot still signs
@@ -57,10 +61,16 @@ def create_app(config_class=Config):
         seconds=app.config["IDLE_TIMEOUT"]
     )
     app.config["SESSION_REFRESH_EACH_REQUEST"] = False
+    # HTTPS only (nginx redirects port 80, but a browser would still send the
+    # cookie there in cleartext), and not on cross-site subrequests.
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     app.logger.debug("registering auth blueprint")
     from wlanpi_webui.auth import bp as auth_bp
+    from wlanpi_webui.auth.auth import end_session, init_auth, session_is_valid
 
+    init_auth(app)
     app.register_blueprint(auth_bp)
     app.logger.debug("auth blueprint registered")
 
@@ -181,14 +191,17 @@ def create_app(config_class=Config):
     def enforce_session_freshness():
         if not session.get("user"):
             return None
-        now = time()
+        now = boot_clock()
         boot_id = read_boot_id()
         if boot_id and session.get("boot_id") != boot_id:
-            session.clear()  # the device rebooted
+            end_session()  # the device rebooted
+            return None
+        if not session_is_valid():
+            end_session()  # logged out, revoked, or past MAX_SESSION_AGE
             return None
         last_seen = session.get("last_seen")
         if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
-            session.clear()  # idle for too long
+            end_session()  # idle for too long
             return None
         if request.endpoint not in BACKGROUND_ENDPOINTS:
             session["last_seen"] = now

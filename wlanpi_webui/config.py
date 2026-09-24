@@ -81,10 +81,17 @@ class Config:
     # Idle auto-logout window in seconds (default 4 hours). Any user activity
     # refreshes it; background polling does not.
     IDLE_TIMEOUT = int(os.environ.get("WLANPI_WEBUI_IDLE_TIMEOUT", 4 * 60 * 60))
+    # Absolute session lifetime in seconds (default 12 hours), however active.
+    MAX_SESSION_AGE = int(os.environ.get("WLANPI_WEBUI_MAX_SESSION_AGE", 12 * 60 * 60))
     # Persisted Flask signing key so a service restart does not sign users out
     # (a reboot still does, via the boot id check).
     SESSION_KEY_PATH = os.environ.get(
         "WLANPI_WEBUI_SESSION_KEY", "/var/lib/wlanpi-webui/session_key"
+    )
+    # Server-side registry of signed-in sessions, so logout and a password
+    # change revoke a cookie instead of only deleting it from the browser.
+    SESSION_STORE_PATH = os.environ.get(
+        "WLANPI_WEBUI_SESSION_STORE", "/var/lib/wlanpi-webui/sessions.json"
     )
     # Hidden easter egg. Arming it is a device-wide flag file, written by
     # POST /beacon/arm and read at request time, so deleting the file disarms
