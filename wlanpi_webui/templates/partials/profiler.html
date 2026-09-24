@@ -24,13 +24,8 @@
       <div id="profiler-session" hx-get="/profiler/session" hx-trigger="load, every 5s" hx-swap="innerHTML">
         <p class="uk-text-meta">Loading session&hellip;</p>
       </div>
-      {% if profiler_qr %}
-      <div class="session-qr">
-        <div id="profiler-qr" data-wifi="{{ profiler_qr }}"
-          _="on load js(window.wlanpiRenderQr(me))"></div>
-        <p class="uk-text-meta uk-margin-small-top">Scan to join {{ profiler_ssid }}</p>
-      </div>
-      {% endif %}
+      {# Filled out-of-band by the /profiler/session poll. #}
+      <div id="profiler-qr-slot"></div>
     </div>
   </div>
 

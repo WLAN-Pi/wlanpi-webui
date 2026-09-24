@@ -646,8 +646,6 @@ def profiler():
         "profiler_toggle": service_toggle_anchor(
             profiler_running, "/startprofiler", "/stopprofiler"
         ),
-        "profiler_qr": session.get("wifi_qr") or "",
-        "profiler_ssid": session.get("ssid") or "",
         "reports": get_reports(),
     }
     if is_htmx(request):
