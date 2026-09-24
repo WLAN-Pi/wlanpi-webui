@@ -1,3 +1,18 @@
+wlanpi-webui (1.21.13-1) unstable; urgency=medium
+
+  * Harden the WebUI login. Sessions are now tracked server-side, so
+    logout and a password change revoke them, and they expire after 12
+    hours. Cookies are Secure and SameSite=Lax.
+  * Throttle repeated failed logins per client IP with a doubling
+    backoff, and log failures to the journal.
+  * Require the CSRF token on logout, trust only X-Forwarded-For and
+    X-Forwarded-Proto from the proxy, and send X-Frame-Options SAMEORIGIN.
+  * Show clear messages when wlanpi-core rejects a new password or is
+    rate limiting or unavailable. Everyone is signed out once after
+    upgrading.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 24 Sep 2026 00:35:25 -0400
+
 wlanpi-webui (1.21.12-1) unstable; urgency=medium
 
   * Fix the wlanpi-core outage alert so its suggested command also
