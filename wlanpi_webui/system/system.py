@@ -119,6 +119,7 @@ def get_system_info() -> dict:
         "hardware_model": info.get("model") or _hardware_model(),
         "kernel_version": _kernel_version(),
         "wlanpi_version": info.get("software_version") or Config.WLANPI_VERSION,
+        "wlanpi_codename": Config.WLANPI_CODENAME,
         "webui_version": Config.WEBUI_VERSION,
         "wlanpi_core_version": get_apt_package_version("wlanpi-core"),
         "wlanpi_core_status": (

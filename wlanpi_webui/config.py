@@ -51,18 +51,18 @@ def get_hostname() -> str:
     return hostname
 
 
-def get_wlanpi_version() -> str:
-    """Retrieve wlanpi version from wlanpi-release for web interface"""
-    wlanpi_version = ""
+def get_wlanpi_release(path: str = "/etc/wlanpi-release") -> dict[str, str]:
+    """Parse KEY=VALUE lines (VERSION, CODENAME) from wlanpi-release"""
+    release = {}
     try:
-        with open("/etc/wlanpi-release") as _file:
-            lines = _file.read().splitlines()
-            for line in lines:
-                if "VERSION" in line:
-                    wlanpi_version = line.split("=")[1].replace('"', "").strip()
+        with open(path) as _file:
+            for line in _file.read().splitlines():
+                key, sep, value = line.partition("=")
+                if sep:
+                    release[key.strip()] = value.strip().strip("\"'")
     except OSError:
         pass
-    return wlanpi_version
+    return release
 
 
 def get_our_package_version() -> str:
@@ -73,7 +73,9 @@ def get_our_package_version() -> str:
 
 
 class Config:
-    WLANPI_VERSION = get_wlanpi_version()
+    _RELEASE = get_wlanpi_release()
+    WLANPI_VERSION = _RELEASE.get("VERSION", "")
+    WLANPI_CODENAME = _RELEASE.get("CODENAME", "")
     WEBUI_VERSION = get_our_package_version()
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT")
     FILES_ROOT_DIR = "/var/www/html/"
