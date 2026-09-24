@@ -13,8 +13,11 @@
     </div>
     <div class="profiler-service-actions">
       {{ profiler_toggle | safe }}
-      <a class="uk-button uk-button-default" hx-get="/profiler/purge" hx-target="#content" hx-swap="innerHTML"
-        hx-push-url="true" hx-indicator=".progress">Purge data</a>
+      <form hx-post="/profiler/purge" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="Delete all profiler reports and captures? This cannot be undone.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="uk-button uk-button-default" type="submit">Purge data</button>
+      </form>
     </div>
   </div>
 

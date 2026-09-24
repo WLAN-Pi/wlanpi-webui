@@ -3,18 +3,25 @@ from __future__ import annotations
 import glob
 import json
 import os
+import shlex
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from flask import abort, current_app, render_template, request, send_file
+import requests
+from flask import abort, current_app, redirect, render_template, request, send_file
+from markupsafe import escape
 from werkzeug.utils import safe_join
 
 from wlanpi_webui.auth.auth import csrf_required, service_toggle_anchor
 from wlanpi_webui.profiler import bp
 from wlanpi_webui.utils import (
+    CORE_API_BASE,
+    get_safe_referrer_target,
     is_htmx,
+    make_api_request,
+    queue_toast,
     start_stop_service,
     system_service_running_state,
 )
@@ -543,13 +550,12 @@ def get_profiler_files_to_purge() -> list:
     return files
 
 
-@bp.route("/profiler/purge")
-def purge():
-    """Purges profiler files"""
+def _purge_listing():
+    """Render root-shell rm commands, for a wlanpi-core without /profiler/purge."""
     files = get_profiler_files_to_purge()
-    inner = "\r\n".join([f"rm {file}" for file in files])
+    inner = "\r\n".join(escape(f"rm {shlex.quote(file)}") for file in files)
     content = f"""<div>
-<p>The <tt>webui</tt> process does not have permission to remove files.</p>
+<p>This version of wlanpi-core cannot remove profiler files, and the <tt>webui</tt> process does not have permission to.</p>
 <p>To purge profiler files, open a root shell and paste in the following:<br /><pre>{inner}</pre></p>
 </div>"""
     if not files:
@@ -559,6 +565,35 @@ def purge():
         return render_template("/partials/profiler.html", **resp_data)
     else:
         return render_template("/extends/profiler.html", **resp_data)
+
+
+@bp.route("/profiler/purge", methods=["POST"])
+@csrf_required
+def purge():
+    """Delete profiler reports and captures through wlanpi-core."""
+    try:
+        data = make_api_request("POST", f"{CORE_API_BASE}/api/v1/profiler/purge").json()
+        files, size = int(data["files"]), int(data["bytes"])
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+        if status in (404, 405):
+            return _purge_listing()
+        if status == 409:
+            queue_toast("Stop the profiler before purging.", "warning")
+        else:
+            current_app.logger.error("profiler purge failed with status %s", status)
+            queue_toast("Could not purge profiler data.", "warning")
+        return redirect(get_safe_referrer_target())
+    except (requests.RequestException, ValueError, KeyError, TypeError):
+        current_app.logger.exception("profiler purge request failed")
+        if system_service_running_state("wlanpi-core", quiet=True):
+            queue_toast("Could not purge profiler data.", "warning")
+        else:
+            queue_toast("wlanpi-core is not running.", "danger")
+        return redirect(get_safe_referrer_target())
+    noun = "file" if files == 1 else "files"
+    queue_toast(f"Removed {files} {noun} ({size / 1_000_000:.2f} MB).", "success")
+    return redirect(get_safe_referrer_target())
 
 
 @bp.route("/profiler/profile")
