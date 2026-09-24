@@ -519,6 +519,42 @@ class TestProfilerPurge:
         assert b"open a root shell" in resp.data
         assert f"rm {profiler_root}/clients/x.pcap".encode() in resp.data
 
+    def test_fallback_listing_does_not_follow_symlinks(
+        self, client, monkeypatch, profiler_root, tmp_path
+    ):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "secret.pcap").write_bytes(b"\x00")
+        (outside / "keep.json").write_text("{}")
+        link_dir = profiler_root / "clients" / "linked"
+        link_dir.symlink_to(outside, target_is_directory=True)
+        link_file = profiler_root / "clients" / "linked.json"
+        link_file.symlink_to(outside / "keep.json")
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 404)
+        resp = self._purge(client)
+        assert resp.status_code == 200
+        assert str(outside).encode() not in resp.data
+        pre = re.search(r"<pre>(.*?)</pre>", resp.data.decode(), re.S).group(1)
+        assert sorted(pre.splitlines()) == [f"rm {link_dir}", f"rm {link_file}"]
+
+    def test_fallback_listing_quotes_and_escapes_names(
+        self, client, monkeypatch, profiler_root
+    ):
+        import html
+        import shlex
+
+        odd = profiler_root / "clients" / "a b'<&.pcap"
+        odd.write_bytes(b"\x00")
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 404)
+        resp = self._purge(client)
+        body = resp.data.decode()
+        pre = re.search(r"<pre>(.*?)</pre>", body, re.S).group(1)
+        assert "<&" not in pre
+        assert "&lt;&amp;" in pre
+        assert shlex.split(html.unescape(pre)) == ["rm", str(odd)]
+
     def test_core_down(self, client, monkeypatch):
         import requests
 

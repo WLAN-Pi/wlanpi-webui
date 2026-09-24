@@ -533,20 +533,21 @@ def get_reports() -> list[dict[str, str]]:
 
 
 def get_profiler_files_to_purge() -> list:
-    """Provide a purge list for all profiler files"""
+    """Provide a purge list for all profiler files.
+
+    Never follows symlinks: a symlink under the tree is listed itself, so the
+    rm lines stay inside PROFILER_DIR.
+    """
     files = []
-    _glob = glob.glob(f"{current_app.config['PROFILER_DIR']}**", recursive=True)
-    for _file in _glob:
-        if not os.path.isdir(_file):
-            if os.path.isfile(_file):
-                if any(x in _file for x in [".pcap", ".pcapng"]):
-                    files.append(_file)
-                if any(x in _file for x in [".txt"]):
-                    files.append(_file)
-                if ".csv" in _file:
-                    files.append(_file)
-                if ".json" in _file:
-                    files.append(_file)
+    for dirpath, dirnames, filenames in os.walk(current_app.config["PROFILER_DIR"]):
+        # os.walk lists a symlink to a directory under dirnames, not descended.
+        for name in dirnames + filenames:
+            path = os.path.join(dirpath, name)
+            if os.path.islink(path):
+                files.append(path)
+            elif name in filenames and os.path.isfile(path):
+                if any(ext in path for ext in (".pcap", ".txt", ".csv", ".json")):
+                    files.append(path)
     return files
 
 
