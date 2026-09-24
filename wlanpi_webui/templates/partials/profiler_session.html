@@ -3,6 +3,17 @@
   <p class="app-status {{ service.state_class }}">{{ service.state_label }}</p>
   <p class="uk-text-meta uk-margin-remove">{{ service.message }}</p>
 </div>
+{# Out-of-band: the join QR follows the session, so it appears once the
+   profiler writes its info file and clears once it stops. #}
+<div id="profiler-qr-slot" hx-swap-oob="true">
+  {% if session.wifi_qr %}
+  <div class="session-qr">
+    <div id="profiler-qr" data-wifi="{{ session.wifi_qr }}"
+      _="on load js(window.wlanpiRenderQr(me))"></div>
+    <p class="uk-text-meta uk-margin-small-top">Scan to join {{ session.ssid }}</p>
+  </div>
+  {% endif %}
+</div>
 {% if session.live %}
 {# Polled marker read by profiler.js to toast newly profiled clients. #}
 <div id="profiler-session-events" hidden data-profile-count="{{ session.profile_count }}"

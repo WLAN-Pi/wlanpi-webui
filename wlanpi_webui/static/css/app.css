@@ -2365,6 +2365,11 @@ h6 {
     min-width: 0;
 }
 
+/* The poll's out-of-band slot; keep .session-qr the flex item. */
+#profiler-qr-slot {
+    display: contents;
+}
+
 .session-qr {
     flex: 0 0 auto;
     text-align: center;

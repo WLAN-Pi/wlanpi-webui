@@ -272,7 +272,32 @@ class TestProfilerSession:
         assert b'data-profile-count="2"' in resp.data
         assert b'data-last-profile="aa:bb:cc:dd:ee:ff"' in resp.data
 
-    def test_shell_renders_qr_when_running(self, client, monkeypatch, profiler_root):
+    def test_poll_carries_qr_when_running(self, client, monkeypatch, profiler_root):
+        _write_session(
+            profiler_root,
+            {"state": "running"},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b'<div id="profiler-qr-slot" hx-swap-oob="true">' in resp.data
+        assert b'data-wifi="WIFI:S:Profiler 573;T:WPA;P:profiler;;"' in resp.data
+        assert b"Scan to join Profiler 573" in resp.data
+
+    def test_poll_clears_qr_when_stopped(self, client, monkeypatch, profiler_root):
+        _write_session(
+            profiler_root,
+            {"state": "stopped"},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b'<div id="profiler-qr-slot" hx-swap-oob="true">' in resp.data
+        assert b'id="profiler-qr"' not in resp.data
+
+    def test_shell_has_empty_qr_slot(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
             {"state": "running"},
@@ -285,8 +310,8 @@ class TestProfilerSession:
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
         assert resp.status_code == 200
-        assert b"WIFI:S:Profiler 573;T:WPA;P:profiler;;" in resp.data
-        assert b"profiler-qr" in resp.data
+        assert b'<div id="profiler-qr-slot"></div>' in resp.data
+        assert b'id="profiler-qr"' not in resp.data
 
 
 class TestProfilerCapabilities:

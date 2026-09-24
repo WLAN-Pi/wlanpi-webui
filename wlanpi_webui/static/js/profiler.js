@@ -286,6 +286,16 @@
     checkNewProfile();
     init();
   });
+  // The session poll re-sends the QR slot every 5s. Keep the drawn code when
+  // the network is unchanged instead of redrawing (and flashing) it.
+  document.addEventListener("htmx:oobBeforeSwap", function (evt) {
+    if (evt.detail.target.id !== "profiler-qr-slot") return;
+    var next = evt.detail.fragment.querySelector("#profiler-qr");
+    var cur = document.getElementById("profiler-qr");
+    if (next && cur && next.dataset.wifi === cur.dataset.rendered) {
+      evt.detail.shouldSwap = false;
+    }
+  });
   window.addEventListener("load", function () {
     checkNewProfile();
     init();
