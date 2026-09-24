@@ -1,3 +1,18 @@
+wlanpi-webui (1.21.14-1) unstable; urgency=medium
+
+  * Show the OS codename (for example DeadEye) after the version on the
+    System card, read from /etc/wlanpi-release.
+  * Show the profiler's Wi-Fi join QR code while the profiler runs and
+    clear it once it stops. It was drawn only when the page loaded, so
+    it appeared after Stop and never after Start (#154).
+  * Purge data now deletes profiler reports and captures through wlanpi-
+    core, after a confirmation, and says how many files were removed. It
+    is refused while the profiler runs. With a wlanpi-core that lacks
+    the endpoint, it falls back to listing the rm commands, which no
+    longer follow symlinks out of the profiler folder (#155).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 24 Sep 2026 17:03:46 -0400
+
 wlanpi-webui (1.21.13-1) unstable; urgency=medium
 
   * Harden the WebUI login. Sessions are now tracked server-side, so
