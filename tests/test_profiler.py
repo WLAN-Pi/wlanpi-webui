@@ -442,3 +442,158 @@ class TestProfilerCapabilities:
         )
         assert resp.status_code == 200
         assert b"Client MAC: 2e:3d:0c:6f:cb:49" in resp.data
+
+
+class HTTPErrorResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
+
+
+def _csrf(client):
+    with client.session_transaction() as sess:
+        return sess["csrf_token"]
+
+
+class TestProfilerPurge:
+    PROFILES = "https://wlanpi.local/profiler/profiles"
+
+    def _core(self, monkeypatch, result):
+        """Stand in for wlanpi-core: a payload, an HTTP status, or an exception."""
+        import requests
+
+        calls = []
+
+        def fake(method, url, **kwargs):
+            calls.append((method, url))
+            if isinstance(result, Exception):
+                raise result
+            if isinstance(result, int):
+                raise requests.HTTPError(response=HTTPErrorResponse(result))
+            return FakeResponse(result)
+
+        monkeypatch.setattr("wlanpi_webui.profiler.profiler.make_api_request", fake)
+        return calls
+
+    def _purge(self, client, csrf=True):
+        data = {"csrf_token": _csrf(client)} if csrf else {}
+        return client.post(
+            "/profiler/purge",
+            data=data,
+            headers={"hx-request": "true", "Referer": self.PROFILES},
+        )
+
+    def _toast(self, client):
+        with client.session_transaction() as sess:
+            return sess["wlanpi_toast"]
+
+    def test_button_posts_with_csrf_and_confirm(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/profiles")
+        assert b'hx-post="/profiler/purge"' in resp.data
+        assert b'hx-get="/profiler/purge"' not in resp.data
+        assert (
+            b'hx-confirm="Delete all profiler reports and captures? '
+            b'This cannot be undone."' in resp.data
+        )
+        token = _csrf(client).encode()
+        assert b'name="csrf_token" value="' + token + b'"' in resp.data
+
+    def test_rejects_missing_csrf(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        calls = self._core(monkeypatch, {"files": 1, "bytes": 1})
+        assert self._purge(client, csrf=False).status_code == 400
+        assert calls == []
+
+    def test_get_does_not_purge(self, client, monkeypatch, profiler_root):
+        (profiler_root / "reports").mkdir()
+        (profiler_root / "reports" / "r.csv").write_text("x")
+        _login(client, monkeypatch)
+        calls = self._core(monkeypatch, {"files": 1, "bytes": 1})
+        assert client.get("/profiler/purge").status_code == 404
+        assert calls == []
+        assert (profiler_root / "reports" / "r.csv").exists()
+
+    def test_success_shows_counts_and_refreshes(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        calls = self._core(monkeypatch, {"files": 12, "bytes": 3_500_000})
+        resp = self._purge(client)
+        assert calls == [("POST", "https://127.0.0.1:31415/api/v1/profiler/purge")]
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith("/profiler/profiles")
+        assert self._toast(client) == {
+            "message": "Removed 12 files (3.50 MB).",
+            "status": "success",
+        }
+
+    def test_running_profiler_says_stop_first(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 409)
+        resp = self._purge(client)
+        assert resp.status_code == 302
+        assert self._toast(client)["message"] == "Stop the profiler before purging."
+
+    @pytest.mark.parametrize("status", [404, 405])
+    def test_old_core_falls_back_to_rm_listing(
+        self, client, monkeypatch, profiler_root, status
+    ):
+        (profiler_root / "clients" / "x.pcap").write_bytes(b"\x00")
+        _login(client, monkeypatch)
+        self._core(monkeypatch, status)
+        resp = self._purge(client)
+        assert resp.status_code == 200
+        assert b"open a root shell" in resp.data
+        assert f"rm {profiler_root}/clients/x.pcap".encode() in resp.data
+
+    def test_fallback_listing_does_not_follow_symlinks(
+        self, client, monkeypatch, profiler_root, tmp_path
+    ):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "secret.pcap").write_bytes(b"\x00")
+        (outside / "keep.json").write_text("{}")
+        link_dir = profiler_root / "clients" / "linked"
+        link_dir.symlink_to(outside, target_is_directory=True)
+        link_file = profiler_root / "clients" / "linked.json"
+        link_file.symlink_to(outside / "keep.json")
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 404)
+        resp = self._purge(client)
+        assert resp.status_code == 200
+        assert str(outside).encode() not in resp.data
+        pre = re.search(r"<pre>(.*?)</pre>", resp.data.decode(), re.S).group(1)
+        assert sorted(pre.splitlines()) == [f"rm {link_dir}", f"rm {link_file}"]
+
+    def test_fallback_listing_quotes_and_escapes_names(
+        self, client, monkeypatch, profiler_root
+    ):
+        import html
+        import shlex
+
+        odd = profiler_root / "clients" / "a b'<&.pcap"
+        odd.write_bytes(b"\x00")
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 404)
+        resp = self._purge(client)
+        body = resp.data.decode()
+        pre = re.search(r"<pre>(.*?)</pre>", body, re.S).group(1)
+        assert "<&" not in pre
+        assert "&lt;&amp;" in pre
+        assert shlex.split(html.unescape(pre)) == ["rm", str(odd)]
+
+    def test_core_down(self, client, monkeypatch):
+        import requests
+
+        _login(client, monkeypatch)
+        self._core(monkeypatch, requests.ConnectionError("refused"))
+        resp = self._purge(client)
+        assert resp.status_code == 302
+        assert self._toast(client) == {
+            "message": "wlanpi-core is not running.",
+            "status": "danger",
+        }
+
+    def test_core_error_status(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        self._core(monkeypatch, 500)
+        self._purge(client)
+        assert self._toast(client)["message"] == "Could not purge profiler data."
