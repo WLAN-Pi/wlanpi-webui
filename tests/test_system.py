@@ -124,6 +124,54 @@ class TestSystemFacts:
         assert b"Wi-Fi mgmt" in resp.data
         assert b"manual" in resp.data
 
+    def test_codename_after_version(self, client, monkeypatch):
+        monkeypatch.setattr("wlanpi_webui.config.Config.WLANPI_CODENAME", "DeadEye")
+        self._patch(
+            monkeypatch,
+            _device_info(software_version="26.10-rc.1"),
+            {"ip": "10.0.0.5"},
+            {"present": False},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/facts")
+        assert b"26.10-rc.1 DeadEye</li>" in resp.data
+
+    def test_no_codename_shows_version_only(self, client, monkeypatch):
+        monkeypatch.setattr("wlanpi_webui.config.Config.WLANPI_CODENAME", "")
+        self._patch(
+            monkeypatch,
+            _device_info(software_version="26.10-rc.1"),
+            {"ip": "10.0.0.5"},
+            {"present": False},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/system/card/facts")
+        assert b"26.10-rc.1</li>" in resp.data
+
+
+class TestWlanpiRelease:
+    def test_parses_version_and_codename(self, tmp_path):
+        from wlanpi_webui.config import get_wlanpi_release
+
+        f = tmp_path / "wlanpi-release"
+        f.write_text('VERSION=26.10-rc.1\nCODENAME="DeadEye"\n\n')
+        assert get_wlanpi_release(str(f)) == {
+            "VERSION": "26.10-rc.1",
+            "CODENAME": "DeadEye",
+        }
+
+    def test_legacy_version_only(self, tmp_path):
+        from wlanpi_webui.config import get_wlanpi_release
+
+        f = tmp_path / "wlanpi-release"
+        f.write_text("VERSION=26.10-rc.1\n")
+        assert get_wlanpi_release(str(f)) == {"VERSION": "26.10-rc.1"}
+
+    def test_missing_file(self, tmp_path):
+        from wlanpi_webui.config import get_wlanpi_release
+
+        assert get_wlanpi_release(str(tmp_path / "nope")) == {}
+
 
 class TestSystemDiag:
     def _patch(self, monkeypatch):
