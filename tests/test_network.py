@@ -148,8 +148,8 @@ class TestNetwork:
         assert b"Pause refresh" in resp.data
         assert b"Refresh now" in resp.data
         assert b"Unavailable." not in resp.data
-        assert b"latency-chart" in resp.data
-        assert b"Chart.bundle.min.js" in resp.data
+        # the latency graph script (it lazy-loads Chart.js)
+        assert b"/static/js/network.js" in resp.data
         assert b'hx-get="/network/cards"' in resp.data
         assert b"/network/detail" not in resp.data
 

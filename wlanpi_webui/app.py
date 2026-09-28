@@ -23,6 +23,7 @@ from flask import (
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from wlanpi_webui.__version__ import __version__
 from wlanpi_webui.config import Config, get_hostname
 from wlanpi_webui.utils import (
     active_alerts,
@@ -36,11 +37,22 @@ from wlanpi_webui.utils import (
     system_service_running_state,
 )
 
-# Endpoints polled in the background (the stats bar). These must not refresh
-# the idle timer, or an open tab would never time out.
+# Background requests must not refresh the idle timer, or an open tab would
+# never time out. htmx polls say so with this header (see app.js); the CLI's
+# fetch() polling and automatic shell restarts are listed by endpoint.
+POLL_HEADER = "X-Wlanpi-Poll"
 BACKGROUND_ENDPOINTS = {
-    "stream.stream_stats",
+    "cli.output",
+    "cli.resize",
+    "cli.start",
 }
+
+# Scripts load only from this origin: no inline <script>, no on* handler
+# attributes, no eval. WebAssembly (the beacon engine) still compiles.
+CONTENT_SECURITY_POLICY = (
+    "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'self'; "
+    "form-action 'self'; frame-ancestors 'self'"
+)
 
 
 def create_app(config_class=Config):
@@ -203,9 +215,23 @@ def create_app(config_class=Config):
         if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
             end_session()  # idle for too long
             return None
-        if request.endpoint not in BACKGROUND_ENDPOINTS:
+        if request.endpoint not in BACKGROUND_ENDPOINTS and not request.headers.get(
+            POLL_HEADER
+        ):
             session["last_seen"] = now
         return None
+
+    @app.after_request
+    def set_content_security_policy(response):
+        response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    # Static URLs carry the package version so a release busts browser caches.
+    @app.url_defaults
+    def version_static_urls(endpoint, values):
+        if endpoint == "static":
+            values.setdefault("v", __version__)
 
     @app.after_request
     def emit_queued_toast(response):

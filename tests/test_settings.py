@@ -67,8 +67,8 @@ class TestSettings:
         resp = client.get("/settings")
         assert b'id="power-confirm"' in resp.data
         assert b"Are you sure?" in resp.data
-        assert b"wlanpiConfirmPower('reboot')" in resp.data
-        assert b"wlanpiConfirmPower('shutdown')" in resp.data
+        assert b'data-action="power" data-power="reboot"' in resp.data
+        assert b'data-action="power" data-power="shutdown"' in resp.data
 
 
 class TestAlertsHistory:

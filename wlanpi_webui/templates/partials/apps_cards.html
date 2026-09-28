@@ -93,7 +93,7 @@
             hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">Data streams</a>
           {% if grafana_running %}
           <a class="uk-button uk-button-primary" href="/grafana_url" target="_blank"
-            onclick="wlanpiLaunchGrafana(event)">Launch Grafana</a>
+            data-action="launch-grafana">Launch Grafana</a>
           {% endif %}
         </p>
       </div>

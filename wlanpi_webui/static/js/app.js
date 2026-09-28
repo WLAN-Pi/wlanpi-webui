@@ -148,7 +148,7 @@
     return defSecs;
   }
 
-  function wlanpiFire(id, evt) {
+  function wlanpiFire(id, evt, poll) {
     var el = document.getElementById(id);
     if (!el) {
       if (window.wlanpiPollers[id]) {
@@ -158,10 +158,26 @@
       return false;
     }
     if (window.htmx) {
-      window.htmx.trigger(el, evt);
+      window.htmx.trigger(el, evt, poll ? { wlanpiPoll: true } : undefined);
     }
     return true;
   }
+
+  // Background polls tell the server so they don't count as activity and an
+  // open tab can still reach the idle timeout. htmx sends load and "every Ns"
+  // triggers with no event; interval refreshes mark theirs (wlanpiFire).
+  document.addEventListener("htmx:configRequest", function (evt) {
+    var d = evt.detail;
+    var te = d.triggeringEvent;
+    var poll = te
+      ? !!(te.detail && te.detail.wlanpiPoll)
+      : /\b(every|load)\b/.test(
+          (d.elt && d.elt.getAttribute && d.elt.getAttribute("hx-trigger")) || ""
+        );
+    if (poll) {
+      d.headers["X-Wlanpi-Poll"] = "1";
+    }
+  });
 
   window.wlanpiStartPoll = function (id, evt, secs) {
     if (window.wlanpiPollers[id]) {
@@ -177,7 +193,7 @@
       return;
     }
     window.wlanpiPollers[id] = setInterval(function () {
-      wlanpiFire(id, evt);
+      wlanpiFire(id, evt, true);
     }, secs * 1000);
   };
 
@@ -214,6 +230,77 @@
   window.wlanpiFirePoll = function (id, evt) {
     wlanpiFire(id, evt);
   };
+
+  // ---- Declarative controls --------------------------------------------
+  // The CSP forbids inline handlers, so controls carry data-action and
+  // app.js wires them up here, once, by delegation.
+  function pollControls(el) {
+    return el.closest("[data-poll-id]");
+  }
+
+  document.addEventListener("htmx:load", function (evt) {
+    var root = (evt.detail && evt.detail.elt) || document;
+    if (!root.querySelectorAll) return;
+    var found = root.matches && root.matches("[data-poll-id]") ? [root] : [];
+    found = found.concat(
+      Array.prototype.slice.call(root.querySelectorAll("[data-poll-id]"))
+    );
+    found.forEach(function (ctl) {
+      window.wlanpiInitPoll(
+        ctl.dataset.pollId,
+        ctl.dataset.pollEvent,
+        parseInt(ctl.dataset.pollDefault, 10)
+      );
+    });
+  });
+
+  document.addEventListener("change", function (evt) {
+    var sel = evt.target.closest && evt.target.closest("[data-poll-select]");
+    var ctl = sel && pollControls(sel);
+    if (ctl) {
+      window.wlanpiStartPoll(
+        ctl.dataset.pollId,
+        ctl.dataset.pollEvent,
+        parseInt(sel.value, 10)
+      );
+    }
+  });
+
+  document.addEventListener("input", function (evt) {
+    var el = evt.target;
+    if (el.matches && el.matches('[data-action="filter-notifications"]')) {
+      window.wlanpiFilterNotifications(el.value);
+    }
+  });
+
+  document.addEventListener("click", function (evt) {
+    var el = evt.target.closest && evt.target.closest("[data-action]");
+    if (!el) return;
+    var action = el.dataset.action;
+    var ctl = pollControls(el);
+    if (action === "poll-toggle" && ctl) {
+      window.wlanpiTogglePoll(ctl.dataset.pollId, ctl.dataset.pollEvent, el);
+    } else if (action === "poll-fire" && ctl) {
+      window.wlanpiFirePoll(ctl.dataset.pollId, ctl.dataset.pollEvent);
+    } else if (action === "launch-grafana") {
+      window.wlanpiLaunchGrafana(evt);
+    } else if (action === "launch-kismet") {
+      window.wlanpiLaunchKismet(evt);
+    } else if (action === "toggle-theme") {
+      window.wlanpiToggleTheme();
+    } else if (action === "power") {
+      window.wlanpiConfirmPower(el.dataset.power);
+    } else if (action === "copy-card") {
+      var body = document.getElementById(el.dataset.card);
+      var title = el.dataset.title;
+      window.wlanpiCopyText(
+        el.dataset.hostname + " - " + title + " - " +
+          new Date().toISOString() + "\n" + (body ? body.innerText : ""),
+        el,
+        title
+      );
+    }
+  });
 
   // ---- Card masonry -----------------------------------------------------
   // CSS grid keeps cards at their natural height; each card spans as many 8px
@@ -341,9 +428,9 @@
       .map(function (n) {
         return (
           '<li class="notification notification-' +
-          n.status +
+          safeToastStatus(n.status) +
           '"><span class="notification-msg">' +
-          n.message +
+          escapeHtml(n.message) +
           '</span><span class="notification-time">' +
           new Date(n.t).toLocaleTimeString() +
           "</span></li>"
@@ -356,8 +443,21 @@
     renderNotifications(query);
   };
 
+  // Toast text is plain text (some comes from core) and status lands in a
+  // class name; UIkit and the history list both render HTML.
+  function escapeHtml(text) {
+    var div = document.createElement("div");
+    div.textContent = String(text);
+    return div.innerHTML;
+  }
+
+  function safeToastStatus(status) {
+    var known = ["primary", "success", "warning", "danger"];
+    return known.indexOf(status) >= 0 ? status : "primary";
+  }
+
   window.wlanpiToast = function (message, status) {
-    status = status || "primary";
+    status = safeToastStatus(status);
     var data = loadNotifications();
     data.items.push({ message: message, status: status, t: Date.now() });
     if (data.items.length > NOTIF_MAX) {
@@ -366,7 +466,7 @@
     saveNotifications(data);
     if (window.UIkit && UIkit.notification) {
       UIkit.notification({
-        message: message,
+        message: escapeHtml(message),
         status: status,
         pos: "top-right",
         timeout: 8000,
@@ -570,21 +670,6 @@
     var bell = document.getElementById("alerts-bell");
     if (bell) syncAlertsBell(alertKeysFrom(bell.dataset.alertKeys));
   });
-
-  // Debug aid: fire a test toast from the query string, e.g.
-  //   /about?toast=Hello&status=warning
-  try {
-    var params = new URLSearchParams(window.location.search);
-    var toastMessage = params.get("toast");
-    if (toastMessage) {
-      var toastStatus = params.get("status") || "primary";
-      window.addEventListener("load", function () {
-        window.wlanpiToast(toastMessage, toastStatus);
-      });
-    }
-  } catch (e) {
-    /* ignore */
-  }
 
   // ---- Session expiry -------------------------------------------------
   // nginx rewrites an expired session to a redirect to /login, which htmx

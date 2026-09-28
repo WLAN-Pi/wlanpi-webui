@@ -1,6 +1,7 @@
 """Tests for the Phase 1 UI work: branded auth pages and the PWA manifest."""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -137,3 +138,66 @@ class TestModernization:
         assert b"page-head" in resp.data
         assert b"Applications" in resp.data
         assert b"app-footer" in resp.data
+
+
+class TestContentSecurityPolicy:
+    @pytest.mark.parametrize("path", ["/login", "/no-such-page", "/auth/check"])
+    def test_policy_on_every_response(self, client, path):
+        # after_request covers pages, error pages and JSON alike
+        resp = client.get(path)
+        csp = resp.headers["Content-Security-Policy"]
+        assert "script-src 'self' 'wasm-unsafe-eval'" in csp
+        assert "object-src 'none'" in csp
+        assert "'unsafe-inline'" not in csp
+        assert resp.headers["X-Content-Type-Options"] == "nosniff"
+
+    # script-src 'self' blocks inline <script>, on* attributes, javascript:
+    # URLs and eval (hyperscript's js() block).
+    INLINE = re.compile(
+        r"<script\b(?![^>]*\bsrc\s*=)[^>]*>|\son[a-z]+\s*=|javascript:"
+        r"""|(?<![\w-])_\s*=\s*["'][^"']*\bjs\s*\(""",
+        re.IGNORECASE,
+    )
+
+    @pytest.mark.parametrize(
+        "snippet",
+        [
+            "<SCRIPT>alert(1)</SCRIPT>",
+            "<script type=module>alert(1)</script>",
+            '<button ONCLICK="x()">',
+            '<button onclick = "x()">',
+            '<a href="javascript:x()">',
+            '_="on load JS (window.x())"',
+        ],
+    )
+    def test_inline_detector_catches(self, snippet):
+        assert self.INLINE.search(snippet)
+
+    def test_inline_detector_allows_external_script(self):
+        assert not self.INLINE.search('<script src="/static/js/app.js" defer></script>')
+
+    def test_templates_have_no_inline_script(self):
+        root = Path(__file__).parent.parent / "wlanpi_webui" / "templates"
+        offenders = [
+            f"{path.name}: {m.group(0)}"
+            for path in root.rglob("*.html")
+            for m in self.INLINE.finditer(path.read_text())
+        ]
+        assert offenders == []
+
+    def test_toast_from_query_string_is_gone(self):
+        # ?toast= was rendered as HTML, pre-auth on /login.
+        app_js = Path(__file__).parent.parent / "wlanpi_webui/static/js/app.js"
+        text = app_js.read_text()
+        assert 'params.get("toast")' not in text
+        assert "message: escapeHtml(message)" in text
+        assert "escapeHtml(n.message)" in text
+
+    def test_static_urls_carry_version(self, client):
+        from wlanpi_webui.__version__ import __version__
+
+        page = client.get("/login").data.decode()
+        assert f"/static/js/app.js?v={__version__}" in page
+        img = client.get(f"/static/img/favicon-16x16.png?v={__version__}")
+        assert img.status_code == 200
+        assert img.mimetype == "image/png"

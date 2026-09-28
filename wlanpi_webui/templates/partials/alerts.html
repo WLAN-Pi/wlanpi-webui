@@ -31,7 +31,7 @@
     <div class="notifications-toolbar">
       <label class="visually-hidden" for="notifications-search">Search messages</label>
       <input id="notifications-search" class="uk-input" type="search" placeholder="Search messages"
-        oninput="wlanpiFilterNotifications(this.value)">
+        data-action="filter-notifications">
     </div>
     <ul class="uk-list uk-list-divider notifications-list" id="notifications-list">
       <li class="uk-text-meta">No messages yet.</li>
