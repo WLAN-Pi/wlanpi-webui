@@ -11,7 +11,7 @@ wlanpi-webui (1.21.15-1) unstable; urgency=medium
     fingerprinted URLs, and gunicorn runs 4 threads so a page no longer
     waits behind a slow poll.
   * Restrict the gunicorn socket to 0660 wlanpi:www-data (was 0666) so
-    only nginx can reach the app.
+    other local users cannot reach the app directly.
 
  -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 29 Sep 2026 00:53:47 -0400
 
