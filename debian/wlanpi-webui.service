@@ -14,7 +14,9 @@ Group=wlanpi
 # this is to support multiple versions of system Python across distros because unit files will not follow symlinks
 WorkingDirectory=/opt/wlanpi-webui/workingdirectory
 
-ExecStart=/opt/wlanpi-webui/bin/gunicorn --workers 1 --bind unix:wlanpi_webui.sock wsgi:app
+# One worker keeps the in-memory state (CLI shell, core token) in one place;
+# threads let a page load proceed while a slow poll waits on wlanpi-core.
+ExecStart=/opt/wlanpi-webui/bin/gunicorn --workers 1 --threads 4 --bind unix:wlanpi_webui.sock wsgi:app
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5

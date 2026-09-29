@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import fcntl
 import json
 import math
 import os
 import secrets
 import subprocess
+import tempfile
+import threading
 import urllib.parse
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -27,6 +31,8 @@ class CoreAuthError(requests.RequestException):
 # Cached wlanpi-core bearer token. Per process: the service runs a single
 # gunicorn worker, and a fresh token is minted on demand after a 401.
 _token: dict[str, str | None] = {"value": None}
+# One mint at a time; threads that wait reuse the fresh token.
+_token_lock = threading.Lock()
 
 # Last wlanpi-core authentication problem, surfaced by the navbar alert icon
 # and the /alerts page. Diagnostic state, not a ledger.
@@ -178,7 +184,7 @@ def get_safe_referrer_target() -> str:
     return get_safe_redirect_target(path)
 
 
-def get_core_token(force=False) -> str:
+def get_core_token(force=False, rejected: str | None = None) -> str:
     """Return a wlanpi-core JWT, minting one via the root-owned wrapper.
 
     The shared HMAC secret is root-only, so the WebUI (which runs unprivileged
@@ -188,7 +194,15 @@ def get_core_token(force=False) -> str:
     """
     if _token["value"] and not force:
         return _token["value"]
+    stale = rejected if rejected is not None else _token["value"]
+    with _token_lock:
+        # Another thread may have replaced the rejected token meanwhile.
+        if _token["value"] and _token["value"] != stale:
+            return _token["value"]
+        return _mint_core_token()
 
+
+def _mint_core_token() -> str:
     wrapper = current_app.config["CORE_TOKEN_WRAPPER"]
     try:
         result = subprocess.run(
@@ -263,10 +277,11 @@ def make_api_request(
             timeout=10,
         )
 
-    response = _send(get_core_token())
+    token = get_core_token()
+    response = _send(token)
     if response.status_code == 401:
         # the token expired or was revoked; mint a fresh one and retry once
-        response = _send(get_core_token(force=True))
+        response = _send(get_core_token(force=True, rejected=token))
 
     if response.status_code == 503 and _clock_not_set(response):
         record_core_alert("NTP needs set; cannot proceed")
@@ -282,16 +297,24 @@ def make_api_request(
 _health_cache: list[dict[str, str]] = []
 _health_cache_at = 0.0
 HEALTH_CACHE_TTL = 60
+_health_lock = threading.Lock()
 
 
 def _health_alerts() -> list[dict[str, str]]:
     """Throttling, clock, and failed-unit alerts from wlanpi-core, cached."""
+    if time() - _health_cache_at < HEALTH_CACHE_TTL:
+        return list(_health_cache)
+    with _health_lock:
+        # Another thread may have refreshed while this one waited.
+        if time() - _health_cache_at < HEALTH_CACHE_TTL:
+            return list(_health_cache)
+        return _refresh_health_alerts()
+
+
+def _refresh_health_alerts() -> list[dict[str, str]]:
     global _health_cache, _health_cache_at
 
     now = time()
-    if now - _health_cache_at < HEALTH_CACHE_TTL:
-        return list(_health_cache)
-
     alerts: list[dict[str, str]] = []
 
     health = get_core_json("/api/v1/system/health")
@@ -736,6 +759,31 @@ def load_speedtest_results() -> list[dict]:
     return data if isinstance(data, list) else []
 
 
+# One writer at a time, or two saves read the same list and the second drops
+# the first's result: a thread lock for gunicorn's threads, plus a file lock
+# for the old and new workers that overlap during a reload.
+_speedtest_lock = threading.Lock()
+
+
+@contextmanager
+def _speedtest_store_lock(target: Path):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with _speedtest_lock, open(f"{target}.lock", "a") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        yield
+
+
+def _write_speedtest_results(target: Path, results: list) -> None:
+    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            json.dump(results, fh)
+        os.replace(tmp, target)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
 def save_speedtest_result(payload) -> dict | None:
     """Validate and store a speedtest result. None if the payload is unusable."""
     if not isinstance(payload, dict):
@@ -760,16 +808,12 @@ def save_speedtest_result(payload) -> dict | None:
     if not path:
         return None
 
-    results = load_speedtest_results()
-    results.insert(0, result)
-    del results[SPEEDTEST_RESULT_LIMIT:]
-
     try:
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_suffix(".tmp")
-        tmp.write_text(json.dumps(results))
-        tmp.replace(target)
+        with _speedtest_store_lock(Path(path)):
+            results = load_speedtest_results()
+            results.insert(0, result)
+            del results[SPEEDTEST_RESULT_LIMIT:]
+            _write_speedtest_results(Path(path), results)
     except OSError:
         current_app.logger.warning("could not store speedtest result: %s", path)
         return None
@@ -787,19 +831,16 @@ def set_speedtest_note(result_id: str, note: str) -> bool:
     if not path:
         return False
 
-    results = load_speedtest_results()
-    for result in results:
-        if result.get("id") == result_id:
-            result["note"] = note[:SPEEDTEST_NOTE_MAX]
-            break
-    else:
-        return False
-
     try:
-        target = Path(path)
-        tmp = target.with_suffix(".tmp")
-        tmp.write_text(json.dumps(results))
-        tmp.replace(target)
+        with _speedtest_store_lock(Path(path)):
+            results = load_speedtest_results()
+            for result in results:
+                if result.get("id") == result_id:
+                    result["note"] = note[:SPEEDTEST_NOTE_MAX]
+                    break
+            else:
+                return False
+            _write_speedtest_results(Path(path), results)
     except OSError:
         current_app.logger.warning("could not store speedtest note: %s", path)
         return False

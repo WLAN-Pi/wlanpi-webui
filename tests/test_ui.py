@@ -1,5 +1,6 @@
 """Tests for the Phase 1 UI work: branded auth pages and the PWA manifest."""
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -193,11 +194,68 @@ class TestContentSecurityPolicy:
         assert "message: escapeHtml(message)" in text
         assert "escapeHtml(n.message)" in text
 
-    def test_static_urls_carry_version(self, client):
-        from wlanpi_webui.__version__ import __version__
+    def _fingerprint(self, app, filename):
+        data = (Path(app.static_folder) / filename).read_bytes()
+        return hashlib.sha256(data).hexdigest()[:12]
 
+    def test_static_urls_carry_fingerprint(self, app, client):
         page = client.get("/login").data.decode()
-        assert f"/static/js/app.js?v={__version__}" in page
-        img = client.get(f"/static/img/favicon-16x16.png?v={__version__}")
+        assert f"/static/js/app.js?v={self._fingerprint(app, 'js/app.js')}" in page
+        fp = self._fingerprint(app, "img/favicon-16x16.png")
+        img = client.get(f"/static/img/favicon-16x16.png?v={fp}")
         assert img.status_code == 200
         assert img.mimetype == "image/png"
+        assert "immutable" in img.headers["Cache-Control"]
+
+    def test_only_matching_fingerprint_is_cached_long(self, app, client):
+        fp = self._fingerprint(app, "js/app.js")
+        current = client.get(f"/static/js/app.js?v={fp}")
+        assert "max-age=31536000" in current.headers["Cache-Control"]
+        # a hand-copied or newer file no longer matches an old URL
+        for url in ("/static/js/app.js", "/static/js/app.js?v=000000000000"):
+            assert "immutable" not in client.get(url).headers.get("Cache-Control", "")
+
+    def test_request_path_never_reads_files(self, app, client, monkeypatch):
+        # Fingerprints come from a table built at startup; a client-chosen
+        # path (traversal, random names, OPTIONS) must not reach the disk
+        # or grow anything.
+        def boom(self):
+            raise AssertionError(f"read {self}")
+
+        monkeypatch.setattr(Path, "read_bytes", boom)
+        for method, url in (
+            ("OPTIONS", "/static/x/../../../../etc/passwd?v=1"),
+            ("OPTIONS", "/static/nope-1.js?v=1"),
+            ("GET", "/static/js/zz/../app.js?v=1"),
+        ):
+            resp = client.open(url, method=method)
+            assert "immutable" not in resp.headers.get("Cache-Control", "")
+
+    def test_replaced_file_loses_long_cache(self, app, client, monkeypatch):
+        import os
+
+        fp = self._fingerprint(app, "js/app.js")
+        target = Path(app.static_folder) / "js/app.js"
+        stat = target.stat()
+        real_stat = Path.stat
+
+        def changed(self, **kwargs):
+            if self == target:
+                return os.stat_result(
+                    (stat.st_mode, 0, 0, 0, 0, 0, stat.st_size + 1, 0, 0, 0)
+                )
+            return real_stat(self, **kwargs)
+
+        monkeypatch.setattr(Path, "stat", changed)
+        resp = client.get(f"/static/js/app.js?v={fp}")
+        assert "immutable" not in resp.headers.get("Cache-Control", "")
+        assert f"app.js?v={fp}" not in client.get("/login").data.decode()
+
+    def test_revalidation_keeps_long_cache_and_no_cookie(self, app, client):
+        url = f"/static/js/app.js?v={self._fingerprint(app, 'js/app.js')}"
+        first = client.get(url)
+        again = client.get(url, headers={"If-None-Match": first.headers["ETag"]})
+        assert again.status_code == 304
+        assert "immutable" in again.headers["Cache-Control"]
+        assert "Set-Cookie" not in again.headers
+        assert "Cookie" not in again.headers.get("Vary", "")

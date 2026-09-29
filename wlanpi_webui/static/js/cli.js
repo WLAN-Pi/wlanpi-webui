@@ -1,6 +1,6 @@
 /* Interactive shell on the /cli page.
  *
- * The WebUI runs one sync worker, so there is no WebSocket: the PTY lives on
+ * The WebUI's gunicorn worker has no WebSocket support: the PTY lives on
  * the server and this polls for output. xterm.js renders it.
  *
  * This file is loaded on every page (see base.html) because htmx swaps the
@@ -164,8 +164,38 @@
         });
     }
 
+    // One input request at a time: the server handles requests on several
+    // threads, so parallel keystroke POSTs could reach the shell out of
+    // order. Keys typed while a request is in flight go in the next batch.
+    // A batch that fails is dropped, not replayed: the usual cause is a shell
+    // that was reaped, and its replacement should not receive stale keys.
+    var pendingInput = "";
+    var sendingInput = false;
+    function flushInput() {
+      if (stopped || sendingInput || !pendingInput) return;
+      var data = pendingInput;
+      pendingInput = "";
+      sendingInput = true;
+      post("/cli/input", { data: bytesToBase64(new TextEncoder().encode(data)) })
+        .then(
+          function (r) {
+            if (!r.ok && r.status !== 409) {
+              term.writeln("\r\n[input not delivered: HTTP " + r.status + "]");
+            }
+          },
+          function () {
+            term.writeln("\r\n[input not delivered: connection lost]");
+          }
+        )
+        .then(function () {
+          sendingInput = false;
+          flushInput();
+        });
+    }
+
     term.onData(function (data) {
-      post("/cli/input", { data: bytesToBase64(new TextEncoder().encode(data)) });
+      pendingInput += data;
+      flushInput();
     });
 
     function onThemeChange() {

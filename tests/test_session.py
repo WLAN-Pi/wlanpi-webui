@@ -100,6 +100,21 @@ class TestSessionLifecycle:
         with client.session_transaction() as sess:
             assert sess["last_seen"] > before
 
+    @pytest.mark.parametrize(
+        "path", ["/static/js/app.js?v=1", "/static/img/favicon-16x16.png"]
+    )
+    def test_static_files_leave_the_session_alone(self, client, monkeypatch, path):
+        # A new cookie per asset plus Vary: Cookie defeats the browser cache.
+        _login(client, monkeypatch)
+        with client.session_transaction() as sess:
+            sess["last_seen"] = before = sess["last_seen"] - 60
+        resp = client.get(path)
+        assert resp.status_code == 200
+        assert "Set-Cookie" not in resp.headers
+        assert "Cookie" not in resp.headers.get("Vary", "")
+        with client.session_transaction() as sess:
+            assert sess["last_seen"] == before
+
     def test_background_endpoints_exist(self, app):
         # A typo here would silently keep an open tab signed in forever.
         from wlanpi_webui.app import BACKGROUND_ENDPOINTS
@@ -169,6 +184,8 @@ class TestSystemPage:
         assert b'class="stat-container"' in resp.data
         # The card title now loads lazily with the rows.
         assert b'uk-card-title">Resource usage<' in resp.data
+        # icons are fingerprinted like every other static URL
+        assert re.search(rb"/static/icon/cpu\.svg\?v=[0-9a-f]{12}", resp.data)
 
     def test_debug_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)
