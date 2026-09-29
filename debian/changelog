@@ -1,3 +1,20 @@
+wlanpi-webui (1.21.15-1) unstable; urgency=medium
+
+  * Harden the web interface against script injection: notification
+    toasts escape their text, the ?toast= debug hook that rendered URL
+    input is removed, and a Content-Security-Policy blocks inline
+    scripts (#159).
+  * Background polls no longer count as activity, so an idle browser tab
+    signs out after the idle timeout instead of staying signed in.
+  * Load pages faster, most noticeably over Bluetooth PAN: nginx
+    compresses CSS, JS, SVG and wasm, static files are cached under
+    fingerprinted URLs, and gunicorn runs 4 threads so a page no longer
+    waits behind a slow poll.
+  * Restrict the gunicorn socket to 0660 wlanpi:www-data (was 0666) so
+    only nginx can reach the app.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 29 Sep 2026 00:53:47 -0400
+
 wlanpi-webui (1.21.14-1) unstable; urgency=medium
 
   * Show the OS codename (for example DeadEye) after the version on the
