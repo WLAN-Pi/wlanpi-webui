@@ -240,11 +240,12 @@ def create_app(config_class=Config):
     # busts browser caches. The table is built once from the files on disk;
     # nothing on the request path reads a file named by the client.
     static_root = Path(app.static_folder or "")
-    fingerprints: dict[str, tuple[int, int, str]] = {}
+    fingerprints: dict[str, tuple[Path, int, int, str]] = {}
     for path in static_root.rglob("*"):
         if path.is_file():
             stat = path.stat()
             fingerprints[path.relative_to(static_root).as_posix()] = (
+                path,
                 stat.st_mtime_ns,
                 stat.st_size,
                 hashlib.sha256(path.read_bytes()).hexdigest()[:12],
@@ -261,13 +262,14 @@ def create_app(config_class=Config):
         known = fingerprints.get(filename)
         if not known:
             return None
+        path, mtime_ns, size, fingerprint = known
         try:
-            stat = (static_root / filename).stat()
+            stat = path.stat()  # the startup path, never one built from input
         except OSError:
             return None
-        if (stat.st_mtime_ns, stat.st_size) != known[:2]:
+        if (stat.st_mtime_ns, stat.st_size) != (mtime_ns, size):
             return None  # replaced without a restart: stop promising immutable
-        return known[2]
+        return fingerprint
 
     @app.url_defaults
     def fingerprint_static_urls(endpoint, values):
@@ -290,7 +292,7 @@ def create_app(config_class=Config):
             filename = static_filename(request.endpoint, request.view_args or {})
             known = fingerprints.get(filename) if filename else None
             version = request.args.get("v")
-            if known and version == known[2] and current_fingerprint(filename):
+            if known and version == known[3] and current_fingerprint(filename):
                 response.headers["Cache-Control"] = (
                     "public, max-age=31536000, immutable"
                 )
