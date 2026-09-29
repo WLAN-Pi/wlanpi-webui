@@ -7,9 +7,12 @@ wlanpi_webui.app
 the main flask app
 """
 
+import hashlib
 import json
 import logging
+import threading
 from datetime import timedelta
+from pathlib import Path
 from time import time
 
 from flask import (
@@ -36,11 +39,24 @@ from wlanpi_webui.utils import (
     system_service_running_state,
 )
 
-# Endpoints polled in the background (the stats bar). These must not refresh
-# the idle timer, or an open tab would never time out.
+# Background requests must not refresh the idle timer, or an open tab would
+# never time out. htmx polls say so with this header (see app.js); the CLI's
+# fetch() polling and automatic shell restarts are listed by endpoint.
+POLL_HEADER = "X-Wlanpi-Poll"
 BACKGROUND_ENDPOINTS = {
-    "stream.stream_stats",
+    "cli.output",
+    "cli.resize",
+    "cli.start",
 }
+
+STATIC_ENDPOINTS = ("static", "img")
+
+# Scripts load only from this origin: no inline <script>, no on* handler
+# attributes, no eval. WebAssembly (the beacon engine) still compiles.
+CONTENT_SECURITY_POLICY = (
+    "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'self'; "
+    "form-action 'self'; frame-ancestors 'self'"
+)
 
 
 def create_app(config_class=Config):
@@ -189,6 +205,11 @@ def create_app(config_class=Config):
 
     @app.before_request
     def enforce_session_freshness():
+        # Static files are public and must not touch the session: reading it
+        # adds Vary: Cookie and refreshing it sets a new cookie, and together
+        # those make browsers refetch every asset on every page.
+        if request.endpoint in STATIC_ENDPOINTS:
+            return None
         if not session.get("user"):
             return None
         now = boot_clock()
@@ -203,12 +224,84 @@ def create_app(config_class=Config):
         if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
             end_session()  # idle for too long
             return None
-        if request.endpoint not in BACKGROUND_ENDPOINTS:
+        if request.endpoint not in BACKGROUND_ENDPOINTS and not request.headers.get(
+            POLL_HEADER
+        ):
             session["last_seen"] = now
         return None
 
     @app.after_request
+    def set_content_security_policy(response):
+        response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    # Static URLs carry a hash of the file, so a release or a hand-copied file
+    # busts browser caches. The table is built once from the files on disk;
+    # nothing on the request path reads a file named by the client.
+    static_root = Path(app.static_folder or "")
+    fingerprints: dict[str, tuple[Path, int, int, str]] = {}
+    for path in static_root.rglob("*"):
+        if path.is_file():
+            stat = path.stat()
+            fingerprints[path.relative_to(static_root).as_posix()] = (
+                path,
+                stat.st_mtime_ns,
+                stat.st_size,
+                hashlib.sha256(path.read_bytes()).hexdigest()[:12],
+            )
+
+    def static_filename(endpoint, values) -> str | None:
+        filename = values.get("filename")
+        if not filename:
+            return None
+        return f"img/{filename}" if endpoint == "img" else filename
+
+    def current_fingerprint(filename: str) -> str | None:
+        """The file's hash, or None if it changed since startup."""
+        known = fingerprints.get(filename)
+        if not known:
+            return None
+        path, mtime_ns, size, fingerprint = known
+        try:
+            stat = path.stat()  # the startup path, never one built from input
+        except OSError:
+            return None
+        if (stat.st_mtime_ns, stat.st_size) != (mtime_ns, size):
+            return None  # replaced without a restart: stop promising immutable
+        return fingerprint
+
+    @app.url_defaults
+    def fingerprint_static_urls(endpoint, values):
+        if endpoint in STATIC_ENDPOINTS:
+            filename = static_filename(endpoint, values)
+            fingerprint = current_fingerprint(filename) if filename else None
+            if fingerprint:
+                values.setdefault("v", fingerprint)
+
+    # A fingerprinted URL never changes, so the browser keeps it without
+    # revalidating (one round trip per asset per page adds up over Bluetooth
+    # PAN). Other static URLs keep the default revalidation.
+    @app.after_request
+    def cache_fingerprinted_static(response):
+        if (
+            request.endpoint in STATIC_ENDPOINTS
+            and request.method in ("GET", "HEAD")
+            and response.status_code in (200, 304)
+        ):
+            filename = static_filename(request.endpoint, request.view_args or {})
+            known = fingerprints.get(filename) if filename else None
+            version = request.args.get("v")
+            if known and version == known[3] and current_fingerprint(filename):
+                response.headers["Cache-Control"] = (
+                    "public, max-age=31536000, immutable"
+                )
+        return response
+
+    @app.after_request
     def emit_queued_toast(response):
+        if request.endpoint in STATIC_ENDPOINTS:
+            return response
         # The navbar bell reads the alert keys from every response.
         core_running = _context_cache.get("core_running", True)
         response.headers["X-Wlanpi-Alerts"] = ",".join(
@@ -225,16 +318,13 @@ def create_app(config_class=Config):
 
     @app.before_request
     def require_login():
-        if session.get("user"):
+        if request.endpoint in STATIC_ENDPOINTS:
             return None
-        if request.path.startswith("/static"):
+        if session.get("user"):
             return None
         if request.endpoint is None:
             return None
-        if request.blueprint in ("auth", "errors") or request.endpoint in (
-            "static",
-            "img",
-        ):
+        if request.blueprint in ("auth", "errors"):
             return None
         if is_htmx(request) or request.headers.get("X-Requested-With"):
             return "", 401
@@ -244,6 +334,7 @@ def create_app(config_class=Config):
     _context_cache_time = 0
     _context_cache_mtime = 0
     CONTEXT_CACHE_TTL = 60
+    context_lock = threading.Lock()
 
     def _with_alerts(context):
         # Computed per render so a core failure surfaces promptly; the
@@ -257,19 +348,26 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def utility_processor():
-        nonlocal _context_cache, _context_cache_time, _context_cache_mtime
-
         current_time = time()
         current_mtime = get_dpkg_status_mtime()
-        cache_age = current_time - _context_cache_time
 
-        if (
-            _context_cache
-            and cache_age < CONTEXT_CACHE_TTL
-            and _context_cache_mtime == current_mtime
-        ):
+        def fresh():
+            return (
+                _context_cache
+                and time() - _context_cache_time < CONTEXT_CACHE_TTL
+                and _context_cache_mtime == current_mtime
+            )
+
+        if fresh():
             return _with_alerts(_context_cache)
+        with context_lock:
+            # Another thread may have refreshed while this one waited.
+            if fresh():
+                return _with_alerts(_context_cache)
+            return _with_alerts(refresh_context(current_time, current_mtime))
 
+    def refresh_context(current_time, current_mtime):
+        nonlocal _context_cache, _context_cache_time, _context_cache_mtime
         _context_cache = {
             "profiler_installed": package_installed("wlanpi-profiler"),
             "kismet_installed": package_installed("kismet"),
@@ -279,8 +377,7 @@ def create_app(config_class=Config):
         }
         _context_cache_time = current_time
         _context_cache_mtime = current_mtime
-
-        return _with_alerts(_context_cache)
+        return _context_cache
 
     @app.route("/static/img/<path:filename>")
     def img(filename):

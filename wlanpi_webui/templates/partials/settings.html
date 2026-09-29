@@ -12,7 +12,7 @@
         <h3 class="uk-card-title">Appearance</h3>
         <p class="uk-text-meta">Switch between the light and dark themes. The choice is remembered on this device.</p>
         <div class="settings-actions">
-          <button class="uk-button uk-button-default" type="button" onclick="wlanpiToggleTheme()">Toggle dark mode</button>
+          <button class="uk-button uk-button-default" type="button" data-action="toggle-theme">Toggle dark mode</button>
         </div>
       </div>
     </div>
@@ -81,12 +81,12 @@
       <form id="reboot-form" hx-post="/settings/reboot" hx-target="#content" hx-swap="innerHTML"
         hx-indicator=".progress">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="uk-button uk-button-default" type="button" onclick="wlanpiConfirmPower('reboot')">Reboot</button>
+        <button class="uk-button uk-button-default" type="button" data-action="power" data-power="reboot">Reboot</button>
       </form>
       <form id="shutdown-form" hx-post="/settings/shutdown" hx-target="#content" hx-swap="innerHTML"
         hx-indicator=".progress">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="uk-button uk-button-danger" type="button" onclick="wlanpiConfirmPower('shutdown')">Shut down</button>
+        <button class="uk-button uk-button-danger" type="button" data-action="power" data-power="shutdown">Shut down</button>
       </form>
     </div>
   </div>

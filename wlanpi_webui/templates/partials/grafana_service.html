@@ -11,7 +11,7 @@
     {{ toggle|safe }}
     {% if state == 'running' %}
     <a class="uk-button uk-button-primary" href="/grafana_url" target="_blank" rel="noopener"
-      onclick="wlanpiLaunchGrafana(event)">Launch Grafana</a>
+      data-action="launch-grafana">Launch Grafana</a>
     {% else %}
     <button class="uk-button uk-button-primary" type="button" disabled>Launch Grafana</button>
     {% endif %}

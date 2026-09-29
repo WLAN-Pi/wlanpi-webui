@@ -296,6 +296,13 @@
       evt.detail.shouldSwap = false;
     }
   });
+  // The QR slot arrives out-of-band with the session poll; draw it on arrival.
+  document.addEventListener("htmx:load", function (evt) {
+    var el = evt.detail && evt.detail.elt;
+    if (!el || !el.querySelector) return;
+    var qr = el.id === "profiler-qr" ? el : el.querySelector("#profiler-qr");
+    if (qr) window.wlanpiRenderQr(qr);
+  });
   window.addEventListener("load", function () {
     checkNewProfile();
     init();

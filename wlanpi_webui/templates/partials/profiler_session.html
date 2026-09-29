@@ -8,8 +8,7 @@
 <div id="profiler-qr-slot" hx-swap-oob="true">
   {% if session.wifi_qr %}
   <div class="session-qr">
-    <div id="profiler-qr" data-wifi="{{ session.wifi_qr }}"
-      _="on load js(window.wlanpiRenderQr(me))"></div>
+    <div id="profiler-qr" data-wifi="{{ session.wifi_qr }}"></div>
     <p class="uk-text-meta uk-margin-small-top">Scan to join {{ session.ssid }}</p>
   </div>
   {% endif %}

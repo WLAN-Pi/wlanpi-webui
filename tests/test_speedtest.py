@@ -202,3 +202,73 @@ class TestSpeedtestReport:
         resp = client.get(f"/app/librespeed/results/{rid}")
         # The lede and the canvas payload both carry the display value.
         assert raw.encode() not in resp.data
+
+
+def test_concurrent_saves_keep_both_results(app, monkeypatch, results_path):
+    # gunicorn runs with threads: two reports arriving together must not read
+    # the same list and overwrite each other.
+    import threading
+
+    from conftest import ContendedLock, join_all
+
+    from wlanpi_webui import utils
+
+    lock = ContendedLock()
+    monkeypatch.setattr(utils, "_speedtest_lock", lock)
+    real_write = utils._write_speedtest_results
+    entered = threading.Event()
+    release = threading.Event()
+
+    def slow_write(target, results):
+        if not entered.is_set():
+            entered.set()
+            assert release.wait(5), "test never released"
+        real_write(target, results)
+
+    monkeypatch.setattr(utils, "_write_speedtest_results", slow_write)
+    saved = []
+
+    def save(mbps):
+        with app.app_context():
+            saved.append(utils.save_speedtest_result({"download_mbps": mbps}))
+
+    first = threading.Thread(target=save, args=(100,))
+    first.start()
+    assert entered.wait(5)
+    second = threading.Thread(target=save, args=(200,))
+    second.start()
+    assert lock.contended.wait(5), "second save never reached the lock"
+    release.set()
+    join_all(first, second)
+
+    stored = json.loads(results_path.read_text())
+    assert sorted(r["download_mbps"] for r in stored) == [100, 200]
+    assert not list(results_path.parent.glob(".speedtest.json.*"))  # no temp left
+
+
+def test_store_lock_excludes_other_processes(app, results_path):
+    # gunicorn's old and new workers overlap during a reload; the thread lock
+    # can't see across processes, the file lock must.
+    import multiprocessing
+
+    from wlanpi_webui import utils
+
+    ctx = multiprocessing.get_context("fork")
+    holding, done = ctx.Event(), ctx.Event()
+
+    def hold():
+        with utils._speedtest_store_lock(results_path):
+            holding.set()
+            done.wait(5)
+
+    child = ctx.Process(target=hold)
+    child.start()
+    try:
+        assert holding.wait(5)
+        with open(f"{results_path}.lock", "a") as fh:
+            with pytest.raises(BlockingIOError):
+                utils.fcntl.flock(fh, utils.fcntl.LOCK_EX | utils.fcntl.LOCK_NB)
+    finally:
+        done.set()
+        child.join(5)
+    assert child.exitcode == 0

@@ -45,6 +45,7 @@ CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
 # the wait doubles from 1s up to MAX_DELAY. A key is forgotten after an hour
 # without failures, and at most MAX_TRACKED keys are kept.
 FREE_ATTEMPTS = 5
+IN_PROGRESS = "Another sign-in from this address is in progress. Try again."
 MAX_DELAY = 300
 FORGET_AFTER = 3600
 MAX_TRACKED = 4096
@@ -81,6 +82,7 @@ def init_auth(app) -> None:
         "sessions": {},
         "stamp": None,
         "failures": {},
+        "in_flight": set(),
     }
 
 
@@ -350,6 +352,34 @@ def _record_failure(keys: list[str], username: str) -> None:
     )
 
 
+@contextmanager
+def _attempt(keys: list[str]):
+    """Allow one sign-in attempt per client IP (and username) at a time.
+
+    gunicorn serves requests on several threads, so parallel guesses would
+    all pass the throttle check before the first failure is recorded. Yields
+    False when this IP already has an attempt waiting on PAM. Nothing blocks:
+    a flood from one address can't tie up the worker threads.
+    """
+    state = _state()
+    now = boot_clock()
+    with state["lock"]:
+        ip_count, ip_last = state["failures"].get(keys[0], (0, 0.0))
+        # Mirror _throttle_wait: the username key counts once this IP has
+        # failed, so failed IPs guessing one username take turns too, while an
+        # admin on a clean address never waits on the username.
+        held = keys if ip_count and now - ip_last <= FORGET_AFTER else keys[:1]
+        busy = any(key in state["in_flight"] for key in held)
+        if not busy:
+            state["in_flight"].update(held)
+    try:
+        yield not busy
+    finally:
+        if not busy:
+            with state["lock"]:
+                state["in_flight"].difference_update(held)
+
+
 def _clear_failures(keys: list[str]) -> None:
     state = _state()
     with state["lock"]:
@@ -390,27 +420,30 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         keys = _throttle_keys(username)
-        wait = _throttle_wait(keys)
-        if wait:
-            return _render_login(_throttled_message(wait), 429)
-        # Control characters never name an account (PAM would cut at a NUL).
-        status = (
-            pam_authenticate(username, password)
-            if username.isprintable()
-            else "failure"
-        )
-        if status == "success":
-            _clear_failures(keys)
-            _login_session(username)
-            return redirect("/")
-        if status == "password_change_required":
-            # Carried in the signed session, not the URL, so it stays out of
-            # access logs and browser history.
-            session["pending_password_change"] = username
-            return redirect(url_for("auth.change_password"))
-        if status in _FAILED_GUESS or status not in MESSAGES:
-            _record_failure(keys, username)
-        return _render_login(MESSAGES.get(status, MESSAGES["failure"]), 401)
+        with _attempt(keys) as allowed:
+            if not allowed:
+                return _render_login(IN_PROGRESS, 429)
+            wait = _throttle_wait(keys)
+            if wait:
+                return _render_login(_throttled_message(wait), 429)
+            # Control characters never name an account (PAM would cut at a NUL).
+            status = (
+                pam_authenticate(username, password)
+                if username.isprintable()
+                else "failure"
+            )
+            if status == "success":
+                _clear_failures(keys)
+                _login_session(username)
+                return redirect("/")
+            if status == "password_change_required":
+                # Carried in the signed session, not the URL, so it stays out of
+                # access logs and browser history.
+                session["pending_password_change"] = username
+                return redirect(url_for("auth.change_password"))
+            if status in _FAILED_GUESS or status not in MESSAGES:
+                _record_failure(keys, username)
+            return _render_login(MESSAGES.get(status, MESSAGES["failure"]), 401)
     if session.get("user"):
         return redirect("/")
     expired = request.args.get("reason") == "expired"
@@ -431,33 +464,36 @@ def change_password():
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("new_password_confirm", "")
         keys = _throttle_keys(username)
-        wait = _throttle_wait(keys)
-        if wait:
-            return _render_change(_throttled_message(wait), username, 429)
-        if new_password != confirm_password:
-            error = "New passwords do not match."
-        elif new_password == current_password:
-            error = "New password must be different from the current password."
-        else:
-            status = (
-                pam_change_password(username, current_password, new_password)
-                if username.isprintable()
-                else "failure"
-            )
-            if status == "success":
-                _clear_failures(keys)
-                _revoke_user_sessions(username)
-                _login_session(username)
-                return redirect("/")
-            if status in _FAILED_GUESS or status not in MESSAGES:
-                _record_failure(keys, username)
-            if status == "failure" or status not in MESSAGES:
-                error = (
-                    "Unable to change password. Check your current password "
-                    "and try again."
-                )
+        with _attempt(keys) as allowed:
+            if not allowed:
+                return _render_change(IN_PROGRESS, username, 429)
+            wait = _throttle_wait(keys)
+            if wait:
+                return _render_change(_throttled_message(wait), username, 429)
+            if new_password != confirm_password:
+                error = "New passwords do not match."
+            elif new_password == current_password:
+                error = "New password must be different from the current password."
             else:
-                error = MESSAGES[status]
+                status = (
+                    pam_change_password(username, current_password, new_password)
+                    if username.isprintable()
+                    else "failure"
+                )
+                if status == "success":
+                    _clear_failures(keys)
+                    _revoke_user_sessions(username)
+                    _login_session(username)
+                    return redirect("/")
+                if status in _FAILED_GUESS or status not in MESSAGES:
+                    _record_failure(keys, username)
+                if status == "failure" or status not in MESSAGES:
+                    error = (
+                        "Unable to change password. Check your current password "
+                        "and try again."
+                    )
+                else:
+                    error = MESSAGES[status]
         return _render_change(error, username, 400)
     return render_template(
         "change_password.html", username=session.get("pending_password_change", "")

@@ -60,11 +60,11 @@
     {{ tile("/network", "server", "Network") }}
     {{ tile("/cli", "code", "CLI") }}
     {% if profiler_installed %}{{ tile("/profiler/profiles", "users", "Profiler") }}{% endif %}
-    {% if kismet_installed %}<a class="launcher-tile" href="/kismet" onclick="wlanpiLaunchKismet(event)">
+    {% if kismet_installed %}<a class="launcher-tile" href="/kismet" data-action="launch-kismet">
       <span class="launcher-tile-icon" uk-icon="icon: receiver; ratio: 1.8"></span>
       <span class="launcher-tile-label">Kismet</span>
     </a>{% endif %}
-    {% if grafana_installed %}<a class="launcher-tile" href="/grafana_url" onclick="wlanpiLaunchGrafana(event)">
+    {% if grafana_installed %}<a class="launcher-tile" href="/grafana_url" data-action="launch-grafana">
       <span class="launcher-tile-icon" uk-icon="icon: database; ratio: 1.8"></span>
       <span class="launcher-tile-label">Grafana</span>
     </a>{% endif %}

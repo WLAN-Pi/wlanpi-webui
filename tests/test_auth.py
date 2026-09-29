@@ -342,6 +342,90 @@ class TestLoginThrottle:
         monkeypatch.setattr(auth, "make_api_request", fake)
         return calls
 
+    def _parallel_guesses(self, app, monkeypatch, ips):
+        """Send one guess per IP, all while the first is still inside PAM."""
+        import threading
+
+        from wlanpi_webui.auth import auth
+
+        entered = threading.Event()
+        release = threading.Event()
+        in_pam = []
+        peak = []
+
+        def fake(*args, **kwargs):
+            in_pam.append(1)
+            peak.append(len(in_pam))
+            entered.set()
+            if len(peak) == len(ips):
+                release.set()
+            assert release.wait(5), "test never released"
+            in_pam.pop()
+            return FakeResponse({"status": "failure"})
+
+        monkeypatch.setattr(auth, "make_api_request", fake)
+        clients = [app.test_client() for _ in ips]
+        results = []
+        threads = [
+            threading.Thread(
+                target=lambda c=c, ip=ip: results.append(_post_login(c, ip=ip))
+            )
+            for c, ip in zip(clients, ips, strict=True)
+        ]
+        threads[0].start()
+        assert entered.wait(5)
+        for t in threads[1:]:
+            t.start()
+        return threads, results, peak, release
+
+    def test_parallel_guesses_from_one_address_are_refused(self, app, monkeypatch):
+        # gunicorn runs with threads: parallel guesses would all pass the
+        # throttle check before the first failure is recorded.
+        from conftest import join_all
+
+        threads, results, peak, release = self._parallel_guesses(
+            app, monkeypatch, ["192.0.2.10", "192.0.2.10"]
+        )
+        threads[1].join(5)  # refused without waiting on the first guess
+        assert not threads[1].is_alive()
+        release.set()
+        join_all(*threads)
+        assert sorted(r.status_code for r in results) == [401, 429]
+        assert len(peak) == 1
+
+    def test_failed_addresses_take_turns_on_a_username(self, app, monkeypatch):
+        # Several IPs that have already failed, guessing one username at once:
+        # only one reaches PAM, or the per-username backoff is raced.
+        from conftest import join_all
+
+        from wlanpi_webui.auth import auth
+
+        ips = ["192.0.2.20", "192.0.2.21", "192.0.2.22"]
+        self._core(monkeypatch)
+        for ip in ips:
+            _post_login(app.test_client(), ip=ip)
+        threads, results, peak, release = self._parallel_guesses(app, monkeypatch, ips)
+        for t in threads[1:]:
+            t.join(5)
+            assert not t.is_alive()
+        release.set()
+        join_all(*threads)
+        assert len(peak) == 1
+        assert sorted(r.status_code for r in results) == [401, 429, 429]
+        assert b"in progress" in next(r for r in results if r.status_code == 429).data
+        assert auth.FREE_ATTEMPTS > 1  # the setup failures stay under the backoff
+
+    def test_other_addresses_are_not_held_up(self, app, monkeypatch):
+        # One client's guess in PAM must not block sign-in from elsewhere.
+        from conftest import join_all
+
+        threads, results, peak, _ = self._parallel_guesses(
+            app, monkeypatch, ["192.0.2.10", "192.0.2.11"]
+        )
+        join_all(*threads)
+        assert max(peak) == 2
+        assert [r.status_code for r in results] == [401, 401]
+
     def test_backs_off_after_free_attempts(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
 

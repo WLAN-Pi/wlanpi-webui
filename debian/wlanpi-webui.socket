@@ -5,7 +5,11 @@ Description=wlanpi-webui gunicorn socket
 
 [Socket]
 ListenStream=/run/wlanpi_webui.sock
-User=wlanpi
+# Only nginx (www-data) may connect: gunicorn trusts the X-Forwarded-For that
+# arrives here for the login throttle, so other local users must not reach it.
+SocketUser=wlanpi
+SocketGroup=www-data
+SocketMode=0660
 
 [Install]
 WantedBy=sockets.target

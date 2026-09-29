@@ -3,6 +3,7 @@
 import base64
 import os
 import re
+import threading
 import time
 
 import pytest
@@ -158,6 +159,128 @@ class TestCli:
         body = client.get("/cli/output?since=0").get_json()
         assert body["alive"] is True
         assert b"wlanpi-resume" in base64.b64decode(body["data"])
+
+    def _fake_session(self, monkeypatch, block=None):
+        """Replace Session; the first instance optionally blocks in __init__."""
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = []
+
+        class FakeSession:
+            def __init__(self):
+                self.last = time.time()
+                self.closed = False
+                created.append(self)
+                if block and len(created) == 1:
+                    block["entered"].set()
+                    assert block["release"].wait(5), "test never released"
+
+            def drain(self):
+                pass
+
+            def close(self):
+                self.closed = True
+
+        monkeypatch.setattr(cli_module, "Session", FakeSession)
+        return created
+
+    def _clients(self, app, monkeypatch, n=2):
+        clients = [app.test_client() for _ in range(n)]
+        for c in clients:
+            _login(c, monkeypatch)
+        return clients
+
+    def _post(self, c, path, results):
+        results.append(c.post(path, headers={"X-CSRF-Token": _csrf(c)}))
+
+    def test_concurrent_starts_share_one_shell(self, app, monkeypatch):
+        # gunicorn runs with threads; two tabs mounting /cli at once must not
+        # each spawn a shell (the second would orphan the first PTY).
+        from conftest import ContendedLock, join_all
+
+        from wlanpi_webui.cli import cli as cli_module
+
+        lock = ContendedLock()
+        monkeypatch.setattr(cli_module, "_lock", lock)
+        block = {"entered": threading.Event(), "release": threading.Event()}
+        created = self._fake_session(monkeypatch, block)
+        c1, c2 = self._clients(app, monkeypatch)
+        results = []
+
+        first = threading.Thread(target=self._post, args=(c1, "/cli/start", results))
+        first.start()
+        assert block["entered"].wait(5)
+        second = threading.Thread(target=self._post, args=(c2, "/cli/start", results))
+        second.start()
+        assert lock.contended.wait(5), "second start never reached the lock"
+        block["release"].set()
+        join_all(first, second)
+
+        assert len(created) == 1
+        assert sorted(r.get_json()["resumed"] for r in results) == [False, True]
+
+    def test_start_during_stop_gets_a_new_shell(self, app, monkeypatch):
+        # A tab mounting /cli while another tab's stop is closing the shell
+        # must not "resume" the shell that is about to disappear.
+        from conftest import ContendedLock, join_all
+
+        from wlanpi_webui.cli import cli as cli_module
+
+        lock = ContendedLock()
+        monkeypatch.setattr(cli_module, "_lock", lock)
+        created = self._fake_session(monkeypatch)
+        closing = threading.Event()
+        release = threading.Event()
+
+        class ClosingSession:
+            last = time.time()
+
+            def drain(self):
+                pass
+
+            def close(self):
+                closing.set()
+                assert release.wait(5), "test never released"
+
+        cli_module._session = ClosingSession()
+        c1, c2 = self._clients(app, monkeypatch)
+        stops, starts = [], []
+
+        stop = threading.Thread(target=self._post, args=(c1, "/cli/stop", stops))
+        stop.start()
+        assert closing.wait(5)
+        start = threading.Thread(target=self._post, args=(c2, "/cli/start", starts))
+        start.start()
+        assert lock.contended.wait(5), "start never reached the lock"
+        release.set()
+        join_all(stop, start)
+
+        assert stops[0].status_code == 204
+        assert starts[0].get_json() == {"ok": True, "resumed": False}
+        assert cli_module._session is created[0]
+
+    def test_shell_owns_its_terminal(self, client, monkeypatch):
+        # setsid --ctty: the shell leads its own session with the PTY as its
+        # controlling terminal, so job control (Ctrl-Z, fg) works.
+        _login(client, monkeypatch)
+        headers = {"X-CSRF-Token": _csrf(client)}
+        client.post("/cli/start", headers=headers)
+        client.post(
+            "/cli/input",
+            json={
+                "data": base64.b64encode(
+                    # "JC""X" prints as JCX, so the typed line never matches
+                    b'echo "JC""X $$ $(ps -o sid= -p $$) $(ps -o tty= -p $$)"\n'
+                ).decode()
+            },
+            headers=headers,
+        )
+        output = _read_until(client, b"JCX ", 1, tries=200).decode(errors="replace")
+        match = re.search(r"JCX (\d+) +(\d+) +(\S+)", output)
+        assert match, output
+        pid, sid, tty = match.groups()
+        assert pid == sid
+        assert tty != "?"
 
     def test_no_idle_banner(self, client, monkeypatch):
         _login(client, monkeypatch)

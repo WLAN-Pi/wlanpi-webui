@@ -85,10 +85,64 @@ class TestSessionLifecycle:
         _login(client, monkeypatch)
         with client.session_transaction() as sess:
             before = sess["last_seen"]
-        resp = client.get("/stream/stats", headers={"hx-request": "true"})
+        resp = client.get(
+            "/stream/stats", headers={"hx-request": "true", "X-Wlanpi-Poll": "1"}
+        )
         assert "Set-Cookie" not in resp.headers
         with client.session_transaction() as sess:
             assert sess["last_seen"] == before
+
+    def test_system_refresh_now_counts_as_activity(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        with client.session_transaction() as sess:
+            sess["last_seen"] = before = sess["last_seen"] - 60
+        client.get("/stream/stats", headers={"hx-request": "true"})
+        with client.session_transaction() as sess:
+            assert sess["last_seen"] > before
+
+    @pytest.mark.parametrize(
+        "path", ["/static/js/app.js?v=1", "/static/img/favicon-16x16.png"]
+    )
+    def test_static_files_leave_the_session_alone(self, client, monkeypatch, path):
+        # A new cookie per asset plus Vary: Cookie defeats the browser cache.
+        _login(client, monkeypatch)
+        with client.session_transaction() as sess:
+            sess["last_seen"] = before = sess["last_seen"] - 60
+        resp = client.get(path)
+        assert resp.status_code == 200
+        assert "Set-Cookie" not in resp.headers
+        assert "Cookie" not in resp.headers.get("Vary", "")
+        with client.session_transaction() as sess:
+            assert sess["last_seen"] == before
+
+    def test_background_endpoints_exist(self, app):
+        # A typo here would silently keep an open tab signed in forever.
+        from wlanpi_webui.app import BACKGROUND_ENDPOINTS
+
+        endpoints = {rule.endpoint for rule in app.url_map.iter_rules()}
+        assert BACKGROUND_ENDPOINTS <= endpoints
+
+    def _last_seen_after(self, client, monkeypatch, headers):
+        from wlanpi_webui.network import network
+
+        monkeypatch.setattr(network, "get_core_json", lambda *a, **k: None)
+        _login(client, monkeypatch)
+        with client.session_transaction() as sess:
+            sess["last_seen"] = before = sess["last_seen"] - 60
+        client.get("/network/cards", headers={"hx-request": "true", **headers})
+        with client.session_transaction() as sess:
+            return before, sess["last_seen"]
+
+    def test_marked_poll_does_not_refresh(self, client, monkeypatch):
+        before, after = self._last_seen_after(
+            client, monkeypatch, {"X-Wlanpi-Poll": "1"}
+        )
+        assert after == before
+
+    def test_refresh_now_counts_as_activity(self, client, monkeypatch):
+        # Same endpoint as the poll, but user-initiated: no poll header.
+        before, after = self._last_seen_after(client, monkeypatch, {})
+        assert after > before
 
 
 class TestSessionKey:
@@ -130,6 +184,8 @@ class TestSystemPage:
         assert b'class="stat-container"' in resp.data
         # The card title now loads lazily with the rows.
         assert b'uk-card-title">Resource usage<' in resp.data
+        # icons are fingerprinted like every other static URL
+        assert re.search(rb"/static/icon/cpu\.svg\?v=[0-9a-f]{12}", resp.data)
 
     def test_debug_is_gone(self, client, monkeypatch):
         _login(client, monkeypatch)

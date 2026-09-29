@@ -2,7 +2,7 @@
 
 A single interactive shell for the WebUI, served over HTTP polling.
 
-The WebUI runs on one sync gunicorn worker, so a WebSocket is not an option.
+The WebUI runs on one threaded gunicorn worker with no WebSocket support.
 Instead a real PTY is held in-process (one at a time) and the browser polls for
 output. The shell runs as the WebUI's own user; there is no sudo.
 """
@@ -17,6 +17,7 @@ import signal
 import struct
 import subprocess
 import termios
+import threading
 import time
 
 from flask import abort, jsonify, render_template, request
@@ -30,25 +31,21 @@ OUTPUT_LIMIT = 200_000  # bytes of scrollback kept per session
 IDLE_TIMEOUT = 600  # seconds without input or output before the shell is reaped
 
 
-def _child_setup() -> None:
-    """Make the PTY the shell's controlling terminal so job control works."""
-    os.setsid()
-    fcntl.ioctl(0, termios.TIOCSCTTY, 0)
-
-
 class Session:
     """One PTY-backed shell."""
 
     def __init__(self) -> None:
         master, slave = pty.openpty()
         self.fd = master
+        # setsid --ctty makes the PTY the shell's controlling terminal (job
+        # control) without running Python in the forked child, which is
+        # unsafe now that gunicorn serves requests on several threads.
         self.proc = subprocess.Popen(
-            [SHELL],
+            ["setsid", "--ctty", SHELL],
             stdin=slave,
             stdout=slave,
             stderr=slave,
             cwd=os.environ.get("HOME") or "/home/wlanpi",
-            preexec_fn=_child_setup,
             close_fds=True,
             env={**os.environ, "TERM": "xterm-256color"},
         )
@@ -111,6 +108,9 @@ class Session:
 
 
 _session: Session | None = None
+# gunicorn runs with threads: one lock around the shared shell so two
+# requests can't start two shells or drain the PTY at the same time.
+_lock = threading.Lock()
 
 
 def _current() -> Session | None:
@@ -138,72 +138,77 @@ def start():
     the shell and its scrollback, which the browser replays from offset 0.
     """
     global _session
-    if _current() is not None:
-        return jsonify({"ok": True, "resumed": True})
-    _session = Session()
-    _session.drain()
-    return jsonify({"ok": True, "resumed": False})
+    with _lock:
+        if _current() is not None:
+            return jsonify({"ok": True, "resumed": True})
+        _session = Session()
+        _session.drain()
+        return jsonify({"ok": True, "resumed": False})
 
 
 @bp.route("/cli/input", methods=["POST"])
 @csrf_required
 def send_input():
-    session = _current()
-    if session is None:
-        abort(409)
-    payload = request.get_json(silent=True) or {}
-    try:
-        data = base64.b64decode(payload.get("data") or "", validate=True)
-    except (ValueError, TypeError):
-        abort(400)
-    session.write(data)
-    return "", 204
+    with _lock:
+        session = _current()
+        if session is None:
+            abort(409)
+        payload = request.get_json(silent=True) or {}
+        try:
+            data = base64.b64decode(payload.get("data") or "", validate=True)
+        except (ValueError, TypeError):
+            abort(400)
+        session.write(data)
+        return "", 204
 
 
 @bp.route("/cli/resize", methods=["POST"])
 @csrf_required
 def resize():
-    session = _current()
-    if session is None:
-        abort(409)
-    payload = request.get_json(silent=True) or {}
-    try:
-        rows = int(payload.get("rows") or 0)
-        cols = int(payload.get("cols") or 0)
-    except (TypeError, ValueError):
-        abort(400)
-    session.resize(max(1, min(rows, 500)), max(1, min(cols, 500)))
-    return "", 204
+    with _lock:
+        session = _current()
+        if session is None:
+            abort(409)
+        payload = request.get_json(silent=True) or {}
+        try:
+            rows = int(payload.get("rows") or 0)
+            cols = int(payload.get("cols") or 0)
+        except (TypeError, ValueError):
+            abort(400)
+        session.resize(max(1, min(rows, 500)), max(1, min(cols, 500)))
+        return "", 204
 
 
 @bp.route("/cli/output")
 def output():
     """Return the output the browser has not seen yet, as base64."""
-    session = _current()
-    if session is None:
-        # `alive` lets the browser tell a reaped session (idle timeout) from a
-        # quiet one, so it can start a new shell instead of sitting dead.
-        return jsonify({"offset": 0, "data": "", "alive": False})
+    with _lock:
+        session = _current()
+        if session is None:
+            # `alive` lets the browser tell a reaped session (idle timeout) from a
+            # quiet one, so it can start a new shell instead of sitting dead.
+            return jsonify({"offset": 0, "data": "", "alive": False})
 
-    session.drain()
-    since = request.args.get("since", type=int)
-    if since is None or since < session.start or since > session.total:
-        since = session.start
-    chunk = bytes(session.buffer[since - session.start :])
-    return jsonify(
-        {
-            "offset": session.total,
-            "data": base64.b64encode(chunk).decode("ascii"),
-            "alive": True,
-        }
-    )
+        session.drain()
+        since = request.args.get("since", type=int)
+        if since is None or since < session.start or since > session.total:
+            since = session.start
+        chunk = bytes(session.buffer[since - session.start :])
+        return jsonify(
+            {
+                "offset": session.total,
+                "data": base64.b64encode(chunk).decode("ascii"),
+                "alive": True,
+            }
+        )
 
 
 @bp.route("/cli/stop", methods=["POST"])
 @csrf_required
 def stop():
     global _session
-    if _session is not None:
-        _session.close()
-        _session = None
-    return "", 204
+    with _lock:
+        if _session is not None:
+            _session.close()
+            _session = None
+        return "", 204
