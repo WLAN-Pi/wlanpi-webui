@@ -2201,6 +2201,20 @@ h6 {
     z-index: 5;
 }
 
+/* On a portrait phone the two sticky columns cover nearly the whole table, so
+   pin only the client MAC; the actions still lead each row. */
+@media (max-width: 640px) {
+    .cap-table .cap-sticky-actions {
+        position: static;
+        box-shadow: none;
+    }
+
+    .cap-table th.cap-sticky,
+    .cap-table td.cap-sticky {
+        left: 0;
+    }
+}
+
 .cap-th {
     position: relative;
     cursor: pointer;
