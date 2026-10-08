@@ -49,11 +49,13 @@
           {% set next_dir = 'desc' if (sort == col.key and direction == 'asc') else 'asc' %}
           <th scope="col" class="cap-th{% if col.key == 'mac' %} cap-sticky{% endif %}" data-column="{{ col.key }}"
             data-group="{{ col.group }}" {% if col.key in default_columns %}data-default="1"{% endif %}
-            hx-get="/profiler/capabilities?sort={{ col.key }}&dir={{ next_dir }}{% if filter %}&filter={{ filter | urlencode }}{% endif %}"
-            hx-target="#profiler-capabilities" hx-swap="outerHTML" hx-indicator=".progress" tabindex="0" role="button"
-            aria-label="Sort by {{ col.label }}">
-            <span class="cap-th-label">{{ col.label }}</span>
-            {% if sort == col.key %}<span class="cap-sort">{% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>{% endif %}
+            {% if sort == col.key %}aria-sort="{{ 'ascending' if direction == 'asc' else 'descending' }}"{% endif %}>
+            <button type="button" class="cap-sort-btn" data-sort="{{ col.key }}"
+              hx-get="/profiler/capabilities?sort={{ col.key }}&dir={{ next_dir }}{% if filter %}&filter={{ filter | urlencode }}{% endif %}"
+              hx-target="#profiler-capabilities" hx-swap="outerHTML" hx-indicator=".progress">
+              <span class="cap-th-label">{{ col.label }}</span>
+              {% if sort == col.key %}<span class="cap-sort" aria-hidden="true">{% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>{% endif %}
+            </button>
           </th>
           {% endfor %}
         </tr>
@@ -65,11 +67,10 @@
             {% if row.profile.text_href %}
             <button type="button" class="uk-button uk-button-default uk-button-small"
               hx-get="/profiler/profile?profile={{ row.profile.key }}" hx-target="#profiler-modals"
-              _="on htmx:afterOnLoad wait 10ms then add .uk-open to #profile_{{ row.profile.key }}">report</button>
+              hx-swap="innerHTML">report</button>
             {% endif %}
             {% if row.profile.pcap_href %}
-            <a href="{{ row.profile.pcap_href }}"><button type="button"
-                class="uk-button uk-button-default uk-button-small">pcap</button></a>
+            <a class="uk-button uk-button-default uk-button-small" href="{{ row.profile.pcap_href }}">pcap</a>
             {% endif %}
             {% if row.profile.pcapng %}
             <button type="button" class="uk-button uk-button-default uk-button-small cap-copy"

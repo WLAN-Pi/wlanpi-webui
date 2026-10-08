@@ -240,16 +240,16 @@ def csrf_required(f):
     return wrapper
 
 
-def hx_post_anchor(
+def hx_post_button(
     url: str, inner: str, target: str | None = None, css: str = ""
 ) -> str:
-    """Build an htmx POST anchor carrying the CSRF token for ``url``."""
+    """Build an htmx POST button carrying the CSRF token for ``url``."""
     token = get_csrf_token()
     swap = f' hx-target="{target}" hx-swap="innerHTML"' if target else ""
     cls = f' class="{css}"' if css else ""
     return (
-        f'<a hx-post="{url}" hx-indicator=".progress"{swap}{cls} '
-        f'hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</a>'
+        f'<button type="button" hx-post="{url}" hx-indicator=".progress"{swap}{cls} '
+        f'hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</button>'
     )
 
 
@@ -258,10 +258,10 @@ def service_toggle_anchor(
 ) -> str:
     """Start/Stop button for a systemd-backed service."""
     if running:
-        return hx_post_anchor(
+        return hx_post_button(
             stop, "Stop", target=target, css="uk-button uk-button-default"
         )
-    return hx_post_anchor(
+    return hx_post_button(
         start, "Start", target=target, css="uk-button uk-button-primary"
     )
 

@@ -141,6 +141,35 @@ class TestModernization:
         assert b"app-footer" in resp.data
 
 
+class TestKeyboardReachable:
+    ROOT = Path(__file__).parent.parent / "wlanpi_webui" / "templates"
+
+    def _offenders(self, pattern):
+        return [
+            f"{path.name}: {' '.join(m.group(0).split())[:80]}"
+            for path in self.ROOT.rglob("*.html")
+            for m in re.finditer(pattern, path.read_text())
+        ]
+
+    def test_htmx_links_have_href(self):
+        # Without href an <a> is not focusable and Enter does nothing; a
+        # different href would send new-tab clicks somewhere else.
+        bad = []
+        for path in self.ROOT.rglob("*.html"):
+            for m in re.finditer(
+                r"<a\b[^>]*\bhx-get=\"([^\"]*)\"[^>]*>", path.read_text()
+            ):
+                if f'href="{m.group(1)}"' not in m.group(0):
+                    bad.append(f"{path.name}: {m.group(1)}")
+        assert bad == []
+
+    def test_no_button_inside_link(self):
+        assert self._offenders(r"<a\b[^>]*>\s*<button\b") == []
+
+    def test_no_fake_buttons(self):
+        assert self._offenders(r"<(?!button\b)\w+\b[^>]*\brole=\"button\"") == []
+
+
 class TestContentSecurityPolicy:
     @pytest.mark.parametrize("path", ["/login", "/no-such-page", "/auth/check"])
     def test_policy_on_every_response(self, client, path):

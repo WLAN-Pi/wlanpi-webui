@@ -685,6 +685,12 @@ h6 {
     color: var(--text);
 }
 
+/* Focused on open so screen readers announce the dialog; the panel is the
+   focus indicator. */
+.uk-modal-dialog:focus {
+    outline: none;
+}
+
 /* UIKit hardcodes a white footer; follow the theme instead. */
 .uk-modal-footer {
     background: var(--bg-surface);
@@ -1116,6 +1122,11 @@ h6 {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--brand-ink);
+}
+
+/* Focused by script after navigation, for screen readers; no ring needed. */
+.page-title:focus {
+    outline: none;
 }
 
 .page-title {
@@ -2201,8 +2212,27 @@ h6 {
 }
 
 .cap-th:hover,
-.cap-th:focus-visible {
+.cap-th:focus-within {
     background: var(--surface-2);
+}
+
+.cap-sort-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+
+/* Stretch the hit area over the whole header cell; the resizer stays on top. */
+.cap-sort-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
 }
 
 .cap-actions-th {

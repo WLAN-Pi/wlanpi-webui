@@ -82,7 +82,7 @@ class TestApps:
         assert resp.status_code == 200
         for name in (b"Profiler", b"Kismet", b"Grafana", b"Cockpit"):
             assert name in resp.data
-        assert b'hx-post="/stopprofiler"' in resp.data
+        assert b'<button type="button" hx-post="/stopprofiler"' in resp.data
         assert b'href="/kismet"' in resp.data
         assert b'href="/grafana_url"' in resp.data
         assert b'href="/app/cockpit"' in resp.data

@@ -282,9 +282,40 @@
     }
   });
 
-  document.addEventListener("htmx:afterSwap", function () {
+  // A report arrives as modal markup; open it, and on close drop it and hand
+  // focus back to the button that asked for it (re-found by its request URL,
+  // since the 5s table refresh may have replaced it meanwhile).
+  function openReport(evt) {
+    var t = evt.detail && evt.detail.target;
+    if (!t || t.id !== "profiler-modals" || !window.UIkit) return;
+    var modal = t.querySelector("[data-report-modal]");
+    if (!modal) return;
+    var opener = evt.detail.requestConfig && evt.detail.requestConfig.elt;
+    var url = opener && opener.getAttribute("hx-get");
+    modal.addEventListener("hidden", function onHidden(e) {
+      if (e.target !== modal) return;
+      modal.removeEventListener("hidden", onHidden);
+      // After UIkit's own hidden handlers, which still guard focus until then.
+      setTimeout(function () {
+        window.UIkit.modal(modal).$destroy(true);
+        var back = url && document.querySelector('[hx-get="' + CSS.escape(url) + '"]');
+        if (back) back.focus();
+      });
+    });
+    window.UIkit.modal(modal).show();
+  }
+
+  document.addEventListener("htmx:afterSwap", function (evt) {
+    openReport(evt);
     checkNewProfile();
     init();
+  });
+  // UIkit moved an open report to <body>, so Back would snapshot it into
+  // history and Forward would restore a dead overlay. Drop it first.
+  document.addEventListener("htmx:beforeHistorySave", function () {
+    document.querySelectorAll("[data-report-modal]").forEach(function (m) {
+      m.remove();
+    });
   });
   // The session poll re-sends the QR slot every 5s. Keep the drawn code when
   // the network is unchanged instead of redrawing (and flashing) it.
