@@ -149,11 +149,7 @@ def _grafana_responding(timeout: float = 2.0) -> bool:
 # State -> (pill label, pill class, message) shown on the /grafana page.
 GRAFANA_STATES = {
     "running": ("Running", "is-on", "Grafana is ready."),
-    "waiting": (
-        "Waiting for WebUI",
-        "is-warn",
-        "Waiting for the Grafana WebUI to respond…",
-    ),
+    "waiting": ("Starting", "is-warn", "Waiting for Grafana to answer…"),
     "starting": ("Starting", "is-warn", "Starting the Grafana service…"),
     "stopping": ("Stopping", "is-warn", "Stopping the Grafana service…"),
     "stopped": ("Stopped", "is-off", "Grafana is not running."),
@@ -175,7 +171,7 @@ def grafana_state() -> dict:
     return {"state": state, "running": active == "active", "responding": responding}
 
 
-def _grafana_toggle(state: str) -> str:
+def grafana_toggle(state: str) -> str:
     """Start/Stop control for the current state, disabled mid-transition."""
     if state == "stopped":
         return service_toggle_anchor(False, "/startgrafana", "/stopgrafana")
@@ -205,7 +201,7 @@ def grafana_service():
         state_label=label,
         state_class=css,
         state_message=message,
-        toggle=_grafana_toggle(state),
+        toggle=grafana_toggle(state),
     )
 
 

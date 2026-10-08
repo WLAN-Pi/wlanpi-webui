@@ -1,3 +1,15 @@
+wlanpi-webui (1.21.17-1) unstable; urgency=medium
+
+  * Show Grafana on the dashboard and Apps page only once wlanpi-grafana
+    is installed. The tile and card used to appear while dpkg was still
+    unpacking Grafana, and app cards stayed after apt remove.
+  * The Apps Grafana card shows Starting until Grafana answers, then
+    Running with Launch, without reloading the page. It used to say
+    Running as soon as the service started, about 15 seconds early (a
+    minute on first start).
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 08 Oct 2026 17:18:10 -0400
+
 wlanpi-webui (1.21.16-1) unstable; urgency=medium
 
   * Make the web interface usable from the keyboard and with screen

@@ -371,7 +371,9 @@ def create_app(config_class=Config):
             "profiler_installed": package_installed("wlanpi-profiler"),
             "kismet_installed": package_installed("kismet"),
             "cockpit_installed": package_installed("cockpit"),
-            "grafana_installed": package_installed("grafana"),
+            # Not "grafana": its postinst finishes before wlanpi-grafana's, which
+            # links the grafana.ini that serves Grafana under /app/grafana.
+            "grafana_installed": package_installed("wlanpi-grafana"),
             "core_running": system_service_running_state("wlanpi-core", quiet=True),
         }
         _context_cache_time = current_time
