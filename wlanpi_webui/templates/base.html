@@ -9,7 +9,7 @@
   <meta name="author" content="josh@joshschmelzle.com">
   <meta name="description" content="Tools for Wireless LAN Professionals">
   <meta name="keywords" content="wifi, wlan, wlanpi, wlan pi">
-  <meta name="theme-color" content="#fff">
+  <meta name="theme-color" content="#222222">
   <meta name="wlanpi-boot-id" content="{{ session.get('boot_id', '') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
   <link rel="icon" type="image/png" sizes="192x192"
@@ -44,7 +44,7 @@
         <div class="uk-navbar-left">
           <a class="uk-navbar-item uk-logo uk-padding-small uk-padding-remove-bottom uk-padding-remove-top"
             hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress"
-            href="/"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi logo"
+            href="/"><img src="{{ url_for('static', filename='img/wlanpi-sticker.png') }}" alt="WLAN Pi home"
               width="96" height="37"></a>
           <ul class="uk-navbar-nav uk-visible@m">
             <li{% if _nav == 'home' %} class="uk-active"{% endif %}><a href="/" data-nav="home" hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
@@ -114,16 +114,16 @@
       <button class="uk-offcanvas-close uk-close uk-icon" type="button" data-uk-close aria-label="Close navigation"></button>
       <ul class="uk-nav uk-nav-default" uk-nav>
         <li{% if _nav == 'home' %} class="uk-active"{% endif %}><a href="/" data-nav="home" hx-get="/" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-            hx-indicator=".progress">HOME</a></li>
+            hx-indicator=".progress"{% if _nav == 'home' %} aria-current="page"{% endif %}>HOME</a></li>
         <li{% if _nav == 'apps' %} class="uk-active"{% endif %}><a href="/apps" data-nav="apps" hx-get="/apps" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-            hx-indicator=".progress">APPS</a></li>
+            hx-indicator=".progress"{% if _nav == 'apps' %} aria-current="page"{% endif %}>APPS</a></li>
         <li{% if _nav == 'cli' %} class="uk-active"{% endif %}><a href="/cli" data-nav="cli" hx-get="/cli" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-            hx-indicator=".progress">CLI</a></li>
+            hx-indicator=".progress"{% if _nav == 'cli' %} aria-current="page"{% endif %}>CLI</a></li>
         <li{% if _nav == 'network' %} class="uk-active"{% endif %}><a href="/network" data-nav="network" hx-get="/network" hx-target="#content" hx-trigger="click" hx-indicator=".progress" hx-push-url="true"
-            hx-swap="innerHTML">NETWORK</a></li>
+            hx-swap="innerHTML"{% if _nav == 'network' %} aria-current="page"{% endif %}>NETWORK</a></li>
         <li{% if _nav == 'system' %} class="uk-active"{% endif %}><a href="/system" data-nav="system" hx-get="/system" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
-            hx-indicator=".progress">SYSTEM</a></li>
-        <li class="uk-divider-icon"></li>
+            hx-indicator=".progress"{% if _nav == 'system' %} aria-current="page"{% endif %}>SYSTEM</a></li>
+        <li class="uk-divider-icon" aria-hidden="true"></li>
         <li><a href="/settings" hx-get="/settings" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
             hx-indicator=".progress">SETTINGS</a></li>
       </ul>

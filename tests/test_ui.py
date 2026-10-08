@@ -110,7 +110,8 @@ class TestModernization:
         assert b"skip-link" in resp.data
         assert b"Wi-Fi Analysis. Anywhere. Anytime." in resp.data
         assert b"uk-active" in resp.data
-        assert b'aria-current="page"' in resp.data
+        # Desktop navbar and phone offcanvas both mark the current page.
+        assert resp.data.count(b'aria-current="page"') == 2
 
     def test_full_pages_have_header_and_footer(self, client, monkeypatch):
         import re

@@ -5,13 +5,18 @@
   // ---- Theme ----------------------------------------------------------
   // The stored preference is applied here, before the stylesheets are
   // evaluated, so there is no flash of the wrong theme.
+  // The template's own value is the light colour: the navbar on app pages,
+  // the page background on the login page.
   function syncThemeColor(theme) {
     try {
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
+        if (!meta.hasAttribute("data-light")) {
+          meta.setAttribute("data-light", meta.getAttribute("content"));
+        }
         meta.setAttribute(
           "content",
-          theme === "dark" ? "#0b0f13" : "#f8f8f8"
+          theme === "dark" ? "#0b0f13" : meta.getAttribute("data-light")
         );
       }
     } catch (e) {
