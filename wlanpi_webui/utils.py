@@ -649,16 +649,23 @@ def start_stop_service(task, service, label=None, noun="service"):
     return redirect(get_safe_referrer_target())
 
 
-def package_installed(package):
-    version = get_apt_package_version(package)
-    if version == "":
-        return False
-    return True
+# dpkg states where the package is configured; triggers-* only defer trigger runs.
+INSTALLED_STATES = ("installed", "triggers-pending", "triggers-awaited")
 
 
-_package_cache: dict[str, tuple[str, float, float]] = {}
+def package_installed(package) -> bool:
+    """True once dpkg has configured the package.
+
+    dpkg-query reports a version from the moment a package starts unpacking
+    and keeps reporting it after ``apt remove`` (config-files), so the version
+    alone would show an app before its postinst has run.
+    """
+    return _dpkg_package(package)[0] in INSTALLED_STATES
+
+
+# package -> (dpkg status, version, status file mtime)
+_package_cache: dict[str, tuple[str, str, float]] = {}
 _dpkg_status_file = "/var/lib/dpkg/status"
-CACHE_TTL = 60
 
 
 def get_dpkg_status_mtime():
@@ -669,24 +676,20 @@ def get_dpkg_status_mtime():
 
 
 def get_apt_package_version(package) -> str:
-    current_time = time()
+    return _dpkg_package(package)[1]
+
+
+def _dpkg_package(package) -> tuple[str, str]:
+    """(dpkg status, version), cached until dpkg rewrites its status file."""
     current_mtime = get_dpkg_status_mtime()
-
-    if package in _package_cache:
-        version, cache_time, cache_mtime = _package_cache[package]
-        cache_age = current_time - cache_time
-
-        if cache_mtime == current_mtime:
-            if cache_age < CACHE_TTL:
-                return version
-            else:
-                _package_cache[package] = (version, current_time, current_mtime)
-                return version
+    cached = _package_cache.get(package)
+    if cached and cached[2] == current_mtime:
+        return cached[0], cached[1]
 
     try:
-        version = (
+        output = (
             subprocess.check_output(
-                ["dpkg-query", "-W", "-f=${Version}", package],
+                ["dpkg-query", "-W", "-f=${db:Status-Status} ${Version}", package],
                 timeout=5,
                 stderr=subprocess.DEVNULL,
             )
@@ -698,10 +701,11 @@ def get_apt_package_version(package) -> str:
         subprocess.TimeoutExpired,
         FileNotFoundError,
     ):
-        version = ""
+        output = ""
 
-    _package_cache[package] = (version, current_time, current_mtime)
-    return version
+    status, _, version = output.partition(" ")
+    _package_cache[package] = (status, version, current_mtime)
+    return status, version
 
 
 SPEEDTEST_RESULT_LIMIT = 20

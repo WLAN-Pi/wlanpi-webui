@@ -78,12 +78,12 @@
 
     {% if grafana_installed %}
     <div>
-      <div class="uk-card uk-card-default uk-card-body app-card">
+      <div id="apps-grafana-card" class="uk-card uk-card-default uk-card-body app-card">
         <div class="app-card-head">
           <span class="app-icon" uk-icon="icon: database; ratio: 1.6"></span>
           <div>
             <h3 class="uk-card-title uk-margin-remove-bottom">Grafana</h3>
-            <p class="app-status {% if grafana_running %}is-on{% else %}is-off{% endif %}">{% if grafana_running %}Running{% else %}Stopped{% endif %}</p>
+            <p class="app-status {{ grafana_state_class }}">{{ grafana_state_label }}</p>
           </div>
         </div>
         <p class="uk-text-meta">Dashboards and graphs from collected telemetry.</p>
@@ -91,11 +91,16 @@
           {{ grafana_toggle|safe }}
           <a class="uk-button uk-button-default" href="/grafana" hx-get="/grafana" hx-target="#content"
             hx-swap="innerHTML" hx-push-url="true" hx-indicator=".progress">Data streams</a>
-          {% if grafana_running %}
+          {% if grafana_state == 'running' %}
           <a class="uk-button uk-button-primary" href="/grafana_url" target="_blank"
             data-action="launch-grafana">Launch Grafana</a>
           {% endif %}
         </p>
+        {% if grafana_settling %}
+        {# Re-render only this card until Grafana settles; the other cards keep focus. #}
+        <span hidden hx-get="/apps/cards" hx-trigger="load delay:3s" hx-select="#apps-grafana-card"
+          hx-target="#apps-grafana-card" hx-swap="outerHTML"></span>
+        {% endif %}
       </div>
     </div>
     {% endif %}

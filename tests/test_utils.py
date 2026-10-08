@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import patch
 
 import pytest
@@ -107,6 +108,65 @@ class TestServiceFriendlyName:
 
     def test_suffix_stripped(self):
         assert service_friendly_name("kismet.service") == "Kismet"
+
+
+class TestPackageInstalled:
+    """dpkg-query prints a version for packages that are not usable yet."""
+
+    @pytest.fixture()
+    def dpkg(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        state = {"output": b"", "mtime": 1.0, "calls": 0}
+
+        def check_output(cmd, **kwargs):
+            state["calls"] += 1
+            if state["output"] is None:
+                raise subprocess.CalledProcessError(1, cmd)
+            return state["output"]
+
+        monkeypatch.setattr(utils, "_package_cache", {})
+        monkeypatch.setattr(utils.subprocess, "check_output", check_output)
+        monkeypatch.setattr(utils, "get_dpkg_status_mtime", lambda: state["mtime"])
+        return state
+
+    @pytest.mark.parametrize(
+        "status, installed",
+        [
+            ("installed", True),
+            ("triggers-pending", True),
+            ("triggers-awaited", True),
+            ("half-installed", False),
+            ("unpacked", False),
+            ("half-configured", False),
+            ("config-files", False),
+        ],
+    )
+    def test_only_configured_counts(self, dpkg, status, installed):
+        from wlanpi_webui import utils
+
+        dpkg["output"] = f"{status} 13.2.3".encode()
+        assert utils.package_installed("grafana") is installed
+        assert utils.get_apt_package_version("grafana") == "13.2.3"
+
+    def test_unknown_package(self, dpkg):
+        from wlanpi_webui import utils
+
+        dpkg["output"] = None
+        assert utils.package_installed("nope") is False
+        assert utils.get_apt_package_version("nope") == ""
+
+    def test_cached_until_dpkg_status_changes(self, dpkg):
+        from wlanpi_webui import utils
+
+        dpkg["output"] = b"unpacked 13.2.3"
+        assert utils.package_installed("grafana") is False
+        dpkg["output"] = b"installed 13.2.3"
+        assert utils.package_installed("grafana") is False
+        assert dpkg["calls"] == 1
+        dpkg["mtime"] = 2.0
+        assert utils.package_installed("grafana") is True
+        assert dpkg["calls"] == 2
 
 
 class TestSystemServiceActiveState:

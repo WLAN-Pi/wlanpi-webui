@@ -62,6 +62,14 @@ def _everything_installed(monkeypatch):
     monkeypatch.setattr(
         grafana_module, "system_service_running_state", lambda unit: False
     )
+    _grafana(monkeypatch, "active", True)
+
+
+def _grafana(monkeypatch, active, responding):
+    from wlanpi_webui.grafana import grafana as g
+
+    monkeypatch.setattr(g, "system_service_active_state", lambda *a, **kw: active)
+    monkeypatch.setattr(g, "_grafana_responding", lambda *a, **kw: responding)
 
 
 class TestApps:
@@ -128,6 +136,66 @@ class TestApps:
         assert resp.headers["Location"].endswith("/apps")
 
 
+class TestAppsGrafanaCard:
+    """The Apps card follows Grafana's web UI, not just systemd's active state."""
+
+    POLL = b'hx-trigger="load delay:3s"'
+
+    def _cards(self, client, monkeypatch, active, responding):
+        _everything_installed(monkeypatch)
+        _grafana(monkeypatch, active, responding)
+        _login(client, monkeypatch)
+        resp = client.get("/apps/cards")
+        assert resp.status_code == 200
+        return resp.data[resp.data.index(b'id="apps-grafana-card"') :]
+
+    def test_running_offers_launch_and_stops_polling(self, client, monkeypatch):
+        card = self._cards(client, monkeypatch, "active", True)
+        assert b">Running<" in card
+        assert b'data-action="launch-grafana"' in card
+        assert b'hx-post="/stopgrafana"' in card
+        assert self.POLL not in card
+
+    def test_active_but_not_answering_is_starting(self, client, monkeypatch):
+        card = self._cards(client, monkeypatch, "active", False)
+        assert b">Starting<" in card
+        assert b">Running<" not in card
+        assert b'data-action="launch-grafana"' not in card
+        assert b'hx-post="/stopgrafana"' in card
+        assert self.POLL in card
+        assert b'hx-select="#apps-grafana-card"' in card
+
+    def test_activating_polls_without_toggle(self, client, monkeypatch):
+        card = self._cards(client, monkeypatch, "activating", False)
+        assert b">Starting<" in card
+        assert b'hx-post="/startgrafana"' not in card
+        assert b'data-action="launch-grafana"' not in card
+        assert self.POLL in card
+
+    def test_deactivating_polls(self, client, monkeypatch):
+        card = self._cards(client, monkeypatch, "deactivating", False)
+        assert b">Stopping<" in card
+        assert self.POLL in card
+
+    def test_stopped_offers_start_without_polling(self, client, monkeypatch):
+        card = self._cards(client, monkeypatch, "inactive", False)
+        assert b">Stopped<" in card
+        assert b'hx-post="/startgrafana"' in card
+        assert b'data-action="launch-grafana"' not in card
+        assert self.POLL not in card
+
+    @pytest.mark.parametrize(
+        "package, shown", [("grafana", False), ("wlanpi-grafana", True)]
+    )
+    def test_card_keyed_on_wlanpi_grafana(self, client, monkeypatch, package, shown):
+        _everything_installed(monkeypatch)
+        monkeypatch.setattr(
+            "wlanpi_webui.app.package_installed", lambda pkg: pkg == package
+        )
+        _login(client, monkeypatch)
+        assert (b'hx-get="/grafana"' in client.get("/apps/cards").data) is shown
+
+
 class TestGrafanaPage:
     def test_requires_login(self, client):
         assert client.get("/grafana").status_code == 302
@@ -171,7 +239,8 @@ class TestGrafanaServiceFragment:
         self._patch(monkeypatch, "active", False)
         _login(client, monkeypatch)
         resp = client.get("/grafana/service")
-        assert b"Waiting for WebUI" in resp.data
+        assert b">Starting<" in resp.data
+        assert b"Waiting for Grafana to answer" in resp.data
         assert b"disabled" in resp.data
         assert b'href="/grafana_url"' not in resp.data
 
