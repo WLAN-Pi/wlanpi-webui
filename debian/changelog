@@ -1,3 +1,28 @@
+wlanpi-webui (1.21.16-1) unstable; urgency=medium
+
+  * Make the web interface usable from the keyboard and with screen
+    readers. The navbar, Alerts, Settings and app Start/Stop controls
+    can be reached with Tab and opened with Enter, and Ctrl-click opens
+    pages in a new tab. After following a link the browser tab title
+    names the page and focus moves to its heading. Network copy buttons
+    and Profiler sort buttons keep keyboard focus when the page
+    refreshes, and loaded cards are no longer announced as loading.
+  * Profiler: sort columns from the keyboard, with the sort direction
+    announced. A report opens as a proper dialog that closes with Esc,
+    and opening a second report works again. On a portrait phone only
+    the client MAC column stays pinned, leaving room for the data.
+  * Network: show each interface's DHCP lease as labelled fields
+    (address with prefix length, hostname, client ID, gateway, DNS,
+    domain, NTP, DHCP server, lease time and expiry) instead of one long
+    line of raw options.
+  * On phones, pages no longer scroll past their content, the menu closes
+    after a choice, and the status bar matches the navbar. The keyboard
+    focus ring is visible on the navbar and the footer lines up with the
+    page.
+  * Remove the _hyperscript library, which only the profiler report used.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Thu, 08 Oct 2026 10:41:24 -0400
+
 wlanpi-webui (1.21.15-1) unstable; urgency=medium
 
   * Harden the web interface against script injection: notification

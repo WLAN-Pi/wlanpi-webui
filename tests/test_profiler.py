@@ -403,6 +403,10 @@ class TestProfilerCapabilities:
         second = b"24:eb:16:35:d4:f5"
         assert ascending.index(second) < ascending.index(first)
         assert descending.index(first) < descending.index(second)
+        sorted_th = rb'data-column="dot11be"[^>]*aria-sort="%s"'
+        assert re.search(sorted_th % b"ascending", ascending)
+        assert re.search(sorted_th % b"descending", descending)
+        assert ascending.count(b"aria-sort=") == 1
 
     def test_filter(self, client, monkeypatch, profiler_root):
         _write_profile(
@@ -442,6 +446,29 @@ class TestProfilerCapabilities:
         )
         assert resp.status_code == 200
         assert b"Client MAC: 2e:3d:0c:6f:cb:49" in resp.data
+        # profiler.js opens [data-report-modal] as a UIkit dialog named by its title
+        assert b"data-report-modal" in resp.data
+        assert b'aria-labelledby="profile_2e-3d-0c-6f-cb-49_5GHz_title"' in resp.data
+        assert b'id="profile_2e-3d-0c-6f-cb-49_5GHz_title"' in resp.data
+
+    def test_report_button_swaps_into_modal_slot(
+        self, client, monkeypatch, profiler_root
+    ):
+        # The table's inherited outerHTML swap would replace the slot itself,
+        # so the second report has nowhere to land.
+        _write_profile(
+            profiler_root,
+            "2e:3d:0c:6f:cb:49",
+            "5",
+            "Broadcom",
+            {"dot11be": 1},
+            1_700_000_000,
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/capabilities")
+        assert re.search(
+            rb'hx-target="#profiler-modals"\s+hx-swap="innerHTML">report<', resp.data
+        )
 
 
 class HTTPErrorResponse:

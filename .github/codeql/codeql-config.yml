@@ -10,6 +10,5 @@ paths-ignore:
   - "wlanpi_webui/static/vendor/**"
   - "wlanpi_webui/static/js/uikit*.js"
   - "wlanpi_webui/static/js/htmx.min.js"
-  - "wlanpi_webui/static/js/_hyperscript.min.js"
   - "wlanpi_webui/static/js/qrcode.min.js"
   - "wlanpi_webui/static/js/Chart.bundle.min.js"

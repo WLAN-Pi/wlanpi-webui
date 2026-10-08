@@ -3,7 +3,7 @@ import warnings
 import requests
 from flask import jsonify, redirect, render_template, request
 
-from wlanpi_webui.auth.auth import csrf_required, hx_post_anchor, service_toggle_anchor
+from wlanpi_webui.auth.auth import csrf_required, hx_post_button, service_toggle_anchor
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (
     is_htmx,
@@ -112,7 +112,7 @@ def get_data_streams(target: str | None = "#content") -> list[dict]:
             {
                 "name": name,
                 "running": running,
-                "anchor": hx_post_anchor(
+                "anchor": hx_post_button(
                     stop_task if running else start_task,
                     "Stop" if running else "Start",
                     target=target,

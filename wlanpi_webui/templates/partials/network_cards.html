@@ -53,7 +53,11 @@
   {{ card("lldp", "LLDP Neighbour", lldp) }}
   {{ card("cdp", "CDP Neighbour", cdp) }}
   {{ detail_card("Routing", routing) }}
-  {{ detail_card("DHCP Leases", leases) }}
+  {% for lease in leases %}
+  {{ detail_card((lease.interface ~ " DHCP Lease") if lease.interface else "DHCP Lease", lease.lines) }}
+  {% else %}
+  {{ detail_card("DHCP Leases", []) }}
+  {% endfor %}
   {% for stats in link_stats %}
   {{ detail_card(stats.interface ~ " Link", stats.lines, "No link data.") }}
   {% endfor %}

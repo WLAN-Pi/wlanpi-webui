@@ -197,7 +197,7 @@ class TestNetworkDetail:
                     ]
                 }
             if "dhcp/leases" in path:
-                return {"leases": [{"ip": "192.168.6.63", "mac": "aa:bb"}]}
+                return {"leases": [{"interface": "eth0", "ip_address": "192.168.6.63"}]}
             if "interfaces" in path:
                 return {
                     "root": [{"ifname": "eth0"}, {"ifname": "wlan0"}, {"ifname": "lo"}]
@@ -210,12 +210,12 @@ class TestNetworkDetail:
         assert resp.status_code == 200
         assert b"default via 192.168.6.1 dev eth0" in resp.data
         assert b"Speed mbps: 1000" in resp.data
-        assert b"DHCP Leases" in resp.data
+        assert b"eth0 DHCP Lease" in resp.data
         assert b"eth0 Link" in resp.data
         assert b"wlan0 Link" in resp.data
         assert b"SSID: HomeNet" in resp.data
         assert b"Signal: -48.0 dBm" in resp.data
-        assert b"ip: 192.168.6.63" in resp.data
+        assert b"Address: 192.168.6.63" in resp.data
         # The latency card ships in the same masonry so cards pack beside it.
         assert b'id="latency-card"' in resp.data
         assert b"card-wide" in resp.data
@@ -235,3 +235,154 @@ class TestNetworkDetail:
         resp = client.get("/network/cards")
         assert b"wlan0 Link" in resp.data
         assert b"Not connected" in resp.data
+
+
+class TestDhcpLeases:
+    def test_networkmanager_options(self):
+        from wlanpi_webui.network.network import _lease_cards
+
+        cards = _lease_cards(
+            {
+                "leases": [
+                    {
+                        "interface": "eth0",
+                        "ip_address": "192.168.6.60",
+                        "subnet_mask": "255.255.255.0",
+                        "routers": "192.168.6.1",
+                        "domain_name_servers": "9.9.9.9 1.0.0.1",
+                        "domain_name": "home.arpa",
+                        "dhcp_server_identifier": "192.168.6.1",
+                        "dhcp_lease_time": "4294967295",
+                        "requested_routers": "1",
+                        "dhcp_client_identifier": "01:dc:a6:32:e7:25:e1",
+                        "host_name": "wlanpi-5e1",
+                    },
+                    {
+                        "interface": "wlan0",
+                        "ip_address": "10.0.0.5",
+                        "dhcp_lease_time": "86400",
+                        "expiry": "1791547200",
+                    },
+                ],
+                "source": "NetworkManager",
+            }
+        )
+        assert cards == [
+            {
+                "interface": "eth0",
+                "lines": [
+                    "Address: 192.168.6.60/24",
+                    "Hostname: wlanpi-5e1",
+                    "Client ID: 01:dc:a6:32:e7:25:e1",
+                    "Gateway: 192.168.6.1",
+                    "DNS servers: 9.9.9.9, 1.0.0.1",
+                    "Domain: home.arpa",
+                    "DHCP server: 192.168.6.1",
+                    "Lease time: Infinite (4294967295 s)",
+                ],
+            },
+            {
+                "interface": "wlan0",
+                "lines": [
+                    "Address: 10.0.0.5",
+                    "Lease time: 1d (86400 s)",
+                    "Expires: 2026-10-09 12:00:00 UTC",
+                ],
+            },
+        ]
+
+    def test_dhclient_keeps_latest_lease_per_interface(self):
+        from wlanpi_webui.network.network import _lease_cards
+
+        old = {"interface": "eth0", "fixed_address": "192.168.1.9"}
+        new = {
+            "interface": "eth0",
+            "fixed_address": "192.168.1.10",
+            "option_subnet_mask": "255.255.252.0",
+            "option_host_name": '"wlanpi-lab"',
+            "option_dhcp_client_identifier": "1:dc:a6:32:e7:25:e1",
+            "option_routers": "192.168.1.1",
+            "option_domain_name_servers": "192.168.1.1,8.8.8.8",
+            "option_domain_search": 'lab.example", "example.com',
+            "option_dhcp_lease_time": "5400",
+            "expire": "4 2026/10/08 12:30:00",
+            "source_file": "dhclient.eth0.leases",
+        }
+        cards = _lease_cards({"leases": [old, new]})
+        assert cards == [
+            {
+                "interface": "eth0",
+                "lines": [
+                    "Address: 192.168.1.10/22",
+                    "Hostname: wlanpi-lab",
+                    "Client ID: 1:dc:a6:32:e7:25:e1",
+                    "Gateway: 192.168.1.1",
+                    "DNS servers: 192.168.1.1, 8.8.8.8",
+                    "Search domains: lab.example, example.com",
+                    "Lease time: 1h 30m (5400 s)",
+                    "Expires: 2026-10-08 12:30:00 UTC",
+                ],
+            }
+        ]
+
+    def test_unknown_shape_and_bad_values_fall_back(self):
+        from wlanpi_webui.network.network import _lease_cards
+
+        cards = _lease_cards(
+            {
+                "leases": [
+                    {"ip": "10.0.0.9", "requested_x": "1"},
+                    {
+                        "ip_address": "10.0.0.8",
+                        "dhcp_lease_time": "soon",
+                        "expire": " ",
+                    },
+                    "raw lease text",
+                ]
+            }
+        )
+        assert [c["lines"] for c in cards] == [
+            ["ip: 10.0.0.9"],
+            ["Address: 10.0.0.8", "Lease time: soon"],
+            ["raw lease text"],
+        ]
+        assert all(c["interface"] == "" for c in cards)
+
+    @pytest.mark.parametrize(
+        ("lease", "expected"),
+        [
+            ({"expire": "never"}, "Never"),
+            ({"expire": "x unavailable now"}, "x unavailable now"),
+            ({"expire": "4 2026/13/40 12:30:00"}, "4 2026/13/40 12:30:00"),
+            ({"expiry": "soon"}, "soon"),
+            ({"expiry": ["1"]}, "['1']"),
+        ],
+    )
+    def test_expiry_fallbacks(self, lease, expected):
+        from wlanpi_webui.network.network import _lease_expiry
+
+        assert _lease_expiry(lease) == expected
+
+    @pytest.mark.parametrize(
+        ("lease", "expected"),
+        [
+            # Mask without address, and masks that are not dotted netmasks
+            ({"subnet_mask": "255.255.255.0"}, ["Subnet mask: 255.255.255.0"]),
+            (
+                {"ip_address": "10.0.0.2", "subnet_mask": "255.0.255.0"},
+                ["Address: 10.0.0.2", "Subnet mask: 255.0.255.0"],
+            ),
+            (
+                {"ip_address": "10.0.0.2", "subnet_mask": "0.0.0.255"},
+                ["Address: 10.0.0.2", "Subnet mask: 0.0.0.255"],
+            ),
+            (
+                {"ip_address": "10.0.0.2", "subnet_mask": "24"},
+                ["Address: 10.0.0.2", "Subnet mask: 24"],
+            ),
+        ],
+    )
+    def test_address_without_valid_mask(self, lease, expected):
+        from wlanpi_webui.network.network import _address_lines
+
+        assert _address_lines(lease) == expected

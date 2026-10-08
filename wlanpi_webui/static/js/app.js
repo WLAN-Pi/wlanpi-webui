@@ -5,13 +5,18 @@
   // ---- Theme ----------------------------------------------------------
   // The stored preference is applied here, before the stylesheets are
   // evaluated, so there is no flash of the wrong theme.
+  // The template's own value is the light colour: the navbar on app pages,
+  // the page background on the login page.
   function syncThemeColor(theme) {
     try {
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
+        if (!meta.hasAttribute("data-light")) {
+          meta.setAttribute("data-light", meta.getAttribute("content"));
+        }
         meta.setAttribute(
           "content",
-          theme === "dark" ? "#0b0f13" : "#f8f8f8"
+          theme === "dark" ? "#0b0f13" : meta.getAttribute("data-light")
         );
       }
     } catch (e) {
@@ -127,6 +132,106 @@
       syncNav(evt.detail.path);
     }
   });
+
+  // htmx would load a modified click (new tab, new window) in place; leave it
+  // to the browser. Capture phase runs before htmx's listener on the link.
+  document.addEventListener(
+    "click",
+    function (evt) {
+      if (!(evt.ctrlKey || evt.metaKey || evt.shiftKey || evt.button === 1)) return;
+      var link = evt.target.closest && evt.target.closest("a[href][hx-get]");
+      if (link) evt.stopPropagation();
+    },
+    true
+  );
+
+  // ---- Focus and announcements across swaps -----------------------------
+  // An innerHTML swap replaces a placeholder's children but not the busy
+  // flag on the placeholder itself.
+  document.addEventListener("htmx:afterSwap", function (evt) {
+    var t = evt.detail && evt.detail.target;
+    if (t && t.getAttribute && t.getAttribute("aria-busy") === "true") {
+      t.removeAttribute("aria-busy");
+      if (t.getAttribute("aria-label") === "Loading") {
+        t.removeAttribute("aria-label");
+      }
+    }
+  });
+
+  // A refresh that replaces the focused control drops focus to <body>. htmx
+  // restores focus by id; controls without one are matched on these.
+  function focusKey(el) {
+    var attrs = ["data-card", "data-sort", "hx-get", "href"];
+    for (var i = 0; i < attrs.length; i++) {
+      var v = el.getAttribute(attrs[i]);
+      if (v !== null) return "[" + attrs[i] + '="' + CSS.escape(v) + '"]';
+    }
+    return null;
+  }
+
+  // beforeSwap and afterSwap run back to back (no swap delay is used), so one
+  // slot is enough even with several cards loading at once. Search from the
+  // target's parent: an outerHTML swap detaches the target itself.
+  var pendingFocus = null;
+  document.addEventListener("htmx:beforeSwap", function (evt) {
+    var t = evt.detail && evt.detail.target;
+    var active = document.activeElement;
+    var key =
+      t && t.id !== "content" && active && active !== document.body && t.contains(active)
+        ? focusKey(active)
+        : null;
+    pendingFocus = key ? { key: key, scope: t.parentElement || document } : null;
+  });
+  document.addEventListener("htmx:afterSwap", function () {
+    var p = pendingFocus;
+    pendingFocus = null;
+    var el = p && p.scope.querySelector(p.key);
+    if (el && el !== document.activeElement) el.focus({ preventScroll: true });
+  });
+
+  // Not document.title: an error page starts with its own.
+  function baseTitle() {
+    var m = document.querySelector('meta[name="application-name"]');
+    return (m && m.content) || document.title;
+  }
+
+  function syncTitle() {
+    var h = document.querySelector("#content .page-title");
+    var name = h ? h.textContent.trim() : "";
+    document.title = name ? name + " · " + baseTitle() : baseTitle();
+  }
+
+  // After in-app navigation, title the page and move focus to its heading so
+  // screen readers announce the new page; unless page code (the CLI, games)
+  // already focused something inside it. A nav tap on a phone also closes the
+  // menu, which holds focus until it is fully hidden.
+  document.addEventListener("htmx:afterSettle", function (evt) {
+    var t = evt.detail && evt.detail.target;
+    if (!t || t.id !== "content") return;
+    syncTitle();
+
+    function focusHeading() {
+      if (t.contains(document.activeElement)) return;
+      var h = t.querySelector(".page-title, h1, h2");
+      if (h) {
+        h.setAttribute("tabindex", "-1");
+        h.focus({ preventScroll: true });
+      }
+    }
+
+    var menu = document.getElementById("offcanvas-nav");
+    if (menu && menu.classList.contains("uk-open") && window.UIkit) {
+      menu.addEventListener("hidden", function onHidden(e) {
+        if (e.target !== menu) return;
+        menu.removeEventListener("hidden", onHidden);
+        setTimeout(focusHeading);
+      });
+      window.UIkit.offcanvas(menu).hide();
+      return;
+    }
+    focusHeading();
+  });
+  window.addEventListener("load", syncTitle);
 
   // ---- Feed polling (network cards, system health) ----------------------
   // htmx has no native pause/interval control, so intervals live here.
@@ -610,6 +715,13 @@
     if (badge) {
       badge.textContent = String(unread.length);
       badge.hidden = unread.length === 0;
+    }
+    var link = el.querySelector("a");
+    if (link) {
+      link.setAttribute(
+        "aria-label",
+        unread.length ? "Alerts, " + unread.length + " unread" : "Alerts"
+      );
     }
   }
 

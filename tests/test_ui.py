@@ -110,7 +110,8 @@ class TestModernization:
         assert b"skip-link" in resp.data
         assert b"Wi-Fi Analysis. Anywhere. Anytime." in resp.data
         assert b"uk-active" in resp.data
-        assert b'aria-current="page"' in resp.data
+        # Desktop navbar and phone offcanvas both mark the current page.
+        assert resp.data.count(b'aria-current="page"') == 2
 
     def test_full_pages_have_header_and_footer(self, client, monkeypatch):
         import re
@@ -139,6 +140,35 @@ class TestModernization:
         assert b"page-head" in resp.data
         assert b"Applications" in resp.data
         assert b"app-footer" in resp.data
+
+
+class TestKeyboardReachable:
+    ROOT = Path(__file__).parent.parent / "wlanpi_webui" / "templates"
+
+    def _offenders(self, pattern):
+        return [
+            f"{path.name}: {' '.join(m.group(0).split())[:80]}"
+            for path in self.ROOT.rglob("*.html")
+            for m in re.finditer(pattern, path.read_text())
+        ]
+
+    def test_htmx_links_have_href(self):
+        # Without href an <a> is not focusable and Enter does nothing; a
+        # different href would send new-tab clicks somewhere else.
+        bad = []
+        for path in self.ROOT.rglob("*.html"):
+            for m in re.finditer(
+                r"<a\b[^>]*\bhx-get=\"([^\"]*)\"[^>]*>", path.read_text()
+            ):
+                if f'href="{m.group(1)}"' not in m.group(0):
+                    bad.append(f"{path.name}: {m.group(1)}")
+        assert bad == []
+
+    def test_no_button_inside_link(self):
+        assert self._offenders(r"<a\b[^>]*>\s*<button\b") == []
+
+    def test_no_fake_buttons(self):
+        assert self._offenders(r"<(?!button\b)\w+\b[^>]*\brole=\"button\"") == []
 
 
 class TestContentSecurityPolicy:

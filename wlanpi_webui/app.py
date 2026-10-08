@@ -176,9 +176,8 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_vars():
-        return {
-            "title": f"WLAN Pi: {get_hostname()}",
-        }
+        app_title = f"WLAN Pi: {get_hostname()}"
+        return {"title": app_title, "app_title": app_title}
 
     @app.context_processor
     def inject_csrf_token():

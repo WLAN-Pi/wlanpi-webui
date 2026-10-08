@@ -35,6 +35,7 @@
     --surface-2: #f0f0f0;
     --navbar-bg: #222222;
     --navbar-text: #ffffff;
+    --navbar-accent: #ff8a5c;
 
     /* Text and lines (--text-muted 7.0 on #fff, 6.6 on #f8f8f8) */
     --text: #222222;
@@ -317,6 +318,12 @@ h6 {
 
 .uk-navbar-container {
     background: var(--navbar-bg) !important;
+}
+
+/* The page focus ring is too dark to see on the navbar in either theme. */
+.uk-navbar-container,
+.uk-offcanvas-bar {
+    --focus-ring: var(--navbar-accent);
 }
 
 .uk-navbar-nav > li > a {
@@ -685,6 +692,12 @@ h6 {
     color: var(--text);
 }
 
+/* Focused on open so screen readers announce the dialog; the panel is the
+   focus indicator. */
+.uk-modal-dialog:focus {
+    outline: none;
+}
+
 /* UIKit hardcodes a white footer; follow the theme instead. */
 .uk-modal-footer {
     background: var(--bg-surface);
@@ -708,7 +721,7 @@ h6 {
 }
 
 .uk-offcanvas-bar .uk-nav > li.uk-active > a {
-    color: #ff8a5c;
+    color: var(--navbar-accent);
 }
 
 /* clip.svg is a black stroke; invert it on the dark icon button */
@@ -804,20 +817,8 @@ h6 {
 
 #thebiglebowski {
     min-height: 100vh;
+    min-height: 100dvh;
     min-width: 20em;
-}
-
-@media (max-width: 640px) {
-    #thebiglebowski {
-        min-height: 139vh;
-    }
-
-    /* Center the dashboard launcher in the visible viewport instead of
-       centering it inside the 139vh shell and pushing it below the fold. */
-    #thebiglebowski:has(.launcher-screen) {
-        min-height: 100vh;
-        min-height: 100dvh;
-    }
 }
 
 .progress {
@@ -1118,6 +1119,11 @@ h6 {
     color: var(--brand-ink);
 }
 
+/* Focused by script after navigation, for screen readers; no ring needed. */
+.page-title:focus {
+    outline: none;
+}
+
 .page-title {
     margin: 0 0 var(--space-2);
     font-size: var(--fs-2xl);
@@ -1220,6 +1226,7 @@ h6 {
 }
 
 .app-footer-inner {
+    box-sizing: border-box;
     max-width: var(--container);
     margin: 0 auto;
     padding: var(--space-4);
@@ -1528,7 +1535,7 @@ h6 {
 }
 
 /* Bound the shell to the visible viewport whenever a game is mounted, so
-   the 139vh mobile floor and 100vh min-height cannot push the stage and its
+   the shell's min-height cannot push the stage and its
    thumb controls below the fold. :has() tracks the stage through htmx swaps.
    Both games share these sizing rules via .game-stage. */
 #thebiglebowski:has(.game-stage) {
@@ -2194,6 +2201,20 @@ h6 {
     z-index: 5;
 }
 
+/* On a portrait phone the two sticky columns cover nearly the whole table, so
+   pin only the client MAC; the actions still lead each row. */
+@media (max-width: 640px) {
+    .cap-table .cap-sticky-actions {
+        position: static;
+        box-shadow: none;
+    }
+
+    .cap-table th.cap-sticky,
+    .cap-table td.cap-sticky {
+        left: 0;
+    }
+}
+
 .cap-th {
     position: relative;
     cursor: pointer;
@@ -2201,8 +2222,27 @@ h6 {
 }
 
 .cap-th:hover,
-.cap-th:focus-visible {
+.cap-th:focus-within {
     background: var(--surface-2);
+}
+
+.cap-sort-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+
+/* Stretch the hit area over the whole header cell; the resizer stays on top. */
+.cap-sort-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
 }
 
 .cap-actions-th {
