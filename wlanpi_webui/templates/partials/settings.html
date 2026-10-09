@@ -1,7 +1,7 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Configuration</p>
-    <h2 class="page-title">Settings</h2>
+    <h1 class="page-title">Settings</h1>
     <p class="page-lede">Interface, session, and diagnostics.</p>
   </div>
 
@@ -9,16 +9,18 @@
     uk-height-match="target: > div > .uk-card">
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title">Appearance</h3>
+        <h2 class="uk-card-title">Appearance</h2>
         <p class="uk-text-meta">Switch between the light and dark themes. The choice is remembered on this device.</p>
         <div class="settings-actions">
-          <button class="uk-button uk-button-default" type="button" data-action="toggle-theme">Toggle dark mode</button>
+          <button class="uk-button uk-button-default" type="button" data-action="toggle-theme">
+            {{- 'Switch to light mode' if theme == 'dark' else 'Switch to dark mode' -}}
+          </button>
         </div>
       </div>
     </div>
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title">Session</h3>
+        <h2 class="uk-card-title">Session</h2>
         <p class="uk-text-meta">Signed in as <strong>{{ current_user }}</strong>.</p>
         <div class="settings-actions">
           <form method="post" action="{{ url_for('auth.logout') }}" class="settings-inline-form">
@@ -30,15 +32,19 @@
     </div>
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title">Clock</h3>
+        <h2 class="uk-card-title">Clock</h2>
         <ul class="uk-list uk-list-divider data-list">
           <li>Current: {{ current_datetime }}</li>
           <li>Timezone: {{ current_timezone or 'unknown' }}</li>
         </ul>
-        <form id="tz-form" hx-post="/settings/timezone" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+        <form method="post" id="tz-form" hx-post="/settings/timezone" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+          data-dirty-submit>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <label class="visually-hidden" for="timezone-select">Timezone</label>
           <select id="timezone-select" name="timezone" class="uk-select">
+            {% if current_timezone not in timezones %}
+            <option value="" selected disabled>Choose a timezone</option>
+            {% endif %}
             {% for tz in timezones %}
             <option value="{{ tz }}"{% if tz == current_timezone %} selected{% endif %}>{{ tz }}</option>
             {% endfor %}
@@ -46,7 +52,7 @@
         </form>
         <div class="settings-actions">
           <button class="uk-button uk-button-default" type="submit" form="tz-form">Save timezone</button>
-          <form hx-post="/settings/ntp" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+          <form method="post" hx-post="/settings/ntp" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="enabled" value="{% if ntp_enabled %}false{% else %}true{% endif %}">
             <button class="uk-button uk-button-default" type="submit">{% if ntp_enabled %}Disable NTP{% else %}Enable NTP{% endif %}</button>
@@ -56,12 +62,17 @@
     </div>
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title">Regulatory domain</h3>
-        <p class="uk-text-meta">Current: <strong>{{ reg_country }}</strong>. Changing this can briefly disrupt the radios.</p>
-        <form hx-post="/settings/reg-domain" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+        <h2 class="uk-card-title">Regulatory domain</h2>
+        <p class="uk-text-meta">Current: <strong>{{ reg_label }}</strong>. Changing this can briefly disrupt the radios.</p>
+        <form method="post" hx-post="/settings/reg-domain" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+          hx-confirm="Change the regulatory domain? The Wi-Fi radios may disconnect briefly." data-confirm-ok="Change domain"
+          data-dirty-submit>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <label class="visually-hidden" for="reg-domain-select">Country</label>
           <select id="reg-domain-select" name="country" class="uk-select">
+            {% if reg_country not in reg_countries | map(attribute='code') %}
+            <option value="" selected disabled>Choose a country</option>
+            {% endif %}
             {% for c in reg_countries %}
             <option value="{{ c.code }}"{% if c.code == reg_country %} selected{% endif %}>{{ c.name }} ({{ c.code }})</option>
             {% endfor %}
@@ -74,37 +85,27 @@
     </div>
   </div>
 
-  <h4>Power</h4>
+  <h2 class="page-section">Power</h2>
   <div class="uk-card uk-card-default uk-card-body">
     <p class="uk-text-meta">Reboot or power off the WLAN Pi. The WebUI will disconnect.</p>
     <div class="settings-actions">
-      <form id="reboot-form" hx-post="/settings/reboot" hx-target="#content" hx-swap="innerHTML"
-        hx-indicator=".progress">
+      <form method="post" hx-post="/settings/reboot" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="The WLAN Pi will reboot and the WebUI will disconnect." data-confirm-ok="Reboot">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="uk-button uk-button-default" type="button" data-action="power" data-power="reboot">Reboot</button>
+        <button class="uk-button uk-button-default" type="submit">Reboot</button>
       </form>
-      <form id="shutdown-form" hx-post="/settings/shutdown" hx-target="#content" hx-swap="innerHTML"
-        hx-indicator=".progress">
+      <form method="post" hx-post="/settings/shutdown" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="The WLAN Pi will shut down and the WebUI will disconnect. It stays off until power is cycled."
+        data-confirm-ok="Shut down">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="uk-button uk-button-danger" type="button" data-action="power" data-power="shutdown">Shut down</button>
+        <button class="uk-button uk-button-danger" type="submit">Shut down</button>
       </form>
     </div>
   </div>
 
-  <div id="power-confirm" uk-modal>
-    <div class="uk-modal-dialog uk-modal-body">
-      <h3 class="uk-modal-title">Are you sure?</h3>
-      <p id="power-confirm-text"></p>
-      <p class="uk-text-right uk-margin-remove-bottom">
-        <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
-        <button class="uk-button uk-button-danger" type="button" id="power-confirm-ok">Confirm</button>
-      </p>
-    </div>
-  </div>
-
-  <h4>Diagnostics</h4>
+  <h2 class="page-section">Diagnostics</h2>
   <div class="uk-card uk-card-default uk-card-body">
-    <h5>Session state</h5>
+    <h3 class="page-subsection">Session state</h3>
     <ul class="uk-list uk-list-divider data-list">
       <li>User: {{ current_user }}</li>
       <li>Boot id: {{ boot_id }}</li>

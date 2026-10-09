@@ -2,7 +2,7 @@
 <div>
   <div class="uk-card uk-card-default uk-card-hover uk-card-body">
     <div class="card-head">
-      <h3 class="uk-card-title">{{ title }}</h3>
+      <h2 class="uk-card-title">{{ title }}</h2>
       <button class="uk-icon-button" type="button" uk-tooltip="Copy to Clipboard"
         aria-label="Copy {{ title }} to clipboard"
         data-action="copy-card" data-card="{{ id }}"
@@ -18,7 +18,7 @@
 {% macro detail_card(title, lines, empty="Unavailable.") %}
 <div>
   <div class="uk-card uk-card-default uk-card-body">
-    <h3 class="uk-card-title">{{ title }}</h3>
+    <h2 class="uk-card-title">{{ title }}</h2>
     <ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
       {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
     </ul>
@@ -27,16 +27,16 @@
 {% endmacro %}
 {% if not core_running %}
 <div class="uk-card uk-card-default uk-card-body" role="status">
-  <h3 class="uk-card-title">Network data unavailable</h3>
+  <h2 class="uk-card-title">Network data unavailable</h2>
   {% include "partials/core_down.html" %}
 </div>
 {% else %}
 <div class="card-masonry">
   <div id="latency-card" class="uk-card uk-card-default uk-card-body latency-card card-wide" hx-preserve="true">
     <div id="latency-live">
-      <h3 class="uk-card-title">Latency</h3>
+      <h2 class="uk-card-title">Latency</h2>
       <div class="latency-wrap">
-        <canvas id="latency-chart" aria-label="Latency over the last five minutes"></canvas>
+        <canvas id="latency-chart" role="img" aria-label="Latency over the last five minutes"></canvas>
         <div class="latency-empty" id="latency-empty" hidden>Collecting latency samples...</div>
       </div>
     </div>

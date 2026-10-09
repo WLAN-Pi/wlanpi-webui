@@ -64,11 +64,22 @@
     });
   }
 
+  // An auto-layout table ignores a cell's width once it overflows its box;
+  // min-width is what actually grows the column.
+  function sizeColumn(th, width) {
+    th.style.width = width;
+    th.style.minWidth = width;
+    th.style.maxWidth = width;
+  }
+
+  function clampWidth(width) {
+    return Math.min(800, Math.max(48, Math.round(width)));
+  }
+
   function applyWidths(tbl, widths) {
     headerCells(tbl).forEach(function (th) {
-      var width = widths[th.dataset.column] || "";
-      th.style.width = width;
-      th.style.maxWidth = width;
+      var stored = parseFloat(widths[th.dataset.column]);
+      sizeColumn(th, stored ? clampWidth(stored) + "px" : "");
     });
   }
 
@@ -112,33 +123,71 @@
     });
   }
 
+  // Drag (mouse, pen or touch) or arrow keys resize a column; the width is
+  // remembered per column.
   function attachResizers(tbl) {
     headerCells(tbl).forEach(function (th) {
       if (th.querySelector(".cap-resizer")) return;
+      var labelEl = th.querySelector(".cap-th-label");
       var resizer = document.createElement("div");
       resizer.className = "cap-resizer";
+      resizer.tabIndex = 0;
+      resizer.setAttribute("role", "separator");
+      resizer.setAttribute("aria-orientation", "vertical");
+      resizer.setAttribute("aria-valuemin", "48");
+      resizer.setAttribute("aria-valuemax", "800");
+      resizer.setAttribute(
+        "aria-label",
+        "Resize " + (labelEl ? labelEl.textContent : th.dataset.column) + " column"
+      );
       th.appendChild(resizer);
+      resizer.setAttribute(
+        "aria-valuenow",
+        String(Math.max(48, parseFloat(th.style.width) || th.offsetWidth))
+      );
       var startX = 0;
       var startWidth = 0;
-      function onMove(evt) {
-        var width = Math.max(48, startWidth + (evt.clientX - startX));
-        th.style.width = width + "px";
-        th.style.maxWidth = width + "px";
+
+      function setWidth(width) {
+        width = clampWidth(width);
+        sizeColumn(th, width + "px");
+        resizer.setAttribute("aria-valuenow", String(width));
       }
-      function onUp() {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
+
+      function save() {
         var stored = readJSON(WIDTHS_KEY, {}) || {};
         stored[th.dataset.column] = th.style.width;
         writeJSON(WIDTHS_KEY, stored);
       }
-      resizer.addEventListener("mousedown", function (evt) {
+
+      resizer.addEventListener("pointerdown", function (evt) {
         evt.preventDefault();
         evt.stopPropagation();
         startX = evt.clientX;
         startWidth = th.offsetWidth;
-        document.addEventListener("mousemove", onMove);
-        document.addEventListener("mouseup", onUp);
+        resizer.setPointerCapture(evt.pointerId);
+      });
+      resizer.addEventListener("pointermove", function (evt) {
+        if (!resizer.hasPointerCapture(evt.pointerId)) return;
+        setWidth(startWidth + (evt.clientX - startX));
+      });
+      function endDrag(evt) {
+        if (!resizer.hasPointerCapture(evt.pointerId)) return;
+        resizer.releasePointerCapture(evt.pointerId);
+        save();
+      }
+      resizer.addEventListener("pointerup", endDrag);
+      resizer.addEventListener("pointercancel", endDrag);
+      resizer.addEventListener("keydown", function (evt) {
+        var step = evt.shiftKey ? 48 : 16;
+        var delta =
+          evt.key === "ArrowRight" ? step : evt.key === "ArrowLeft" ? -step : 0;
+        if (!delta) return;
+        evt.preventDefault();
+        // From the set width, not offsetWidth: a cell can't shrink below its
+        // content, and each press must still move the value.
+        setWidth((parseFloat(th.style.width) || th.offsetWidth) + delta);
+        save();
       });
       resizer.addEventListener("click", function (evt) {
         evt.preventDefault();

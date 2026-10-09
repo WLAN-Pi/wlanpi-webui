@@ -328,7 +328,8 @@ class TestProfilerCapabilities:
         _login(client, monkeypatch)
         resp = client.get("/profiler/capabilities")
         assert resp.status_code == 200
-        assert b"No client profiles found" in resp.data
+        assert b"No client profiles yet." in resp.data
+        assert b"uk-alert-danger" not in resp.data
 
     def test_shell_renders_session_reports(self, client, monkeypatch, profiler_root):
         reports_dir = profiler_root / "reports"

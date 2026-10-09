@@ -1,12 +1,12 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Analysis</p>
-    <h2 class="page-title">Speedtest result</h2>
+    <h1 class="page-title">Speedtest result</h1>
     <p class="page-lede">{{ result.tested_at | default('') }}</p>
   </div>
 
   <div class="speedtest-result-card">
-    <canvas class="result-image" data-result='{{ result | tojson }}'
+    <canvas class="result-image" role="img" data-result='{{ result | tojson }}'
       aria-label="Speedtest result: {{ result.download_mbps | default('n/a') }} Mbps down, {{ result.upload_mbps | default('n/a') }} Mbps up"></canvas>
     <div class="result-actions">
       <button type="button" class="uk-button uk-button-default uk-button-small" data-copy-result>Copy image</button>

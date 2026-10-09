@@ -13,6 +13,8 @@
     --brand-contrast: #ffffff;
     --brand-ink: #a83a12;
     --brand-ink-hover: #7e2c0d;
+    /* Text on a --brand fill, either theme (6.4 on #f45625) */
+    --on-brand: #0b0f13;
 
     /* Type: system sans (UIKit) + one mono; 1.25 ratio */
     --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -84,7 +86,7 @@
     --ctl-border: var(--brand);
     --ctl-fg: var(--brand-ink);
     --ctl-active-bg: var(--brand);
-    --ctl-active-fg: #0b0f13;
+    --ctl-active-fg: var(--on-brand);
     --ctl-blur: blur(6px);
     --ctl-hint-bg: rgba(255, 255, 255, 0.72);
     --ctl-hint-fg: var(--text-muted);
@@ -120,7 +122,7 @@
     --ctl-border: var(--brand);
     --ctl-fg: var(--brand-ink);
     --ctl-active-bg: var(--brand);
-    --ctl-active-fg: #0b0f13;
+    --ctl-active-fg: var(--on-brand);
     --ctl-hint-bg: rgba(10, 14, 18, 0.6);
     --ctl-hint-fg: #e6eaee;
 }
@@ -145,6 +147,14 @@ a {
 
 a:hover {
     color: var(--text);
+}
+
+/* Links inside running text need more than colour to stand out from it
+   (WCAG 1.4.1); navigation and button-styled links stay plain. */
+main :where(p, dd, td, .uk-alert, .uk-list > li) a:not(.uk-button):not(.uk-icon-button) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
 }
 
 :focus-visible {
@@ -220,33 +230,8 @@ pre {
     border: 1px solid var(--border);
 }
 
-.bg-brand {
-    background: var(--brand);
-    color: var(--brand-contrast);
-}
-
 .text-dim {
     color: var(--text-muted);
-}
-
-.text-brand {
-    color: var(--brand);
-}
-
-.radius-sm {
-    border-radius: var(--radius-sm);
-}
-
-.radius-md {
-    border-radius: var(--radius-md);
-}
-
-.shadow-sm {
-    box-shadow: var(--shadow-sm);
-}
-
-.shadow-md {
-    box-shadow: var(--shadow-md);
 }
 
 .visually-hidden {
@@ -449,6 +434,10 @@ h6 {
     color: #fff;
 }
 
+.uk-form-label {
+    color: var(--text);
+}
+
 .uk-input,
 .uk-select,
 .uk-textarea {
@@ -520,8 +509,13 @@ h6 {
     background: var(--surface-2);
 }
 
-/* First columns of data tables are timestamps/MACs: set them in mono */
-.uk-table td:nth-child(-n + 2) {
+/* Numbers line up down a column; timestamps, MACs and file names opt in
+   to mono per cell. */
+.uk-table td {
+    font-variant-numeric: tabular-nums;
+}
+
+.uk-table td.cell-mono {
     font-family: var(--font-mono);
     font-size: var(--fs-xs);
     white-space: nowrap;
@@ -593,6 +587,21 @@ h6 {
 }
 
 /* Settings page action rows and diagnostics */
+/* Toggle buttons (dark mode, paused refresh) show their on state. */
+.uk-button-default[aria-pressed="true"] {
+    border-color: var(--brand-ink);
+    color: var(--brand-ink);
+    background: var(--surface-2);
+}
+
+.empty-state {
+    margin: var(--space-3) 0 0;
+    padding: var(--space-4);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+}
+
 .settings-actions {
     display: flex;
     flex-wrap: wrap;
@@ -777,8 +786,16 @@ h6 {
     width: auto;
 }
 
+.auth-title {
+    margin: var(--space-4) 0 0;
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    line-height: var(--lh-tight);
+    color: var(--text);
+}
+
 .auth-subtitle {
-    margin: var(--space-3) 0 0;
+    margin: var(--space-2) 0 0;
     color: var(--text-muted);
     font-size: var(--fs-sm);
 }
@@ -786,13 +803,13 @@ h6 {
 /* Native <details> disclosure (profiler "Getting started") */
 .disclosure > summary {
     cursor: pointer;
-    color: var(--brand);
+    color: var(--brand-ink);
     font-size: 1.25rem;
     line-height: 1.4;
 }
 
 .disclosure > summary:hover {
-    color: var(--brand-hover);
+    color: var(--brand-ink-hover);
 }
 
 .uk-divider-icon {
@@ -825,11 +842,16 @@ h6 {
     position: fixed;
     top: 0;
     z-index: 1000;
-    height: 4px;
+    height: 5px;
     width: 100%;
     border-radius: 2px;
+    background-color: var(--bg-surface);
     background-clip: padding-box;
     overflow: hidden;
+}
+
+.progress .indeterminate {
+    background-color: var(--brand);
 }
 
 .progress .indeterminate:before {
@@ -868,6 +890,18 @@ h6 {
 
 .htmx-request.progress {
     display: inline;
+}
+
+/* The global reduced-motion rule stops the sliding bars at zero width; show
+   one still, full-width bar instead so a load is still visible. */
+@media (prefers-reduced-motion: reduce) {
+    .progress .indeterminate:before {
+        right: 0;
+    }
+
+    .progress .indeterminate:after {
+        display: none;
+    }
 }
 
 @-webkit-keyframes indeterminate {
@@ -992,9 +1026,10 @@ h6 {
    Every page: constrained wrap, eyebrow + title + lede header, slim footer.
    ========================================================================== */
 
+/* White on --brand is 3.2:1; tint the selection instead and keep the text. */
 ::selection {
-    background: var(--brand);
-    color: #fff;
+    background: color-mix(in srgb, var(--brand) 30%, var(--bg-surface));
+    color: var(--text);
 }
 
 .page {
@@ -1025,11 +1060,6 @@ h6 {
 
 .page-head-row .page-head {
     margin-bottom: var(--stack-sm);
-}
-
-.page-head-row .uk-button {
-    flex: none;
-    margin-top: var(--space-1);
 }
 
 .page-head-controls {
@@ -1137,18 +1167,19 @@ h6 {
 }
 
 /* Page sections: one consistent rhythm instead of UIKit's ad-hoc margins */
-.page h4 {
+.page-section {
     margin: var(--stack-md) 0 var(--space-3);
     font-size: var(--fs-lg);
     line-height: var(--lh-tight);
 }
 
-.page-head + h4 {
+.page-head + .page-section {
     margin-top: 0;
 }
 
-/* Sub-sections (e.g. under Diagnostics): small muted labels, clearly below h4 */
-.page h5 {
+/* Sub-sections (e.g. under Diagnostics): small muted labels, clearly below a
+   section */
+.page-subsection {
     margin: var(--space-4) 0 var(--space-2);
     font-size: var(--fs-xs);
     letter-spacing: 0.1em;
@@ -1200,20 +1231,9 @@ h6 {
     white-space: nowrap;
 }
 
-.data-list,
-.sys-facts {
+.data-list {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
-}
-
-.sys-facts .sys-label {
-    display: inline-block;
-    min-width: 96px;
-    font-family: var(--font-sans);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
 }
 
 .app-footer {
@@ -2056,14 +2076,14 @@ h6 {
 .packetstorm-difficulty button:active {
     background: var(--brand);
     border-color: var(--brand);
-    color: #0b0f13;
+    color: var(--on-brand);
     transform: scale(0.97);
 }
 
 .packetstorm-difficulty button.is-active {
     background: var(--brand);
     border-color: var(--brand);
-    color: #0b0f13;
+    color: var(--on-brand);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2167,12 +2187,6 @@ h6 {
     vertical-align: middle;
 }
 
-/* Override the global "first two columns are mono" rule for this table */
-.cap-table td:nth-child(-n + 2) {
-    font-family: inherit;
-    font-size: var(--fs-sm);
-}
-
 .cap-table th.cap-sticky,
 .cap-table td.cap-sticky {
     position: sticky;
@@ -2216,6 +2230,7 @@ h6 {
 }
 
 .cap-th {
+    box-sizing: border-box;
     position: relative;
     cursor: pointer;
     user-select: none;
@@ -2279,12 +2294,12 @@ h6 {
 
 .cap-yes {
     background: rgba(46, 125, 50, 0.16);
-    color: var(--success);
+    color: var(--success-fg);
 }
 
 .cap-no {
     background: rgba(211, 47, 47, 0.14);
-    color: var(--danger);
+    color: var(--danger-fg);
 }
 
 .cap-na {
@@ -2321,17 +2336,28 @@ h6 {
     box-shadow: inset 0 0 0 1px var(--brand);
 }
 
+/* Above the sort button's full-cell hit area. */
 .cap-resizer {
     position: absolute;
     top: 0;
     right: 0;
+    z-index: 1;
     width: 6px;
     height: 100%;
     cursor: col-resize;
+    touch-action: none;
 }
 
-.cap-resizer:hover {
+.cap-resizer:hover,
+.cap-resizer:focus-visible {
     background: var(--brand);
+    outline: none;
+}
+
+@media (pointer: coarse) {
+    .cap-resizer {
+        width: 16px;
+    }
 }
 
 .cap-col-hidden {
@@ -2531,7 +2557,7 @@ h6 {
     padding: 0 4px;
     border-radius: 999px;
     background: var(--brand);
-    color: #0b0f13;
+    color: var(--on-brand);
     font-size: 0.65rem;
     font-weight: 700;
     line-height: 17px;
@@ -2601,16 +2627,20 @@ h6 {
 
 /* The terminal is the whole page: it fills the space between the navbar and
    the footer, inset by a little breathing room. */
+/* min-width: 0 lets both shrink below xterm's initial 80 columns; without it
+   a phone scrolls sideways until the fit addon resizes the terminal. */
 .cli-wrap {
     display: flex;
     flex: 1;
     min-height: 0;
+    min-width: 0;
     padding: var(--space-3);
 }
 
 .cli-terminal {
     flex: 1;
     min-height: 0;
+    min-width: 0;
     overflow: hidden;
     padding: var(--space-2);
     border: 1px solid var(--border);
@@ -2626,4 +2656,43 @@ h6 {
    already comes from the theme, so let it show through. */
 .cli-terminal .xterm .xterm-viewport {
     background-color: transparent;
+}
+
+/* ============================================================
+   Touch
+   ============================================================ */
+
+/* On touch screens, grow controls to a 44px target and keep form text at
+   16px: iOS zooms the page into any field with smaller text. Table action
+   buttons stay compact (36px) so a profiler row still fits. */
+@media (pointer: coarse) {
+    .uk-button {
+        line-height: 42px;
+    }
+
+    .uk-button-small,
+    .cap-actions .uk-button {
+        min-height: 36px;
+        line-height: 34px;
+    }
+
+    .uk-icon-button {
+        width: 44px;
+        height: 44px;
+    }
+
+    .uk-input,
+    .uk-select:not([multiple]):not([size]) {
+        height: 44px;
+        font-size: 16px;
+    }
+
+    .uk-textarea,
+    .uk-form-small:not(textarea):not([multiple]):not([size]) {
+        font-size: 16px;
+    }
+
+    .uk-form-small:not(textarea):not([multiple]):not([size]) {
+        height: 40px;
+    }
 }

@@ -226,6 +226,15 @@
     }
   });
 
+  // An unchanged poll comes back 204 and doesn't swap; the readings on the
+  // page are still current, so record them.
+  document.body.addEventListener("htmx:afterRequest", function (evt) {
+    var d = evt.detail;
+    if (d && d.xhr && d.xhr.status === 204 && d.target && d.target.id === "network-cards") {
+      sample();
+    }
+  });
+
   // Follow the theme: re-read the tokens when it flips.
   try {
     new MutationObserver(render).observe(document.documentElement, {

@@ -1,6 +1,6 @@
 {% extends "auth/base.html" %}
 {% block title %}WLAN Pi: Login{% endblock %}
-{% block subtitle %}Sign in to {{ hostname }}{% endblock %}
+{% block heading %}Sign in to {{ hostname }}{% endblock %}
 {% block content %}
 {% if expired %}
 <div class="uk-alert-warning" uk-alert><p>Your session expired. Please sign in again.</p></div>
@@ -11,17 +11,17 @@
 <form method="post" action="{{ url_for('auth.login') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   <div class="uk-margin">
+    <label class="uk-form-label" for="login-username">Username</label>
     <div class="uk-inline uk-width-1-1">
       <span class="uk-form-icon" uk-icon="icon: user"></span>
-      <input class="uk-input" type="text" name="username" placeholder="Username" autocomplete="username" required
-        autofocus>
+      <input id="login-username" class="uk-input" type="text" name="username" autocomplete="username" required autofocus>
     </div>
   </div>
   <div class="uk-margin">
+    <label class="uk-form-label" for="login-password">Password</label>
     <div class="uk-inline uk-width-1-1">
       <span class="uk-form-icon uk-form-icon-flip" uk-icon="icon: lock"></span>
-      <input class="uk-input" type="password" name="password" placeholder="Password" autocomplete="current-password"
-        required>
+      <input id="login-password" class="uk-input" type="password" name="password" autocomplete="current-password" required>
     </div>
   </div>
   <div class="uk-margin">

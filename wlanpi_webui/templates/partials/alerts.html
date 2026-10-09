@@ -3,7 +3,7 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Diagnostics</p>
-    <h2 class="page-title">Alerts</h2>
+    <h1 class="page-title">Alerts</h1>
     <p class="page-lede">Conditions that may need attention.</p>
   </div>
 
@@ -12,7 +12,7 @@
     {% for alert in alerts %}
     <div>
       <div class="uk-card uk-card-default uk-card-body">
-        <h3 class="uk-card-title uk-margin-small-bottom">{{ alert.title }}</h3>
+        <h2 class="uk-card-title uk-margin-small-bottom">{{ alert.title }}</h2>
         <p class="uk-text-meta uk-margin-remove-top">{{ alert.detail }}</p>
         <pre class="alert-fix">{{ alert.fix }}</pre>
       </div>
@@ -25,7 +25,7 @@
   </div>
   {% endif %}
 
-  <h4>History</h4>
+  <h2 class="page-section">History</h2>
   <p class="uk-text-meta">Messages raised since the last reboot.</p>
   <div class="uk-card uk-card-default uk-card-body">
     <div class="notifications-toolbar">

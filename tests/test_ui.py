@@ -42,6 +42,16 @@ class TestAuthPages:
         assert b"auth-shell" in resp.data
         assert b"Change password" in resp.data
 
+    @pytest.mark.parametrize("path", ["/login", "/change_password"])
+    def test_fields_have_visible_labels(self, client, path):
+        html = client.get(path).data.decode()
+        assert "<main" in html and "<h1" in html
+        assert "placeholder=" not in html
+        inputs = re.findall(r'<input id="([^"]+)" class="uk-input"', html)
+        assert inputs
+        for field_id in inputs:
+            assert f'<label class="uk-form-label" for="{field_id}">' in html
+
 
 class TestManifest:
     def test_manifest_is_valid_and_icons_exist(self, app):
@@ -169,6 +179,42 @@ class TestKeyboardReachable:
 
     def test_no_fake_buttons(self):
         assert self._offenders(r"<(?!button\b)\w+\b[^>]*\brole=\"button\"") == []
+
+    def test_htmx_forms_post_natively(self):
+        # Without method, a click before deferred htmx runs would GET the
+        # form, putting the CSRF token in the URL and access log.
+        assert self._offenders(r"<form\b(?![^>]*\bmethod=)[^>]*\bhx-post=[^>]*>") == []
+
+
+class TestHeadings:
+    ROOT = Path(__file__).parent.parent / "wlanpi_webui" / "templates"
+
+    def test_page_titles_are_h1(self):
+        titles = [
+            (path.name, m.group(1))
+            for path in self.ROOT.rglob("*.html")
+            for m in re.finditer(r'<(h\d) class="page-title', path.read_text())
+        ]
+        assert titles
+        assert [t for t in titles if t[1] != "h1"] == []
+
+    def test_no_unclassed_low_headings(self):
+        # Section and sub-section headings carry a class; a bare <h4>/<h5>
+        # was how levels got skipped.
+        bare = [
+            path.name
+            for path in self.ROOT.rglob("*.html")
+            if re.search(r"<h[4-6]>", path.read_text())
+        ]
+        assert bare == []
+
+
+class TestAssets:
+    def test_shell_loads_minified_uikit_and_no_xterm(self, client):
+        resp = client.get("/login")
+        assert b"css/uikit.min.css" in resp.data
+        assert b"css/uikit.css" not in resp.data
+        assert b"xterm.css" not in resp.data
 
 
 class TestContentSecurityPolicy:
