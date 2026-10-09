@@ -55,20 +55,29 @@ class TestSettings:
         resp = client.get("/settings")
         assert resp.status_code == 200
         assert b"Signed in as" in resp.data
-        assert b"Toggle dark mode" in resp.data
+        assert b'data-action="toggle-theme">Switch to dark mode</button>' in resp.data
         assert b"Diagnostics" in resp.data
         assert b"/alerts" in resp.data
         assert b"Log out" in resp.data
         assert b"/debug" not in resp.data
         assert b"/notifications" not in resp.data
 
-    def test_power_confirm_modal(self, client, monkeypatch):
+    def test_theme_button_names_the_other_theme(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        client.set_cookie("wlanpi_theme", "dark")
+        resp = client.get("/settings")
+        assert b'data-action="toggle-theme">Switch to light mode</button>' in resp.data
+
+    def test_power_actions_confirm(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/settings")
-        assert b'id="power-confirm"' in resp.data
-        assert b"Are you sure?" in resp.data
-        assert b'data-action="power" data-power="reboot"' in resp.data
-        assert b'data-action="power" data-power="shutdown"' in resp.data
+        for action, ok in ((b"reboot", b"Reboot"), (b"shutdown", b"Shut down")):
+            form = re.search(
+                rb'<form[^>]*hx-post="/settings/' + action + rb'"[^>]*>', resp.data
+            )
+            assert form, action
+            assert b"hx-confirm=" in form.group(0)
+            assert b'data-confirm-ok="' + ok + b'"' in form.group(0)
 
 
 class TestAlertsHistory:
@@ -223,3 +232,69 @@ class TestSettingsCore:
         assert b"Clock" in resp.data
         assert b"Disable NTP" in resp.data
         assert b"Enable NTP" not in resp.data
+
+
+class TestCurrentValueNotInList:
+    """A value the lists don't contain must not preselect another entry."""
+
+    def _render(self, client, monkeypatch, country, timezone):
+        from wlanpi_webui.settings import settings as s
+
+        def fake(path, params=None):
+            if "timezone/list" in path:
+                return {"timezones": ["Africa/Abidjan", "UTC"]}
+            if path.endswith("/timezone"):
+                return {"timezone": timezone}
+            if "reg-domain/list" in path:
+                return {
+                    "countries": [
+                        {"code": "AD", "name": "Andorra"},
+                        {"code": "GB", "name": "United Kingdom"},
+                    ]
+                }
+            if "reg-domain" in path:
+                return {"country": country}
+            return {}
+
+        monkeypatch.setattr(s, "get_core_json", fake)
+        _login(client, monkeypatch)
+        return client.get("/settings").data
+
+    @staticmethod
+    def _selected(html, select_id):
+        select = re.search(
+            rb'<select id="' + select_id + rb'".*?</select>', html, re.DOTALL
+        ).group(0)
+        return re.findall(rb"<option ([^>]*)selected[^>]*>([^<]*)<", select)
+
+    def test_world_domain_selects_placeholder(self, client, monkeypatch):
+        html = self._render(client, monkeypatch, "00", "Europe/Nowhere")
+        assert self._selected(html, b"reg-domain-select") == [
+            (b'value="" ', b"Choose a country")
+        ]
+        assert b"World (00), no country set" in html
+        assert self._selected(html, b"timezone-select") == [
+            (b'value="" ', b"Choose a timezone")
+        ]
+
+    def test_known_values_stay_selected(self, client, monkeypatch):
+        html = self._render(client, monkeypatch, "GB", "UTC")
+        assert b"Choose a country" not in html
+        assert b"Choose a timezone" not in html
+        assert self._selected(html, b"reg-domain-select") == [
+            (b'value="GB" ', b"United Kingdom (GB)")
+        ]
+        assert self._selected(html, b"timezone-select") == [(b'value="UTC" ', b"UTC")]
+
+    def test_reg_domain_change_confirms(self, client, monkeypatch):
+        html = self._render(client, monkeypatch, "GB", "UTC")
+        form = re.search(rb'<form[^>]*hx-post="/settings/reg-domain"[^>]*>', html)
+        assert b"hx-confirm=" in form.group(0)
+
+    def test_selects_save_only_when_changed(self, client, monkeypatch):
+        html = self._render(client, monkeypatch, "GB", "UTC")
+        for path in (b"timezone", b"reg-domain"):
+            form = re.search(
+                rb'<form[^>]*hx-post="/settings/' + path + rb'"[^>]*>', html
+            )
+            assert b"data-dirty-submit" in form.group(0)

@@ -1,7 +1,9 @@
 {# Full-bleed terminal: no page head, so it fills the space between the
-   navbar and the footer. cli.js loads the two vendored xterm files on demand. #}
+   navbar and the footer. cli.js loads the vendored xterm files on demand. #}
 <div class="cli-wrap">
+  <h1 class="page-title visually-hidden">CLI</h1>
   <div id="cli-terminal" class="cli-terminal" data-csrf="{{ csrf_token }}"
+    data-xterm-css="{{ url_for('static', filename='vendor/xterm/xterm.css') }}"
     data-xterm="{{ url_for('static', filename='vendor/xterm/xterm.js') }}"
     data-fit="{{ url_for('static', filename='vendor/xterm/addon-fit.js') }}"></div>
 </div>

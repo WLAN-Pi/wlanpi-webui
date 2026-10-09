@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+import wlanpi_webui.app as app_module
 from wlanpi_webui.app import create_app
 from wlanpi_webui.utils import boot_clock
 
@@ -388,3 +389,71 @@ class TestServerSideSessions:
         client = create_app().test_client()
         _login(client, monkeypatch)
         assert client.get("/auth/check").status_code == 200
+
+
+POLL = {"hx-request": "true", "X-Wlanpi-Poll": "1"}
+
+
+class TestUnchangedPoll:
+    """Polls echo the last X-Wlanpi-Etag; identical markup comes back as 204."""
+
+    def test_same_markup_is_204(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        first = client.get("/alerts", headers=POLL)
+        etag = first.headers["X-Wlanpi-Etag"]
+        assert first.status_code == 200 and first.data
+        again = client.get("/alerts", headers={**POLL, "X-Wlanpi-Etag": etag})
+        assert again.status_code == 204
+        assert again.data == b""
+        assert again.headers["X-Wlanpi-Etag"] == etag
+
+    def test_stale_etag_gets_markup(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/alerts", headers={**POLL, "X-Wlanpi-Etag": "stale"})
+        assert resp.status_code == 200 and resp.data
+
+    def test_user_request_is_never_skipped(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        etag = client.get("/alerts", headers=POLL).headers["X-Wlanpi-Etag"]
+        resp = client.get(
+            "/alerts", headers={"hx-request": "true", "X-Wlanpi-Etag": etag}
+        )
+        assert resp.status_code == 200
+        assert "X-Wlanpi-Etag" not in resp.headers
+
+    def test_post_is_never_skipped(self, client, monkeypatch):
+        # A client header must not be able to swallow a mutation's response.
+        client.application.add_url_rule(
+            "/test-post", "test_post", lambda: "<p>done</p>", methods=["POST"]
+        )
+        _login(client, monkeypatch)
+        resp = client.post("/test-post", headers=POLL)
+        etag = resp.headers.get("X-Wlanpi-Etag", "")
+        resp = client.post("/test-post", headers={**POLL, "X-Wlanpi-Etag": etag})
+        assert resp.status_code == 200
+        assert "X-Wlanpi-Etag" not in resp.headers
+
+    def test_alert_change_alone_is_not_skipped(self, client, monkeypatch):
+        # The bell reads X-Wlanpi-Alerts after a swap; a 204 would hide it.
+        client.application.add_url_rule(
+            "/test-poll", "test_poll", lambda: "<p>same</p>"
+        )
+        _login(client, monkeypatch)
+        monkeypatch.setattr(app_module, "active_alerts", lambda core_running: [])
+        etag = client.get("/test-poll", headers=POLL).headers["X-Wlanpi-Etag"]
+        monkeypatch.setattr(
+            app_module, "active_alerts", lambda core_running: [{"key": "core"}]
+        )
+        resp = client.get("/test-poll", headers={**POLL, "X-Wlanpi-Etag": etag})
+        assert resp.status_code == 200
+        assert resp.headers["X-Wlanpi-Alerts"] == "core"
+        assert resp.headers["X-Wlanpi-Etag"] != etag
+
+    def test_toast_is_delivered_even_if_markup_matches(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        etag = client.get("/alerts", headers=POLL).headers["X-Wlanpi-Etag"]
+        with client.session_transaction() as sess:
+            sess["wlanpi_toast"] = {"message": "hi", "status": "primary"}
+        resp = client.get("/alerts", headers={**POLL, "X-Wlanpi-Etag": etag})
+        assert resp.status_code == 200
+        assert "X-Wlanpi-Toast" in resp.headers

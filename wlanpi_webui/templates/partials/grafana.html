@@ -1,7 +1,7 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Tools</p>
-    <h2 class="page-title">Grafana</h2>
+    <h1 class="page-title">Grafana</h1>
     <p class="page-lede">Dashboards and graphs from collected telemetry.</p>
   </div>
 
@@ -12,14 +12,14 @@
     </div>
   </div>
 
-  <h3>Data streams</h3>
+  <h2 class="page-section">Data streams</h2>
   {% if grafana_data_streams %}
   <div class="uk-grid-small uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
     {% for stream in grafana_data_streams %}
     <div>
       <div class="uk-card uk-card-default uk-card-body app-card">
         <div class="card-head">
-          <h4 class="uk-card-title uk-margin-remove">{{ stream.name }}</h4>
+          <h3 class="uk-card-title uk-margin-remove">{{ stream.name }}</h3>
           <span class="app-status {% if stream.running %}is-on{% else %}is-off{% endif %}">{% if stream.running %}Running{% else %}Stopped{% endif %}</span>
         </div>
         <p class="app-actions">{{ stream.anchor|safe }}</p>

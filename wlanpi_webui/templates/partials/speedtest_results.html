@@ -1,7 +1,7 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Analysis</p>
-    <h2 class="page-title">Speedtest results</h2>
+    <h1 class="page-title">Speedtest results</h1>
     <p class="page-lede">Stored runs, newest first. Open result for more details.</p>
   </div>
 
@@ -22,7 +22,7 @@
       <tbody>
         {% for r in rows %}
         <tr>
-          <td>{{ r.tested_at }}</td>
+          <td class="cell-mono">{{ r.tested_at }}</td>
           <td>{{ r.download }}</td>
           <td>{{ r.upload }}</td>
           <td>{{ r.ping }}</td>

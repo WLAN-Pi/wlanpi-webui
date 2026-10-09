@@ -20,21 +20,19 @@
   <!--App JS (theme must apply before the stylesheets to avoid a flash)-->
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <!--UIkit CSS-->
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.css') }}">
-  <!--Vendored terminal CSS (only used by /cli)-->
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/xterm/xterm.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/uikit.min.css') }}">
   <!--App CSS-->
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/app.css') }}">
   <!--UIkit JS-->
-  <script src="{{ url_for('static', filename='js/uikit.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
   <!--htmx JS-->
-  <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/htmx.min.js') }}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
-  <div class="progress" style="height: 5px; background-color: var(--bg-surface);">
-    <div class="indeterminate" style="background-color: var(--brand);"></div>
+  <div class="progress">
+    <div class="indeterminate"></div>
   </div>
   <div id="thebiglebowski" class="uk-flex uk-flex-column">
     <!--HEADER-->

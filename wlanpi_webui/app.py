@@ -43,6 +43,7 @@ from wlanpi_webui.utils import (
 # never time out. htmx polls say so with this header (see app.js); the CLI's
 # fetch() polling and automatic shell restarts are listed by endpoint.
 POLL_HEADER = "X-Wlanpi-Poll"
+POLL_ETAG_HEADER = "X-Wlanpi-Etag"
 BACKGROUND_ENDPOINTS = {
     "cli.output",
     "cli.resize",
@@ -228,6 +229,34 @@ def create_app(config_class=Config):
         ):
             session["last_seen"] = now
         return None
+
+    # A poll whose markup matches what the client already shows gets 204, which
+    # htmx doesn't swap. The Pi still renders it, but the browser keeps its DOM
+    # (focus, scroll, open <details>) and skips the re-layout.
+    @app.after_request
+    def skip_unchanged_poll(response):
+        if (
+            request.method != "GET"
+            or not request.headers.get(POLL_HEADER)
+            or response.status_code != 200
+            or response.mimetype != "text/html"
+            or response.direct_passthrough
+        ):
+            return response
+        # htmx skips afterSettle on a 204, which is where the bell and toasts
+        # are read, so those headers count as part of what changed. (Flask runs
+        # after_request hooks in reverse, so emit_queued_toast has run.)
+        digest = hashlib.sha256(response.get_data())
+        for header in ("X-Wlanpi-Alerts", "X-Wlanpi-Toast"):
+            digest.update(b"\0" + response.headers.get(header, "").encode())
+        etag = digest.hexdigest()[:16]
+        response.headers[POLL_ETAG_HEADER] = etag
+        if request.headers.get(POLL_ETAG_HEADER) == etag and not response.headers.get(
+            "X-Wlanpi-Toast"
+        ):
+            response.status_code = 204
+            response.set_data(b"")
+        return response
 
     @app.after_request
     def set_content_security_policy(response):

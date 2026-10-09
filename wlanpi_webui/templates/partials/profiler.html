@@ -1,7 +1,7 @@
 <div class="page uk-flex uk-flex-1 uk-flex-column">
   <div class="page-head">
     <p class="page-eyebrow">Analysis</p>
-    <h2 class="page-title">Profiler</h2>
+    <h1 class="page-title">Profiler</h1>
     <p class="page-lede">Determine wireless client capabilities by automating the analysis of association frames.</p>
   </div>
   {% if content %}{% autoescape false %}{{ content }}{% endautoescape %}{% endif %}
@@ -13,8 +13,8 @@
     </div>
     <div class="profiler-service-actions">
       {{ profiler_toggle | safe }}
-      <form hx-post="/profiler/purge" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
-        hx-confirm="Delete all profiler reports and captures? This cannot be undone.">
+      <form method="post" hx-post="/profiler/purge" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
+        hx-confirm="Delete all profiler reports and captures? This cannot be undone." data-confirm-ok="Delete all">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="uk-button uk-button-default" type="submit">Purge data</button>
       </form>
@@ -22,7 +22,7 @@
   </div>
 
   <div class="uk-card uk-card-default uk-card-body profiler-session-card">
-    <h3 class="uk-card-title">Profiler session</h3>
+    <h2 class="uk-card-title">Profiler session</h2>
     <div class="session-layout">
       <div id="profiler-session" hx-get="/profiler/session" hx-trigger="load, every 5s" hx-swap="innerHTML">
         <p class="uk-text-meta">Loading session&hellip;</p>
@@ -52,8 +52,8 @@
           <tbody>
             {% for report in reports %}
             <tr>
-              <td class="uk-text-nowrap">{{ report.modifytime }}</td>
-              <td>{{ report.name }}</td>
+              <td class="cell-mono">{{ report.modifytime }}</td>
+              <td class="cell-mono">{{ report.name }}</td>
               <td><a class="uk-button uk-button-default uk-button-small" href="{{ report.href }}">CSV</a></td>
             </tr>
             {% endfor %}

@@ -1,5 +1,6 @@
 <div class="packetstorm-stage game-stage" id="packetstorm-stage" data-csrf="{{ csrf_token }}"
   {% if config.GAME_DEBUG or config.DEBUG %}data-debug="1"{% endif %}>
+  <h1 class="page-title visually-hidden">Packet Storm</h1>
   <canvas id="packetstorm-canvas" tabindex="0" role="img"
     aria-label="Packet Storm: steer the client with arrows or WASD, space fires packets"></canvas>
   <a class="game-exit" href="/" hx-get="/" hx-target="#content" hx-swap="innerHTML"

@@ -12,6 +12,13 @@ from wlanpi_webui.utils import (
 )
 
 
+def _reg_label(country: str) -> str:
+    # 00 is the kernel's world domain: no country set, most restrictive rules.
+    if country == "00":
+        return "World (00), no country set"
+    return country or "unknown"
+
+
 @bp.route("/settings")
 def settings():
     datetime_info = get_core_json("/api/v1/system/datetime") or {}
@@ -21,6 +28,7 @@ def settings():
     reg_list = get_core_json("/api/v1/system/reg-domain/list") or {}
     ntp = get_core_json("/api/v1/system/ntp") or {}
 
+    reg_country = (reg.get("country") or "").upper()
     resp_data = {
         "idle_timeout": Config.IDLE_TIMEOUT,
         "boot_id": session.get("boot_id"),
@@ -35,7 +43,8 @@ def settings():
         or datetime_info.get("timezone")
         or "",
         "timezones": tz_list.get("timezones") or [],
-        "reg_country": reg.get("country") or "unknown",
+        "reg_country": reg_country,
+        "reg_label": _reg_label(reg_country),
         "reg_countries": reg_list.get("countries") or [],
         "ntp_enabled": bool(ntp.get("ntp_service")),
     }

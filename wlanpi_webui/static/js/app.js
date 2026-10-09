@@ -24,9 +24,23 @@
     }
   }
 
+  function syncThemeButtons() {
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    document
+      .querySelectorAll('[data-action="toggle-theme"]')
+      .forEach(function (btn) {
+        btn.textContent = dark ? "Switch to light mode" : "Switch to dark mode";
+      });
+  }
+
+  // The cookie-less first visit renders the light-theme label before the
+  // stored theme is known; correct it as each page fragment loads.
+  document.addEventListener("htmx:load", syncThemeButtons);
+
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     syncThemeColor(theme);
+    syncThemeButtons();
     try {
       localStorage.setItem("wlanpi-theme", theme);
     } catch (e) {
@@ -271,16 +285,56 @@
   // Background polls tell the server so they don't count as activity and an
   // open tab can still reach the idle timeout. htmx sends load and "every Ns"
   // triggers with no event; interval refreshes mark theirs (wlanpiFire).
+  // An element's first request is its load; later ones are interval ticks.
+  var polledOnce = new WeakSet();
+  // Last X-Wlanpi-Etag per request, echoed on the next tick so the server can
+  // answer 204 (no swap) when the markup hasn't changed.
+  var pollEtags = {};
+
+  function pollKey(d) {
+    var elt = d.elt;
+    var target = d.target || elt;
+    return (
+      (elt.getAttribute("hx-get") || "") + "|" + ((target && target.id) || "")
+    );
+  }
+
   document.addEventListener("htmx:configRequest", function (evt) {
     var d = evt.detail;
     var te = d.triggeringEvent;
-    var poll = te
+    var trigger =
+      (d.elt && d.elt.getAttribute && d.elt.getAttribute("hx-trigger")) || "";
+    var interval = te
       ? !!(te.detail && te.detail.wlanpiPoll)
-      : /\b(every|load)\b/.test(
-          (d.elt && d.elt.getAttribute && d.elt.getAttribute("hx-trigger")) || ""
-        );
-    if (poll) {
-      d.headers["X-Wlanpi-Poll"] = "1";
+      : /\bevery\b/.test(trigger) &&
+        (!/\bload\b/.test(trigger) || polledOnce.has(d.elt));
+    var poll = interval || (!te && /\bload\b/.test(trigger));
+    if (d.elt) polledOnce.add(d.elt);
+    if (!poll) return;
+    // A hidden tab skips its ticks (saves the Pi and a PAN link); the next
+    // tick after it's shown again catches up.
+    if (interval && document.hidden) {
+      evt.preventDefault();
+      return;
+    }
+    d.headers["X-Wlanpi-Poll"] = "1";
+    var etag = interval && pollEtags[pollKey(d)];
+    if (etag) d.headers["X-Wlanpi-Etag"] = etag;
+  });
+
+  // beforeSwap, not afterRequest: an outerHTML swap detaches the element, and
+  // events fired on it after that never reach document.
+  document.addEventListener("htmx:beforeSwap", function (evt) {
+    var d = evt.detail;
+    if (!d || !d.elt || !d.xhr || !d.elt.getAttribute) return;
+    // Any other response for the same request (a manual refresh) drops the
+    // stored hash, so a poll can't skip a swap the DOM no longer matches.
+    var etag = d.xhr.getResponseHeader("X-Wlanpi-Etag");
+    var key = pollKey(d);
+    if (etag) {
+      pollEtags[key] = etag;
+    } else if (d.xhr.status !== 204) {
+      delete pollEtags[key];
     }
   });
 
@@ -359,7 +413,35 @@
     });
   });
 
+  // A form marked data-dirty-submit can't be submitted until a field differs
+  // from what the page loaded with, so Save never re-applies (or silently
+  // picks) a value the user didn't choose. form.elements includes buttons
+  // tied to the form by form="…".
+  function syncDirty(form) {
+    var dirty = Array.prototype.some.call(form.elements, function (el) {
+      return el.tagName === "SELECT" && el.value !== el.dataset.initial;
+    });
+    Array.prototype.forEach.call(form.elements, function (el) {
+      if (el.type === "submit") el.disabled = !dirty;
+    });
+  }
+
+  document.addEventListener("htmx:load", function (evt) {
+    var root = (evt.detail && evt.detail.elt) || document;
+    if (!root.querySelectorAll) return;
+    root.querySelectorAll("form[data-dirty-submit]").forEach(function (form) {
+      Array.prototype.forEach.call(form.elements, function (el) {
+        if (el.tagName === "SELECT") el.dataset.initial = el.value;
+      });
+      syncDirty(form);
+    });
+  });
+
   document.addEventListener("change", function (evt) {
+    var dirtyForm = evt.target.form;
+    if (dirtyForm && dirtyForm.hasAttribute("data-dirty-submit")) {
+      syncDirty(dirtyForm);
+    }
     var sel = evt.target.closest && evt.target.closest("[data-poll-select]");
     var ctl = sel && pollControls(sel);
     if (ctl) {
@@ -393,8 +475,6 @@
       window.wlanpiLaunchKismet(evt);
     } else if (action === "toggle-theme") {
       window.wlanpiToggleTheme();
-    } else if (action === "power") {
-      window.wlanpiConfirmPower(el.dataset.power);
     } else if (action === "copy-card") {
       var body = document.getElementById(el.dataset.card);
       var title = el.dataset.title;
@@ -636,42 +716,55 @@
   // ---- Power confirmation ---------------------------------------------
   // Reboot/shutdown open a UIkit "Are you sure?" modal; confirming submits the
   // matching form so htmx still performs the POST with its CSRF token.
-  window.wlanpiConfirmPower = function (action) {
-    var form = document.getElementById(action + "-form");
-    if (!form) return;
-
-    function submit() {
-      if (typeof form.requestSubmit === "function") {
-        form.requestSubmit();
-      } else if (window.htmx) {
-        window.htmx.trigger(form, "submit");
-      } else {
-        form.submit();
+  // Every hx-confirm uses one themed dialog instead of the browser's.
+  // data-confirm-ok on the element names the confirm button.
+  // Not a data attribute: htmx history snapshots would restore it set.
+  var confirming = new WeakSet();
+  document.addEventListener("htmx:confirm", function (evt) {
+    var question = evt.detail && evt.detail.question;
+    if (!question || !window.UIkit) return;
+    evt.preventDefault();
+    // One dialog per control: a double click must not queue a second request.
+    var source = evt.detail.elt;
+    if (confirming.has(source)) return;
+    confirming.add(source);
+    // UIkit inserts a string message as HTML; pass a node so the text is escaped.
+    var body = document.createElement("div");
+    var p = document.createElement("p");
+    p.textContent = question;
+    body.appendChild(p);
+    var holder = source.closest("[data-confirm-ok]");
+    var prompt;
+    try {
+      prompt = window.UIkit.modal.confirm(body, {
+        i18n: { ok: (holder && holder.dataset.confirmOk) || "Confirm" },
+      });
+    } catch (e) {
+      confirming.delete(source);
+      throw e;
+    }
+    // These guard reboots and deletions: start on Cancel, so a stray Enter
+    // doesn't confirm. UIkit focuses [autofocus] once the dialog is shown,
+    // so move the attribute rather than calling focus().
+    var dialogEl = prompt.dialog && prompt.dialog.$el;
+    var cancel = dialogEl && dialogEl.querySelector(".uk-modal-close");
+    if (cancel) {
+      dialogEl.querySelectorAll("[autofocus]").forEach(function (el) {
+        el.removeAttribute("autofocus");
+      });
+      cancel.setAttribute("autofocus", "");
+    }
+    prompt.then(
+      function () {
+        confirming.delete(source);
+        // Navigated away (e.g. Back) while the dialog was open: drop it.
+        if (source.isConnected) evt.detail.issueRequest(true);
+      },
+      function () {
+        confirming.delete(source);
       }
-    }
-
-    var modalEl = document.getElementById("power-confirm");
-    if (!window.UIkit || !modalEl) {
-      if (window.confirm("Are you sure?")) submit();
-      return;
-    }
-
-    var text = document.getElementById("power-confirm-text");
-    if (text) {
-      text.textContent =
-        action === "reboot"
-          ? "The WLAN Pi will reboot and the WebUI will disconnect. Are you sure?"
-          : "The WLAN Pi will shut down and the WebUI will disconnect. Are you sure?";
-    }
-    var ok = document.getElementById("power-confirm-ok");
-    if (ok) {
-      ok.onclick = function () {
-        window.UIkit.modal(modalEl).hide();
-        submit();
-      };
-    }
-    window.UIkit.modal(modalEl).show();
-  };
+    );
+  });
 
   var ALERTS_SEEN_KEY = "wlanpi-alerts-seen";
 

@@ -5,8 +5,8 @@
  *
  * This file is loaded on every page (see base.html) because htmx swaps the
  * page body in place: a script that ships with the swapped partial runs too
- * late to see the swap. The two vendored xterm files are pulled in on demand
- * so other pages do not pay for them.
+ * late to see the swap. The vendored xterm files (script, fit addon, CSS) are
+ * pulled in on demand so other pages do not pay for them.
  */
 (function () {
   "use strict";
@@ -14,23 +14,40 @@
   var POLL_MS = 150;
   var current = null; // the live terminal's teardown, if any
 
-  function loadScript(src) {
-    return new Promise(function (resolve, reject) {
-      var el = document.createElement("script");
-      el.src = src;
-      el.onload = resolve;
-      el.onerror = reject;
-      document.head.appendChild(el);
-    });
+  // One load per URL, shared by every visit to /cli; a failed load is
+  // forgotten so the next visit retries.
+  var loads = {};
+
+  function load(tag, url) {
+    if (!loads[url]) {
+      loads[url] = new Promise(function (resolve, reject) {
+        var el = document.createElement(tag);
+        if (tag === "link") {
+          el.rel = "stylesheet";
+          el.href = url;
+        } else {
+          el.src = url;
+        }
+        el.onload = resolve;
+        el.onerror = function () {
+          delete loads[url];
+          el.remove();
+          reject();
+        };
+        document.head.appendChild(el);
+      });
+    }
+    return loads[url];
   }
 
+  // xterm measures its cells when it opens, so its CSS must be in first.
   function ready(stage) {
-    if (window.Terminal && window.FitAddon) {
-      return Promise.resolve();
-    }
-    return loadScript(stage.getAttribute("data-xterm")).then(function () {
-      return loadScript(stage.getAttribute("data-fit"));
-    });
+    return Promise.all([
+      load("link", stage.getAttribute("data-xterm-css")),
+      load("script", stage.getAttribute("data-xterm")).then(function () {
+        return load("script", stage.getAttribute("data-fit"));
+      }),
+    ]);
   }
 
   function init() {
@@ -39,7 +56,8 @@
     stage.dataset.started = "1";
     ready(stage).then(
       function () {
-        start(stage);
+        // The user may have left /cli while the files loaded.
+        if (stage.isConnected) start(stage);
       },
       function () {
         stage.textContent = "Could not load the terminal.";
@@ -58,6 +76,27 @@
     }
   }
 
+  // xterm's stock ANSI colours are tuned for black: on the light surface its
+  // bright green is 1.6:1, and on the dark surface blue and red fall under 3:1.
+  // Each palette keeps every colour but black at 4.5:1 or better on its own
+  // --bg-surface (#ffffff light, #1a2026 dark).
+  var ANSI = {
+    light: {
+      black: "#24292f", red: "#b31d28", green: "#22863a", yellow: "#8a6100",
+      blue: "#0550ae", magenta: "#8250df", cyan: "#0e7490", white: "#57606a",
+      brightBlack: "#57606a", brightRed: "#a40e26", brightGreen: "#1a7f37",
+      brightYellow: "#7d5700", brightBlue: "#0969da", brightMagenta: "#7b3fbf",
+      brightCyan: "#0b6a85", brightWhite: "#24292f",
+    },
+    dark: {
+      black: "#6e7681", red: "#ff7b72", green: "#3fb950", yellow: "#d29922",
+      blue: "#58a6ff", magenta: "#bc8cff", cyan: "#39c5cf", white: "#c9d1d9",
+      brightBlack: "#8b949e", brightRed: "#ffa198", brightGreen: "#56d364",
+      brightYellow: "#e3b341", brightBlue: "#79c0ff", brightMagenta: "#d2a8ff",
+      brightCyan: "#56d4dd", brightWhite: "#f0f6fc",
+    },
+  };
+
   // xterm cannot use CSS variables directly, so read the theme tokens off the
   // document and hand them to it. Called again on every theme toggle.
   function termTheme() {
@@ -67,11 +106,16 @@
       return (style.getPropertyValue(name) || "").trim() || fallback;
     }
 
-    return {
-      background: token("--bg-surface", "#ffffff"),
-      foreground: token("--text", "#222222"),
-      cursor: token("--brand", "#f45625"),
-    };
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    return Object.assign(
+      {
+        background: token("--bg-surface", "#ffffff"),
+        foreground: token("--text", "#222222"),
+        cursor: token("--brand", "#f45625"),
+        selectionBackground: dark ? "#3a4652" : "#cfe3ff",
+      },
+      dark ? ANSI.dark : ANSI.light
+    );
   }
 
   function start(stage) {
