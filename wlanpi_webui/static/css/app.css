@@ -1383,6 +1383,7 @@ h6 {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--space-4);
     align-items: start;
+    container-type: inline-size;
 }
 
 .card-masonry.is-masonry {
@@ -1400,6 +1401,16 @@ h6 {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .card-masonry--two .card-wide {
+        grid-column: span 2;
+    }
+}
+
+/* Wide cards span two columns only when the grid itself has room for two
+   (2 x 300px minimum + 16px gap). Keyed on the grid's width, not the viewport:
+   page padding and scrollbars shrink the grid below 640px viewport widths, and
+   a viewport-based span then creates an implicit, near-zero-width column. */
+@container (min-width: 616px) {
     .card-masonry .card-wide {
         grid-column: span 2;
     }
