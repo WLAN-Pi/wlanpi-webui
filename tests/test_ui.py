@@ -83,6 +83,24 @@ class TestThemes:
         assert 'document.addEventListener("wlanpi:theme", renderAll);' in js
 
 
+class TestMasonryLayout:
+    def test_wide_card_spans_by_grid_width_not_viewport(self, app):
+        css = (Path(app.root_path) / "static" / "css" / "app.css").read_text()
+        masonry = css[
+            css.index(".card-masonry {") : css.index(".card-masonry.is-masonry")
+        ]
+
+        # The grid is a size container so the span can key on its own width.
+        assert "container-type: inline-size;" in masonry
+        # Two 300px minimum tracks plus the 16px gap need 616px before a second
+        # column exists; a wide card may only span two from that width up.
+        assert "@container (min-width: 616px) {\n    .card-masonry .card-wide {" in css
+        # The 640px viewport rule must not span generic masonry cards, or the
+        # grid can be narrower than two columns at 640px and create a sliver.
+        media = css[css.index("@media (min-width: 640px) {\n    .card-masonry--two") :]
+        assert "    .card-masonry .card-wide {" not in media.split("@container")[0]
+
+
 class TestModernization:
     def test_login_has_fixed_icon_path(self, client):
         resp = client.get("/login")
