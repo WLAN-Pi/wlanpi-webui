@@ -137,7 +137,14 @@ body {
     color: var(--text);
 }
 
-body {
+/* UIkit names its own stack on headings, the navbar and the logo; without
+   this, Linux renders those in Arial next to system-ui body text. */
+body,
+h1, h2, h3, h4, h5, h6,
+.uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6,
+.uk-navbar-nav > li > a,
+.uk-navbar-item,
+.uk-navbar-toggle {
     font-family: var(--font-sans);
 }
 
@@ -1173,7 +1180,11 @@ h6 {
     line-height: var(--lh-tight);
 }
 
-.page-head + .page-section {
+/* .page is a flex column, so margins do not collapse: UIkit's
+   `* + .uk-alert` / `* + p` top margins would stack on these. */
+.page > .page-head + *,
+.page > .page-head-row + *,
+.page-section + * {
     margin-top: 0;
 }
 
@@ -1234,6 +1245,10 @@ h6 {
 .data-list {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
+}
+
+.data-key {
+    color: var(--text-muted);
 }
 
 .app-footer {
@@ -2694,5 +2709,11 @@ h6 {
 
     .uk-form-small:not(textarea):not([multiple]):not([size]) {
         height: 40px;
+    }
+
+    /* 12px footer links: pad them to a 24px target (WCAG 2.5.8). */
+    .app-footer a {
+        display: inline-block;
+        padding: var(--space-1) 0;
     }
 }

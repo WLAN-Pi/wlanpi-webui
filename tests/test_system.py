@@ -282,7 +282,7 @@ class TestSystemHealth:
         _login(client, monkeypatch)
         resp = client.get("/system/card/temperatures")
         assert resp.status_code == 200
-        assert b"cpu_thermal: 63.3" in resp.data
+        assert b"cpu_thermal:</span> 63.3" in resp.data
 
     def test_radios_card(self, client, monkeypatch):
         self._patch(monkeypatch)
@@ -425,7 +425,7 @@ class TestSystemBluetooth:
         resp = client.get("/system/card/bluetooth")
         assert resp.status_code == 200
         assert b"00:11:22:33:44:55" in resp.data
-        assert b"RF kill: Blocked" in resp.data
+        assert b"RF kill:</span> Blocked" in resp.data
         assert b"Power on" in resp.data
 
     def test_bluetooth_card_unavailable(self, client, monkeypatch):

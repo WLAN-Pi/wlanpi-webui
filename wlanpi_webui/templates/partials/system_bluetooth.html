@@ -5,11 +5,11 @@
 <p class="uk-text-meta">Bluetooth unavailable.</p>
 {% else %}
 <ul class="uk-list uk-list-divider data-list">
-  <li>Adapter: {{ bt_name }}{% if bt_alias and bt_alias != bt_name %} ({{ bt_alias }}){% endif %}</li>
-  <li>Address: {{ bt_addr or 'n/a' }}</li>
-  <li>Power: {{ bt_power or 'n/a' }}</li>
-  <li>RF kill: {% if bt_blocked %}Blocked{% else %}Unblocked{% endif %}</li>
-  <li>Paired devices: {{ bt_paired | length }}</li>
+  <li><span class="data-key">Adapter:</span> {{ bt_name }}{% if bt_alias and bt_alias != bt_name %} ({{ bt_alias }}){% endif %}</li>
+  <li><span class="data-key">Address:</span> {{ bt_addr or 'n/a' }}</li>
+  <li><span class="data-key">Power:</span> {{ bt_power or 'n/a' }}</li>
+  <li><span class="data-key">RF kill:</span> {% if bt_blocked %}Blocked{% else %}Unblocked{% endif %}</li>
+  <li><span class="data-key">Paired devices:</span> {{ bt_paired | length }}</li>
 </ul>
 {% if bt_notice %}<p class="uk-text-meta">{{ bt_notice }}</p>{% endif %}
 <div class="settings-actions">

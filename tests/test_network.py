@@ -58,6 +58,7 @@ class TestNetwork:
                 return {
                     "Ping Google": "5ms",
                     "Arping Gateway": "1ms",
+                    "DNS Server 1 Resolution": "9.9.9.9: OK",
                     "custom": [],
                 }
             return {
@@ -71,7 +72,10 @@ class TestNetwork:
         _login(client, monkeypatch)
         resp = client.get("/network/cards")
         assert resp.status_code == 200
-        assert b"Ping Google: 5ms" in resp.data
+        assert b"Ping Google:</span> 5ms" in resp.data
+        # Only the first ": " splits the label off; unlabelled lines stay plain.
+        assert b"DNS Server 1 Resolution:</span> 9.9.9.9: OK" in resp.data
+        assert b"<li>1.2.3.4</li>" in resp.data
         assert b"192.168.6.63" in resp.data
         assert b"sw1" in resp.data
         assert b"1.2.3.4" in resp.data
@@ -132,10 +136,10 @@ class TestNetwork:
         resp = client.get("/network/cards")
         assert resp.status_code == 200
         assert b"wlan0 Interface" in resp.data
-        assert b"Mode: managed" in resp.data
-        assert b"SSID: HomeNet" in resp.data
-        assert b"Channel 6 (2437 MHz)" in resp.data
-        assert b"MAC: AA:BB:CC:DD:EE:FF" in resp.data
+        assert b"Mode:</span> managed" in resp.data
+        assert b"SSID:</span> HomeNet" in resp.data
+        assert b"Channel:</span> 6 (2437 MHz)" in resp.data
+        assert b"MAC:</span> AA:BB:CC:DD:EE:FF" in resp.data
         assert b"Public IPv6" in resp.data
         assert b"2001:db8::1" in resp.data
 
@@ -209,13 +213,13 @@ class TestNetworkDetail:
         resp = client.get("/network/cards")
         assert resp.status_code == 200
         assert b"default via 192.168.6.1 dev eth0" in resp.data
-        assert b"Speed mbps: 1000" in resp.data
+        assert b"Speed mbps:</span> 1000" in resp.data
         assert b"eth0 DHCP Lease" in resp.data
         assert b"eth0 Link" in resp.data
         assert b"wlan0 Link" in resp.data
-        assert b"SSID: HomeNet" in resp.data
-        assert b"Signal: -48.0 dBm" in resp.data
-        assert b"Address: 192.168.6.63" in resp.data
+        assert b"SSID:</span> HomeNet" in resp.data
+        assert b"Signal:</span> -48.0 dBm" in resp.data
+        assert b"Address:</span> 192.168.6.63" in resp.data
         # The latency card ships in the same masonry so cards pack beside it.
         assert b'id="latency-card"' in resp.data
         assert b"card-wide" in resp.data

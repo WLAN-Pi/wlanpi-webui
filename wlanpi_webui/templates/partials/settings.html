@@ -34,8 +34,8 @@
       <div class="uk-card uk-card-default uk-card-body">
         <h2 class="uk-card-title">Clock</h2>
         <ul class="uk-list uk-list-divider data-list">
-          <li>Current: {{ current_datetime }}</li>
-          <li>Timezone: {{ current_timezone or 'unknown' }}</li>
+          <li><span class="data-key">Current:</span> {{ current_datetime }}</li>
+          <li><span class="data-key">Timezone:</span> {{ current_timezone or 'unknown' }}</li>
         </ul>
         <form method="post" id="tz-form" hx-post="/settings/timezone" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
           data-dirty-submit>
@@ -107,9 +107,9 @@
   <div class="uk-card uk-card-default uk-card-body">
     <h3 class="page-subsection">Session state</h3>
     <ul class="uk-list uk-list-divider data-list">
-      <li>User: {{ current_user }}</li>
-      <li>Boot id: {{ boot_id }}</li>
-      <li>Idle timeout: {{ idle_timeout }}s</li>
+      <li><span class="data-key">User:</span> {{ current_user }}</li>
+      <li><span class="data-key">Boot id:</span> {{ boot_id }}</li>
+      <li><span class="data-key">Idle timeout:</span> {{ idle_timeout }}s</li>
     </ul>
   </div>
 </div>
