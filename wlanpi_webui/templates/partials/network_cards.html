@@ -1,3 +1,4 @@
+{% macro line_item(line) %}{% set key, sep, value = (line|string).partition(": ") %}<li>{% if sep %}<span class="data-key">{{ key }}:</span> {{ value }}{% else %}{{ line }}{% endif %}</li>{% endmacro %}
 {% macro card(id, title, lines, empty="Unavailable.") %}
 <div>
   <div class="uk-card uk-card-default uk-card-hover uk-card-body">
@@ -10,7 +11,7 @@
           src="{{ url_for('static', filename='icon/clip.svg') }}" alt="" /></button>
     </div>
     <ul id="{{ id }}" class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
-      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
+      {% for line in lines %}{{ line_item(line) }}{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
     </ul>
   </div>
 </div>
@@ -20,7 +21,7 @@
   <div class="uk-card uk-card-default uk-card-body">
     <h2 class="uk-card-title">{{ title }}</h2>
     <ul class="uk-list uk-list-divider data-list uk-margin-remove uk-text-break">
-      {% for line in lines %}<li>{{ line }}</li>{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
+      {% for line in lines %}{{ line_item(line) }}{% else %}<li class="uk-text-meta">{{ empty }}</li>{% endfor %}
     </ul>
   </div>
 </div>

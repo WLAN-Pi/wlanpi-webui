@@ -5,10 +5,10 @@
 <p class="uk-text-meta">Health data unavailable. Requires wlanpi-core 2.3.0 or newer.</p>
 {% else %}
 <ul class="uk-list uk-list-divider data-list">
-  <li>Throttling: {{ throttle_state }}</li>
-  <li>Past throttling: {{ throttle_occurred }}</li>
-  <li>NTP: {% if ntp_synced %}Synchronised{% elif ntp_enabled %}Enabled, not synchronised{% else %}Disabled{% endif %}</li>
-  <li>Load: {{ load.one }} / {{ load.five }} / {{ load.fifteen }}</li>
-  <li>Swap: {{ swap.used_mb }} / {{ swap.total_mb }} MB</li>
+  <li><span class="data-key">Throttling:</span> {{ throttle_state }}</li>
+  <li><span class="data-key">Past throttling:</span> {{ throttle_occurred }}</li>
+  <li><span class="data-key">NTP:</span> {% if ntp_synced %}Synchronised{% elif ntp_enabled %}Enabled, not synchronised{% else %}Disabled{% endif %}</li>
+  <li><span class="data-key">Load:</span> {{ load.one }} / {{ load.five }} / {{ load.fifteen }}</li>
+  <li><span class="data-key">Swap:</span> {{ swap.used_mb }} / {{ swap.total_mb }} MB</li>
 </ul>
 {% endif %}

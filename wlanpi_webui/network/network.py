@@ -25,7 +25,9 @@ def _wlan_cards(wlan) -> list[dict]:
         info = wlan[name] if isinstance(wlan[name], dict) else {}
         mac = info.get("addr") or ""
         mac = ":".join(mac[i : i + 2] for i in range(0, len(mac), 2)) or "n/a"
-        channel = f"Channel {info['channel']}" if info.get("channel") else "Channel n/a"
+        channel = (
+            f"Channel: {info['channel']}" if info.get("channel") else "Channel: n/a"
+        )
         if info.get("freq"):
             channel += f" ({info['freq']} MHz)"
         cards.append(

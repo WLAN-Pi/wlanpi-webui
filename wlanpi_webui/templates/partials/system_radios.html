@@ -5,6 +5,6 @@
 <p class="uk-text-meta">Health data unavailable.</p>
 {% else %}
 <ul class="uk-list uk-list-divider data-list">
-  {% for r in rfkill %}<li>{{ r.name }} ({{ r.type }}): {% if r.soft_blocked or r.hard_blocked %}blocked{% else %}unblocked{% endif %}</li>{% else %}<li class="uk-text-meta">No rfkill switches.</li>{% endfor %}
+  {% for r in rfkill %}<li><span class="data-key">{{ r.name }} ({{ r.type }}):</span> {% if r.soft_blocked or r.hard_blocked %}blocked{% else %}unblocked{% endif %}</li>{% else %}<li class="uk-text-meta">No rfkill switches.</li>{% endfor %}
 </ul>
 {% endif %}
