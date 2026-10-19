@@ -380,7 +380,7 @@ def _record_failure(keys: dict[str, str], username: str) -> None:
 
 @contextmanager
 def _attempt(keys: dict[str, str]):
-    """Admit one sign-in attempt, or yield the reason it has to wait.
+    """Admit one sign-in attempt, or yield the message saying why it can't run.
 
     gunicorn serves requests on several threads, so parallel guesses for one
     username from one address would all pass the throttle check before the
@@ -388,8 +388,13 @@ def _attempt(keys: dict[str, str]):
     """
     state = _state()
     with state["lock"]:
-        if keys["pair"] in state["in_flight"]:
-            refused: str | None = IN_PROGRESS
+        # Throttled requests are refused before they take a slot, so a flood
+        # of them can't keep the slots full.
+        wait = _throttle_wait(keys)
+        if wait:
+            refused: str | None = _throttled_message(wait)
+        elif keys["pair"] in state["in_flight"]:
+            refused = IN_PROGRESS
         elif len(state["in_flight"]) >= MAX_SIGNINS_IN_FLIGHT:
             refused = BUSY
         else:
@@ -446,9 +451,6 @@ def login():
         with _attempt(keys) as refused:
             if refused:
                 return _render_login(refused, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_login(_throttled_message(wait), 429)
             # Control characters never name an account (PAM would cut at a NUL).
             status = (
                 pam_authenticate(username, password)
@@ -490,9 +492,6 @@ def change_password():
         with _attempt(keys) as refused:
             if refused:
                 return _render_change(refused, username, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_change(_throttled_message(wait), username, 429)
             if new_password != confirm_password:
                 error = "New passwords do not match."
             elif new_password == current_password:

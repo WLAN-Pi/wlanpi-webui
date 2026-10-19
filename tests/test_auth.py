@@ -433,6 +433,24 @@ class TestLoginThrottle:
         join_all(*held)
         assert sorted(r.status_code for r in results) == [401] * len(held) + [429]
 
+    def test_throttled_requests_take_no_slot(self, client, monkeypatch):
+        # Otherwise a flood of already-throttled requests keeps the cap full.
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE["pair"]):
+            _post_login(client)
+        in_flight = client.application.extensions["wlanpi_auth"]["in_flight"]
+        seen = []
+        render = auth._render_login
+        monkeypatch.setattr(
+            auth,
+            "_render_login",
+            lambda *a: seen.append(len(in_flight)) or render(*a),
+        )
+        assert _post_login(client).status_code == 429
+        assert seen == [0]
+
     def test_other_addresses_are_not_held_up(self, app, monkeypatch):
         # One client's guess in PAM must not block sign-in from elsewhere.
         from conftest import join_all
