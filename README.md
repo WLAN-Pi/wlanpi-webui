@@ -8,7 +8,7 @@ wlanpi-webui is a WebUI built and designed for the [WLAN Pi](https://github.com/
  - [flask](https://github.com/pallets/flask)
  - [librespeed](https://github.com/librespeed/speedtest)
  - [uikit](https://github.com/uikit/uikit) 3.25.23
- - [htmx](https://htmx.org/) 2.0.10
+ - [htmx](https://htmx.org/) 4.0.0
  - [qrcodejs](https://github.com/davidshimjs/qrcodejs) 1.0.0
  - [debian new maintainers' guide](https://www.debian.org/doc/manuals/maint-guide/)
 

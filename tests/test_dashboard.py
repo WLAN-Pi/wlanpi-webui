@@ -71,6 +71,25 @@ class TestDashboard:
         assert resp.status_code == 200
         assert b"<html" not in resp.data
 
+    def test_back_forward_gets_the_full_page(self, client, monkeypatch):
+        # htmx restores history by fetching the page and keeping only the
+        # [hx-history-elt] element, so the response needs the whole layout.
+        _login(client, monkeypatch)
+        resp = client.get(
+            "/",
+            headers={"hx-request": "true", "hx-history-restore-request": "true"},
+        )
+        assert b"<html" in resp.data
+        assert (
+            b'<main id="content" class="uk-flex-1 uk-flex bg-page" hx-history-elt>'
+            in (resp.data)
+        )
+
+    def test_error_responses_are_not_swapped(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        page = client.get("/").data.decode()
+        assert """'{"noSwap": [204, 304, "4xx", "5xx"]}'""" in page
+
 
 class TestRedirects:
     def test_speedtest_redirects_to_app(self, client, monkeypatch):

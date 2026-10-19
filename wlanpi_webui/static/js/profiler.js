@@ -335,11 +335,11 @@
   // focus back to the button that asked for it (re-found by its request URL,
   // since the 5s table refresh may have replaced it meanwhile).
   function openReport(evt) {
-    var t = evt.detail && evt.detail.target;
+    var t = evt.detail.ctx.target;
     if (!t || t.id !== "profiler-modals" || !window.UIkit) return;
     var modal = t.querySelector("[data-report-modal]");
     if (!modal) return;
-    var opener = evt.detail.requestConfig && evt.detail.requestConfig.elt;
+    var opener = evt.detail.ctx.sourceElement;
     var url = opener && opener.getAttribute("hx-get");
     modal.addEventListener("hidden", function onHidden(e) {
       if (e.target !== modal) return;
@@ -354,31 +354,34 @@
     window.UIkit.modal(modal).show();
   }
 
-  document.addEventListener("htmx:afterSwap", function (evt) {
+  document.addEventListener("htmx:after:swap", function (evt) {
     openReport(evt);
     checkNewProfile();
     init();
   });
-  // UIkit moved an open report to <body>, so Back would snapshot it into
-  // history and Forward would restore a dead overlay. Drop it first.
-  document.addEventListener("htmx:beforeHistorySave", function () {
+  // UIkit moved an open report to <body>, outside the #content that Back and
+  // Forward replace; close it so it doesn't sit over the restored page.
+  document.addEventListener("htmx:before:history:restore", function () {
     document.querySelectorAll("[data-report-modal]").forEach(function (m) {
-      m.remove();
+      if (window.UIkit) window.UIkit.modal(m).hide();
     });
   });
   // The session poll re-sends the QR slot every 5s. Keep the drawn code when
   // the network is unchanged instead of redrawing (and flashing) it.
-  document.addEventListener("htmx:oobBeforeSwap", function (evt) {
-    if (evt.detail.target.id !== "profiler-qr-slot") return;
-    var next = evt.detail.fragment.querySelector("#profiler-qr");
+  document.addEventListener("htmx:before:swap", function (evt) {
+    var tasks = evt.detail.tasks;
     var cur = document.getElementById("profiler-qr");
-    if (next && cur && next.dataset.wifi === cur.dataset.rendered) {
-      evt.detail.shouldSwap = false;
+    for (var i = tasks.length - 1; i >= 0; i--) {
+      if (tasks[i].target.id !== "profiler-qr-slot") continue;
+      var next = tasks[i].fragment.querySelector("#profiler-qr");
+      if (next && cur && next.dataset.wifi === cur.dataset.rendered) {
+        tasks.splice(i, 1);
+      }
     }
   });
   // The QR slot arrives out-of-band with the session poll; draw it on arrival.
-  document.addEventListener("htmx:load", function (evt) {
-    var el = evt.detail && evt.detail.elt;
+  document.addEventListener("htmx:after:process", function (evt) {
+    var el = evt.target;
     if (!el || !el.querySelector) return;
     var qr = el.id === "profiler-qr" ? el : el.querySelector("#profiler-qr");
     if (qr) window.wlanpiRenderQr(qr);

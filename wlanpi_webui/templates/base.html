@@ -27,6 +27,8 @@
   <script src="{{ url_for('static', filename='js/uikit.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}" defer></script>
   <!--htmx JS-->
+  {# htmx 2's behaviour: error responses are not swapped into the page. #}
+  <meta name="htmx-config" content='{"noSwap": [204, 304, "4xx", "5xx"]}'>
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}" defer></script>
 </head>
 <body>
@@ -87,7 +89,7 @@
     </div>
     <!--/HEADER-->
     <!--CONTENT-->
-    <main id="content" class="uk-flex-1 uk-flex bg-page">
+    <main id="content" class="uk-flex-1 uk-flex bg-page" hx-history-elt>
       {% block content %}
       {% endblock %}
     </main>

@@ -224,7 +224,7 @@
     if (canvas) copyCanvas(canvas, btn);
   });
 
-  document.addEventListener("htmx:afterSwap", renderAll);
+  document.addEventListener("htmx:after:swap", renderAll);
   document.addEventListener("wlanpi:theme", renderAll);
   window.addEventListener("load", renderAll);
 })();
