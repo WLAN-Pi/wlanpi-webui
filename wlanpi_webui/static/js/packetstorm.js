@@ -32,6 +32,15 @@
   var DFS_DUR = 1.8;
   var CLEAR_DUR = 2.5;
   var PMF_R = 70;
+  // Shots reach this fraction of the stage's longer side, but never live less
+  // than SHOT_MIN_LIFE; the live-shot cap scales with lifetime so the fire
+  // rate feels the same on any screen. Each congestion band a shot enters
+  // multiplies its speed by the level's zoneSlow, down to SHOT_FLOOR.
+  var SHOT_SPEED = 460;
+  var SHOT_RANGE = 0.75;
+  var SHOT_MIN_LIFE = 1.6;
+  var SHOT_CAP = 16;
+  var SHOT_FLOOR = SHOT_SPEED * 0.25;
   var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   // ---- Persistence ------------------------------------------------------
@@ -176,8 +185,9 @@
     var dy = ay - by;
     return dx * dx + dy * dy;
   }
+  // A kill is worth 10-180 ms, so tenths of a second would hide most of them.
   function fmtAirtime(ms) {
-    return (ms / 1000).toFixed(1) + "s";
+    return (ms / 1000).toFixed(3) + "s";
   }
 
   // ---- Level spec: band and channel progression -------------------------
@@ -328,7 +338,7 @@
       zones: makeZones(w, spec),
       powers: [], parts: [],
       fx: { spread: 0, spreadKind: "40", mimo: 0, mimoAngle: 1.2, beam: 0, wpa3: 0, pmf: 0, wpa2: 0 },
-      combo: 0, score: 0, kills: 0, sent: 0, hits: 0, gains: [],
+      combo: 0, score: 0, levelStart: 0, kills: 0, sent: 0, hits: 0, gains: [],
       dfs: { active: 0, y: 0, cool: 7, hitDone: false, dir: 1 },
       afc: { phase: "idle", timer: 0, y: 0, cool: 8, hitDone: false },
       vtx: { phase: "idle", timer: 0, x: 0, cool: 6, hitDone: false },
@@ -351,6 +361,12 @@
     n.noise = n.spec.noise;
     n.rocks = spawnRocks(n.w, n.h, n.level, n.spec);
     n.zones = makeZones(n.w, n.spec);
+    n.levelStart = S.score;
+    // Shots in flight keep going; forget the old level's bands so they slow
+    // on entering the new ones.
+    n.packets = S.packets.map(function (p) {
+      return Object.assign({}, p, { zmask: 0 });
+    });
     n.rogues = [];
     var i;
     for (i = 0; i < n.spec.rogues; i++) {
@@ -477,7 +493,9 @@
       return Object.assign({}, p);
     });
     var fired = 0;
-    if (input.fire && ship.cool <= 0 && ship.respawnWait <= 0 && packets.length < 16) {
+    var shotLife = Math.max(SHOT_MIN_LIFE, (SHOT_RANGE * Math.max(n.w, n.h)) / SHOT_SPEED);
+    var shotCap = Math.ceil((SHOT_CAP * shotLife) / SHOT_MIN_LIFE);
+    if (input.fire && ship.cool <= 0 && ship.respawnWait <= 0 && packets.length < shotCap) {
       ship.cool = 0.22 * diff().shipCool;
       var spreadCfg = SPREAD[fx.spreadKind] || SPREAD["40"];
       var angles = fx.spread > 0 ? beamAngles(spreadCfg.beams, spreadCfg.step) : [0];
@@ -496,12 +514,11 @@
         var oy = ship.y + px * em.off;
         var base = ship.a + em.da;
         angles.forEach(function (da) {
-          var sp = 460 * (inZone(ox) ? (S.spec.zoneSlow || 0.55) : 1);
           packets.push({
             x: ox, y: oy,
-            vx: Math.cos(base + da) * sp + ship.vx * 0.4,
-            vy: Math.sin(base + da) * sp + ship.vy * 0.4,
-            life: 1.6, ghost: false
+            vx: Math.cos(base + da) * SHOT_SPEED + ship.vx * 0.4,
+            vy: Math.sin(base + da) * SHOT_SPEED + ship.vy * 0.4,
+            life: shotLife, ghost: false, zmask: 0
           });
           fired++;
         });
@@ -543,6 +560,24 @@
       }
       p.x = wrap(p.x + p.vx * dt, n.w);
       p.y = wrap(p.y + p.vy * dt, n.h);
+      // Congestion: slow once per band entered, never sped back up.
+      var mask = 0;
+      S.zones.forEach(function (z, zi) {
+        if (Math.abs(p.x - z.x) >= z.w / 2) {
+          return;
+        }
+        mask |= 1 << zi;
+        if (p.zmask & (1 << zi)) {
+          return;
+        }
+        var psp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        var slowed = Math.max(SHOT_FLOOR, psp * (S.spec.zoneSlow || 0.55));
+        if (slowed < psp) {
+          p.vx *= slowed / psp;
+          p.vy *= slowed / psp;
+        }
+      });
+      p.zmask = mask;
       if (p.life > 0) {
         kept.push(p);
       } else if (!p.ghost && Math.random() < 0.12) {
@@ -959,6 +994,7 @@
       var bonus = Math.round((ship.rssi + 90) * 1.5);
       n.score = n.score + bonus;
       n.clearBonus = bonus;
+      n.levelGain = n.score - (n.levelStart || 0);
       n.phase = "clear";
       n.clearTimer = CLEAR_DUR;
       n.banner = { text: "", ttl: 0 };
@@ -1673,7 +1709,7 @@
     }
     if (S.phase === "clear") {
       var panelW = Math.min(340, S.w - 32);
-      var panelH = 168;
+      var panelH = 196;
       var px0 = (S.w - panelW) / 2;
       var py0 = (S.h - panelH) / 2;
       ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
@@ -1689,14 +1725,20 @@
       ctx.font = "18px " + THEME.mono;
       ctx.fillText("LEVEL " + S.level + " CLEAR", S.w / 2, py0 + 34);
       ctx.font = "14px " + THEME.mono;
-      ctx.fillText("airtime reclaimed +" + fmtAirtime(S.clearBonus || 0), S.w / 2, py0 + 68);
+      ctx.fillText("airtime this level +" + fmtAirtime(S.levelGain || 0), S.w / 2, py0 + 66);
+      ctx.fillStyle = THEME.muted;
+      ctx.font = "12px " + THEME.mono;
+      ctx.fillText("signal bonus +" + fmtAirtime(S.clearBonus || 0), S.w / 2, py0 + 88);
+      ctx.fillStyle = THEME.text;
+      ctx.font = "14px " + THEME.mono;
+      ctx.fillText("total " + fmtAirtime(S.score), S.w / 2, py0 + 112);
       var nextSpec = levelSpec(S.level + 1);
-      ctx.fillText("next: " + nextSpec.band + " / ch " + nextSpec.ch, S.w / 2, py0 + 98);
+      ctx.fillText("next: " + nextSpec.band + " / ch " + nextSpec.ch, S.w / 2, py0 + 140);
       var clearProg = 1 - Math.max(0, S.clearTimer) / CLEAR_DUR;
       ctx.fillStyle = THEME.border;
-      ctx.fillRect(px0 + 24, py0 + 128, panelW - 48, 8);
+      ctx.fillRect(px0 + 24, py0 + 164, panelW - 48, 8);
       ctx.fillStyle = THEME.brand;
-      ctx.fillRect(px0 + 24, py0 + 128, (panelW - 48) * clearProg, 8);
+      ctx.fillRect(px0 + 24, py0 + 164, (panelW - 48) * clearProg, 8);
     }
     if (S.paused && S.phase === "play") {
       ctx.fillStyle = THEME.text;
