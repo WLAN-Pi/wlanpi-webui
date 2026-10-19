@@ -118,7 +118,7 @@
       <li><span class="data-key">Keep system logs across reboots:</span>
         {% if persistent %}On{% elif journal_storage == "volatile" %}Off{% else %}{{ journal_storage | capitalize }} (systemd decides){% endif %}</li>
       {% if journal_usage is not none %}
-      <li><span class="data-key">Logs on disk:</span> {{ journal_usage | filesizeformat }}</li>
+      <li><span class="data-key">Journal size:</span> {{ journal_usage | filesizeformat }}</li>
       {% endif %}
       {% if journal_override %}
       <li><span class="data-key">Set by:</span> {{ journal_override }}</li>

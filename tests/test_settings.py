@@ -341,7 +341,7 @@ class TestJournalStorage:
         )
         assert "Off" in page
         assert "Set by:</span> /etc/systemd/journald.conf.d/99-local.conf" in page
-        assert "Logs on disk" not in page
+        assert "Journal size" not in page
         assert 'name="storage" value="persistent"' in page
 
     def test_systemd_default(self, client, monkeypatch):
