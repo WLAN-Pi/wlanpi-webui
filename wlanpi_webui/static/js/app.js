@@ -250,6 +250,15 @@
   });
   window.addEventListener("load", syncTitle);
 
+  // Back/Forward swaps in a whole page: htmx applies its <title> after
+  // htmx:after:swap, and the nav outside #content isn't replaced.
+  document.addEventListener("htmx:finally:swap", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (!ctx.request.headers["HX-History-Restore-Request"]) return;
+    syncTitle();
+    syncNav(location.pathname);
+  });
+
   // ---- Feed polling (network cards, system health) ----------------------
   // htmx has no native pause/interval control, so intervals live here.
   // Each feed polls via a custom trigger event; changing the select or
