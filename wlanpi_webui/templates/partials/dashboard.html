@@ -38,8 +38,8 @@
 </a>
 {% endmacro %}
 {% macro beacon_tile(hidden=False) %}
-<a id="beacon-tile" class="launcher-tile" href="/beacon" hx-get="/beacon" hx-target="#content" hx-swap="innerHTML"
-  hx-push-url="true" hx-indicator=".progress"{% if hidden %} hidden{% endif %}>
+{# A full page load, not an htmx swap: the page needs its own CSP. #}
+<a id="beacon-tile" class="launcher-tile" href="/beacon"{% if hidden %} hidden{% endif %}>
   <span class="launcher-tile-icon">
     <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true">
       <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"

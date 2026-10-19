@@ -170,6 +170,18 @@
       post("/cli/resize", { rows: term.rows, cols: term.cols });
     }
 
+    // The shell belongs to the sign-in session that started it. Another
+    // session's live shell is a 409: say so and stop polling.
+    function started(r) {
+      if (r.status !== 409) return true;
+      term.writeln(
+        "The shell is in use by another signed-in session. Reload to try " +
+          "again after that session signs out or closes its browser tab."
+      );
+      teardown(false);
+      return false;
+    }
+
     // The server reaps the shell after a spell with no input or output, so a
     // long idle leaves the terminal dead. Start a new one instead of going
     // quiet.
@@ -177,7 +189,8 @@
       term.writeln("\r\n[session ended, starting a new shell]");
       offset = 0;
       post("/cli/start").then(
-        function () {
+        function (r) {
+          if (!started(r)) return;
           sendResize();
           timer = setTimeout(poll, POLL_MS);
         },
@@ -262,7 +275,8 @@
     document.addEventListener("wlanpi:theme", onThemeChange);
 
     post("/cli/start").then(
-      function () {
+      function (r) {
+        if (!started(r)) return;
         term.focus();
         sendResize();
         poll();

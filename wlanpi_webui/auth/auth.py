@@ -202,7 +202,10 @@ def session_is_valid() -> bool:
 
 def end_session() -> None:
     """Revoke the current session server-side and clear the cookie."""
+    from wlanpi_webui.cli.cli import close_shell  # cli imports this module
+
     sid = session.get("sid")
+    close_shell(sid)
     if sid in _sessions():
         with _update_sessions() as sessions:
             sessions.pop(sid, None)
