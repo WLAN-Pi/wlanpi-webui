@@ -111,5 +111,27 @@
       <li><span class="data-key">Boot id:</span> {{ boot_id }}</li>
       <li><span class="data-key">Idle timeout:</span> {{ idle_timeout }}s</li>
     </ul>
+    <h3 class="page-subsection">System logs</h3>
+    {% if journal_storage %}
+    {% set persistent = journal_storage == "persistent" %}
+    <ul class="uk-list uk-list-divider data-list">
+      <li><span class="data-key">Keep system logs across reboots:</span>
+        {% if persistent %}On{% elif journal_storage == "volatile" %}Off{% else %}{{ journal_storage | capitalize }} (systemd decides){% endif %}</li>
+      {% if journal_usage is not none %}
+      <li><span class="data-key">Logs on disk:</span> {{ journal_usage | filesizeformat }}</li>
+      {% endif %}
+      {% if journal_override %}
+      <li><span class="data-key">Set by:</span> {{ journal_override }}</li>
+      {% endif %}
+    </ul>
+    <p class="uk-text-meta">Logs already on disk are kept when you turn this off.</p>
+    <form method="post" hx-post="/settings/journal" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="storage" value="{% if persistent %}volatile{% else %}persistent{% endif %}">
+      <button class="uk-button uk-button-default" type="submit">{% if persistent %}Stop keeping logs across reboots{% else %}Keep logs across reboots{% endif %}</button>
+    </form>
+    {% else %}
+    <p class="uk-text-meta">Log storage is unavailable. Is wlanpi-core running?</p>
+    {% endif %}
   </div>
 </div>
