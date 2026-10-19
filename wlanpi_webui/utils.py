@@ -258,6 +258,7 @@ def make_api_request(
     params: dict | None = None,
     headers: dict | None = None,
     json_body: dict | None = None,
+    timeout: float = 10,
 ) -> requests.Response:
     """Call wlanpi-core with a bearer token, re-minting once on 401."""
     body = json.dumps(json_body) if json_body is not None else ""
@@ -274,7 +275,7 @@ def make_api_request(
             params=params,
             data=body,
             verify=CA_CERT,
-            timeout=10,
+            timeout=timeout,
         )
 
     token = get_core_token()

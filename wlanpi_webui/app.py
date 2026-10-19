@@ -85,7 +85,12 @@ def create_app(config_class=Config):
 
     app.logger.debug("registering auth blueprint")
     from wlanpi_webui.auth import bp as auth_bp
-    from wlanpi_webui.auth.auth import end_session, init_auth, session_is_valid
+    from wlanpi_webui.auth.auth import (
+        account_still_allowed,
+        end_session,
+        init_auth,
+        session_is_valid,
+    )
 
     init_auth(app)
     app.register_blueprint(auth_bp)
@@ -223,6 +228,9 @@ def create_app(config_class=Config):
         last_seen = session.get("last_seen")
         if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
             end_session()  # idle for too long
+            return None
+        if not account_still_allowed():
+            end_session()  # left sudo, locked, expired, or password changed
             return None
         if request.endpoint not in BACKGROUND_ENDPOINTS and not request.headers.get(
             POLL_HEADER
