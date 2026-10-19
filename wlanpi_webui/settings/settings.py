@@ -132,7 +132,7 @@ def set_journal():
         queue_toast(
             "System logs are now kept across reboots."
             if storage == "persistent"
-            else "System logs are now kept in memory until the next reboot.",
+            else "System logs are now kept in memory and cleared at reboot.",
             "success",
         )
     return redirect(get_safe_referrer_target())
