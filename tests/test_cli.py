@@ -352,3 +352,52 @@ class TestCli:
         assert client.get("/cli/output").status_code == 302  # to /login
         assert created[0].closed
         assert cli_module._session is None
+
+    def test_revoked_owner_does_not_hold_the_shell(self, app, monkeypatch):
+        # A password change revokes the user's other sessions; their shell
+        # must not lock the new session out.
+        created = self._fake_session(monkeypatch)
+        owner, changer = self._clients(app, monkeypatch)
+        assert (
+            owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)}).status_code
+            == 200
+        )
+        resp = changer.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "old",
+                "new_password": "new-Pass-9",
+                "new_password_confirm": "new-Pass-9",
+                "csrf_token": _csrf(changer),
+            },
+        )
+        assert resp.status_code == 302
+        started = changer.post("/cli/start", headers={"X-CSRF-Token": _csrf(changer)})
+        assert started.get_json() == {"ok": True, "resumed": False}
+        assert created[0].closed
+        assert len(created) == 2
+
+    def test_start_racing_sign_out_creates_no_shell(self, client, monkeypatch):
+        # The start passed the session check, then a sign-out revoked the
+        # session before the start reached the CLI lock.
+        from wlanpi_webui.auth import auth
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        _login(client, monkeypatch)
+        real = cli_module._lock
+
+        class SignOutFirst:
+            def __enter__(self):
+                with auth._update_sessions() as sessions:
+                    sessions.clear()
+                return real.__enter__()
+
+            def __exit__(self, *exc):
+                return real.__exit__(*exc)
+
+        monkeypatch.setattr(cli_module, "_lock", SignOutFirst())
+        resp = client.post("/cli/start", headers={"X-CSRF-Token": _csrf(client)})
+        assert resp.status_code == 401
+        assert created == []

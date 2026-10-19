@@ -24,7 +24,7 @@ import time
 
 from flask import abort, jsonify, render_template, request, session
 
-from wlanpi_webui.auth.auth import csrf_required
+from wlanpi_webui.auth.auth import csrf_required, session_registered
 from wlanpi_webui.cli import bp
 from wlanpi_webui.utils import is_htmx
 
@@ -117,9 +117,13 @@ _lock = threading.Lock()
 
 
 def _current() -> Session | None:
-    """The live session, reaping it once it has been idle too long."""
+    """The live shell, reaped once idle too long or once its session has ended
+    (for example revoked by a password change from another browser)."""
     global _session
-    if _session is not None and time.time() - _session.last > IDLE_TIMEOUT:
+    if _session is not None and (
+        time.time() - _session.last > IDLE_TIMEOUT
+        or not session_registered(_session.owner)
+    ):
         _session.close()
         _session = None
     return _session
@@ -164,6 +168,8 @@ def start():
             return jsonify({"ok": True, "resumed": True})
         if _session is not None:
             return jsonify({"ok": False, "error": "in_use"}), 409
+        if not session_registered(session.get("sid")):
+            abort(401)  # signed out while this request was on its way
         _session = Session(session["sid"])
         _session.drain()
         return jsonify({"ok": True, "resumed": False})
