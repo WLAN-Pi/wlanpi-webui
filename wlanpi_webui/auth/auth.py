@@ -17,6 +17,7 @@ import fcntl
 import hmac
 import json
 import os
+import pwd
 import secrets
 import tempfile
 import threading
@@ -41,14 +42,27 @@ from wlanpi_webui.utils import boot_clock, make_api_request, read_boot_id
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
 CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
 
-# Failed-login backoff: FREE_ATTEMPTS misses per client IP or username, then
-# the wait doubles from 1s up to MAX_DELAY. A key is forgotten after an hour
-# without failures, and at most MAX_TRACKED keys are kept.
-FREE_ATTEMPTS = 5
-IN_PROGRESS = "Another sign-in from this address is in progress. Try again."
+# Failed-login backoff. Each key gets FREE misses, then the wait doubles from
+# 1s up to MAX_DELAY. A key is forgotten after an hour without failures, and at
+# most MAX_TRACKED keys are kept.
+# - pair (client IP and username): one person's typos.
+# - ip: one address spraying usernames; generous, since a class behind one NAT
+#   shares it.
+# - user: guessing spread over many addresses. It only holds back clients
+#   whose own pair has failed TYPO_ALLOWANCE times, so an admin who mistypes
+#   during an attack still gets in.
+FREE = {"pair": 5, "ip": 20, "user": 5}
+TYPO_ALLOWANCE = 3
+# PAM holds a gunicorn thread for ~2s on each wrong password; leave the other
+# threads (--threads 4) free for signed-in users.
+MAX_SIGNINS_IN_FLIGHT = 2
+IN_PROGRESS = "Another sign-in for this user from this address is in progress."
+BUSY = "Too many sign-ins are being checked right now. Try again in a few seconds."
 MAX_DELAY = 300
 FORGET_AFTER = 3600
 MAX_TRACKED = 4096
+# wlanpi-core refuses longer usernames, so a failure keys on no more than this.
+MAX_USERNAME = 128
 
 # Core statuses (and core HTTP errors, see _core_status) shown to the user.
 MESSAGES = {
@@ -129,6 +143,11 @@ def _sessions() -> dict:
     if stamp is not None and stamp != state["stamp"]:
         state["sessions"] = _read_store(_store_path())
         state["stamp"] = stamp
+    elif stamp is None and state["stamp"] is not None:
+        # Another worker deleted the file after a failed write: a revocation
+        # may be lost with it, so trust nothing cached from before.
+        state["sessions"] = {}
+        state["stamp"] = None
     sessions: dict = state["sessions"]
     return sessions
 
@@ -302,45 +321,55 @@ def pam_change_password(
     )
 
 
-def _throttle_keys(username: str) -> list[str]:
-    """The client IP key, then the username key (if any)."""
-    keys = [f"ip:{request.remote_addr}"]
-    if username:
-        keys.append(f"user:{username}")
-    return keys
+def _throttle_keys(username: str) -> dict[str, str]:
+    """Backoff keys for this client and username, by kind (see FREE)."""
+    ip = request.remote_addr
+    username = username[:MAX_USERNAME]
+    return {
+        "pair": f"pair:{ip} {username}",
+        "ip": f"ip:{ip}",
+        "user": f"user:{username}",
+    }
 
 
-def _throttle_wait(keys: list[str]) -> int:
-    """Seconds until this client may try again (0 = now).
+def _recent(failures: dict, key: str, now: float) -> tuple[int, float]:
+    count, last = failures.get(key, (0, 0.0))
+    return (count, last) if now - last <= FORGET_AFTER else (0, last)
 
-    The username key only applies once the client's own IP has failed
-    recently. Otherwise anyone hammering ``wlanpi`` would lock the admin's
-    browser out too; guessing spread across many IPs is still throttled after
-    each IP's first miss.
-    """
+
+def _throttle_wait(keys: dict[str, str]) -> int:
+    """Seconds until this client may try again (0 = now)."""
     now = boot_clock()
     failures = _state()["failures"]
-    ip_count, ip_last = failures.get(keys[0], (0, 0.0))
-    active = keys if ip_count and now - ip_last <= FORGET_AFTER else keys[:1]
+    kinds = ["pair", "ip"]
+    if _recent(failures, keys["pair"], now)[0] >= TYPO_ALLOWANCE:
+        kinds.append("user")
     wait = 0.0
-    for key in active:
-        count, last = failures.get(key, (0, 0.0))
-        if count < FREE_ATTEMPTS or now - last > FORGET_AFTER:
+    for kind in kinds:
+        count, last = _recent(failures, keys[kind], now)
+        if count < FREE[kind]:
             continue
-        delay = min(MAX_DELAY, 2 ** (count - FREE_ATTEMPTS))
+        delay = min(MAX_DELAY, 2 ** (count - FREE[kind]))
         wait = max(wait, last + delay - now)
     return min(MAX_DELAY, int(wait + 0.999))
 
 
-def _record_failure(keys: list[str], username: str) -> None:
+def _logged_username(username: str) -> str:
+    """The username for logs, unless it names no account (it may be a password)."""
+    try:
+        pwd.getpwnam(username)
+    except (KeyError, ValueError):
+        return "<unknown user>"
+    return repr(username)
+
+
+def _record_failure(keys: dict[str, str], username: str) -> None:
     now = boot_clock()
     state = _state()
     failures = state["failures"]
     with state["lock"]:
-        for key in keys:
-            count, last = failures.get(key, (0, 0.0))
-            if now - last > FORGET_AFTER:
-                count = 0
+        for key in keys.values():
+            count, _ = _recent(failures, key, now)
             failures[key] = (count + 1, now)
         if len(failures) > MAX_TRACKED:
             for key in [k for k, (_, t) in failures.items() if now - t > FORGET_AFTER]:
@@ -348,42 +377,44 @@ def _record_failure(keys: list[str], username: str) -> None:
             while len(failures) > MAX_TRACKED:
                 del failures[min(failures, key=lambda k: failures[k][1])]
     current_app.logger.warning(
-        "failed login for %r from %s", username, request.remote_addr
+        "failed login for %s from %s", _logged_username(username), request.remote_addr
     )
 
 
 @contextmanager
-def _attempt(keys: list[str]):
-    """Allow one sign-in attempt per client IP (and username) at a time.
+def _attempt(keys: dict[str, str]):
+    """Admit one sign-in attempt, or yield the message saying why it can't run.
 
-    gunicorn serves requests on several threads, so parallel guesses would
-    all pass the throttle check before the first failure is recorded. Yields
-    False when this IP already has an attempt waiting on PAM. Nothing blocks:
-    a flood from one address can't tie up the worker threads.
+    gunicorn serves requests on several threads, so parallel guesses for one
+    username from one address would all pass the throttle check before the
+    first failure is recorded. Nothing blocks: refused attempts return at once.
     """
     state = _state()
-    now = boot_clock()
     with state["lock"]:
-        ip_count, ip_last = state["failures"].get(keys[0], (0, 0.0))
-        # Mirror _throttle_wait: the username key counts once this IP has
-        # failed, so failed IPs guessing one username take turns too, while an
-        # admin on a clean address never waits on the username.
-        held = keys if ip_count and now - ip_last <= FORGET_AFTER else keys[:1]
-        busy = any(key in state["in_flight"] for key in held)
-        if not busy:
-            state["in_flight"].update(held)
+        # Throttled requests are refused before they take a slot, so a flood
+        # of them can't keep the slots full.
+        wait = _throttle_wait(keys)
+        if wait:
+            refused: str | None = _throttled_message(wait)
+        elif keys["pair"] in state["in_flight"]:
+            refused = IN_PROGRESS
+        elif len(state["in_flight"]) >= MAX_SIGNINS_IN_FLIGHT:
+            refused = BUSY
+        else:
+            refused = None
+            state["in_flight"].add(keys["pair"])
     try:
-        yield not busy
+        yield refused
     finally:
-        if not busy:
+        if refused is None:
             with state["lock"]:
-                state["in_flight"].difference_update(held)
+                state["in_flight"].discard(keys["pair"])
 
 
-def _clear_failures(keys: list[str]) -> None:
+def _clear_failures(keys: dict[str, str]) -> None:
     state = _state()
     with state["lock"]:
-        for key in keys:
+        for key in keys.values():
             state["failures"].pop(key, None)
 
 
@@ -420,12 +451,9 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         keys = _throttle_keys(username)
-        with _attempt(keys) as allowed:
-            if not allowed:
-                return _render_login(IN_PROGRESS, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_login(_throttled_message(wait), 429)
+        with _attempt(keys) as refused:
+            if refused:
+                return _render_login(refused, 429)
             # Control characters never name an account (PAM would cut at a NUL).
             status = (
                 pam_authenticate(username, password)
@@ -464,12 +492,9 @@ def change_password():
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("new_password_confirm", "")
         keys = _throttle_keys(username)
-        with _attempt(keys) as allowed:
-            if not allowed:
-                return _render_change(IN_PROGRESS, username, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_change(_throttled_message(wait), username, 429)
+        with _attempt(keys) as refused:
+            if refused:
+                return _render_change(refused, username, 429)
             if new_password != confirm_password:
                 error = "New passwords do not match."
             elif new_password == current_password:
