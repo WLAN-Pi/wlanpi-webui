@@ -4,7 +4,9 @@ A single interactive shell for the WebUI, served over HTTP polling.
 
 The WebUI runs on one threaded gunicorn worker with no WebSocket support.
 Instead a real PTY is held in-process (one at a time) and the browser polls for
-output. The shell runs as the WebUI's own user; there is no sudo.
+output. The shell runs as the WebUI's own user; there is no sudo. It belongs
+to the sign-in session that started it: no other session can attach, and it
+closes when that session ends.
 """
 
 from __future__ import annotations
@@ -20,9 +22,9 @@ import termios
 import threading
 import time
 
-from flask import abort, jsonify, render_template, request
+from flask import abort, jsonify, render_template, request, session
 
-from wlanpi_webui.auth.auth import csrf_required
+from wlanpi_webui.auth.auth import csrf_required, session_registered
 from wlanpi_webui.cli import bp
 from wlanpi_webui.utils import is_htmx
 
@@ -32,9 +34,10 @@ IDLE_TIMEOUT = 600  # seconds without input or output before the shell is reaped
 
 
 class Session:
-    """One PTY-backed shell."""
+    """One PTY-backed shell, owned by one sign-in session."""
 
-    def __init__(self) -> None:
+    def __init__(self, owner: str) -> None:
+        self.owner = owner
         master, slave = pty.openpty()
         self.fd = master
         # setsid --ctty makes the PTY the shell's controlling terminal (job
@@ -114,12 +117,33 @@ _lock = threading.Lock()
 
 
 def _current() -> Session | None:
-    """The live session, reaping it once it has been idle too long."""
+    """The live shell, reaped once idle too long or once its session has ended
+    (for example revoked by a password change from another browser)."""
     global _session
-    if _session is not None and time.time() - _session.last > IDLE_TIMEOUT:
+    if _session is not None and (
+        time.time() - _session.last > IDLE_TIMEOUT
+        or not session_registered(_session.owner)
+    ):
         _session.close()
         _session = None
     return _session
+
+
+def _mine() -> Session | None:
+    """The live shell, if this request's sign-in session started it."""
+    current = _current()
+    if current is not None and current.owner == session.get("sid"):
+        return current
+    return None
+
+
+def close_shell(sid: str | None) -> None:
+    """Close the shell if `sid` owns it; called when that session ends."""
+    global _session
+    with _lock:
+        if sid and _session is not None and _session.owner == sid:
+            _session.close()
+            _session = None
 
 
 @bp.route("/cli")
@@ -132,16 +156,21 @@ def cli():
 @bp.route("/cli/start", methods=["POST"])
 @csrf_required
 def start():
-    """Attach to the live shell, or start one (single session).
+    """Attach to this session's shell, or start one (one shell at a time).
 
     Re-mounting /cli reuses the existing PTY so navigating away and back keeps
     the shell and its scrollback, which the browser replays from offset 0.
+    Another session's shell is never shown: that is 409 until it ends.
     """
     global _session
     with _lock:
-        if _current() is not None:
+        if _mine() is not None:
             return jsonify({"ok": True, "resumed": True})
-        _session = Session()
+        if _session is not None:
+            return jsonify({"ok": False, "error": "in_use"}), 409
+        if not session_registered(session.get("sid")):
+            abort(401)  # signed out while this request was on its way
+        _session = Session(session["sid"])
         _session.drain()
         return jsonify({"ok": True, "resumed": False})
 
@@ -150,15 +179,15 @@ def start():
 @csrf_required
 def send_input():
     with _lock:
-        session = _current()
-        if session is None:
+        shell = _mine()
+        if shell is None:
             abort(409)
         payload = request.get_json(silent=True) or {}
         try:
             data = base64.b64decode(payload.get("data") or "", validate=True)
         except (ValueError, TypeError):
             abort(400)
-        session.write(data)
+        shell.write(data)
         return "", 204
 
 
@@ -166,8 +195,8 @@ def send_input():
 @csrf_required
 def resize():
     with _lock:
-        session = _current()
-        if session is None:
+        shell = _mine()
+        if shell is None:
             abort(409)
         payload = request.get_json(silent=True) or {}
         try:
@@ -175,7 +204,7 @@ def resize():
             cols = int(payload.get("cols") or 0)
         except (TypeError, ValueError):
             abort(400)
-        session.resize(max(1, min(rows, 500)), max(1, min(cols, 500)))
+        shell.resize(max(1, min(rows, 500)), max(1, min(cols, 500)))
         return "", 204
 
 
@@ -183,20 +212,20 @@ def resize():
 def output():
     """Return the output the browser has not seen yet, as base64."""
     with _lock:
-        session = _current()
-        if session is None:
+        shell = _mine()
+        if shell is None:
             # `alive` lets the browser tell a reaped session (idle timeout) from a
             # quiet one, so it can start a new shell instead of sitting dead.
             return jsonify({"offset": 0, "data": "", "alive": False})
 
-        session.drain()
+        shell.drain()
         since = request.args.get("since", type=int)
-        if since is None or since < session.start or since > session.total:
-            since = session.start
-        chunk = bytes(session.buffer[since - session.start :])
+        if since is None or since < shell.start or since > shell.total:
+            since = shell.start
+        chunk = bytes(shell.buffer[since - shell.start :])
         return jsonify(
             {
-                "offset": session.total,
+                "offset": shell.total,
                 "data": base64.b64encode(chunk).decode("ascii"),
                 "alive": True,
             }
@@ -206,9 +235,5 @@ def output():
 @bp.route("/cli/stop", methods=["POST"])
 @csrf_required
 def stop():
-    global _session
-    with _lock:
-        if _session is not None:
-            _session.close()
-            _session = None
-        return "", 204
+    close_shell(session.get("sid"))
+    return "", 204

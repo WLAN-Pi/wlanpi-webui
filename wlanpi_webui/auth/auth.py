@@ -219,12 +219,21 @@ def session_is_valid() -> bool:
     return bool(age <= current_app.config["MAX_SESSION_AGE"])
 
 
+def session_registered(sid: str | None) -> bool:
+    """True while `sid` is in the registry: not signed out or revoked."""
+    return sid in _sessions()
+
+
 def end_session() -> None:
-    """Revoke the current session server-side and clear the cookie."""
+    """Revoke the current session server-side, close its shell, clear the cookie."""
+    from wlanpi_webui.cli.cli import close_shell  # cli imports this module
+
     sid = session.get("sid")
     if sid in _sessions():
         with _update_sessions() as sessions:
             sessions.pop(sid, None)
+    # After the revocation: a racing /cli/start rechecks it under the CLI lock.
+    close_shell(sid)
     session.clear()
 
 
