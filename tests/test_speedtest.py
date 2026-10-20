@@ -102,6 +102,19 @@ class TestSpeedtestReport:
         )
         assert resp.status_code == 403
 
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {"Sec-Fetch-Site": "same-origin"},
+            {"Sec-Fetch-Site": "none"},
+            {"Origin": "https://localhost"},
+        ],
+    )
+    def test_post_accepts_this_origin(self, client, monkeypatch, headers):
+        _login(client, monkeypatch)
+        resp = client.post("/app/librespeed/results", json=PAYLOAD, headers=headers)
+        assert resp.status_code == 200
+
     def test_post_rejects_another_port_on_this_host(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.post(
