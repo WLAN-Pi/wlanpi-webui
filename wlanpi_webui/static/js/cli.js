@@ -170,13 +170,28 @@
       post("/cli/resize", { rows: term.rows, cols: term.cols });
     }
 
+    // Signed out or expired: the server answers 401, or redirects to the
+    // sign-in page, which fetch follows.
+    function signedOut(r) {
+      var login = r.redirected && new URL(r.url).pathname === "/login";
+      if (r.status !== 401 && !login) return false;
+      if (!stopped) {
+        teardown(false);
+        window.location.assign("/login?reason=expired");
+      }
+      return true;
+    }
+
     // The shell belongs to the sign-in session that started it. Another
     // session's live shell is a 409: say so and stop polling.
     function started(r) {
-      if (r.status !== 409) return true;
+      if (signedOut(r)) return false;
+      if (r.ok) return true;
       term.writeln(
-        "The shell is in use by another signed-in session. Reload to try " +
-          "again after that session signs out or closes its browser tab."
+        r.status === 409
+          ? "The shell is in use by another signed-in session. Reload to try " +
+              "again after that session signs out or closes its browser tab."
+          : "Could not start the shell (HTTP " + r.status + "). Reload the page."
       );
       teardown(false);
       return false;
@@ -204,9 +219,11 @@
       if (stopped) return;
       fetch("/cli/output?since=" + offset)
         .then(function (r) {
+          if (signedOut(r)) return null;
           return r.ok ? r.json() : null;
         })
         .then(function (data) {
+          if (stopped) return;
           if (!data) throw new Error("no data");
           if (!data.alive) {
             revive();
@@ -236,6 +253,7 @@
       post("/cli/input", { data: bytesToBase64(new TextEncoder().encode(data)) })
         .then(
           function (r) {
+            if (signedOut(r)) return;
             if (!r.ok && r.status !== 409) {
               term.writeln("\r\n[input not delivered: HTTP " + r.status + "]");
             }
