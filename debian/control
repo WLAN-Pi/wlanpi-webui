@@ -20,6 +20,6 @@ Homepage: https://github.com/WLAN-Pi/wlanpi-webui
 Package: wlanpi-webui
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.1), python3 (>=3.13), ${misc:Pre-Depends}
-Depends: wlanpi-core (>= 2.1.19)
+Depends: wlanpi-core (>= 2.4.9)
 Recommends: wlanpi-common, wlanpi-profiler
 Description: WLAN Pi - a web interface

@@ -1,3 +1,35 @@
+wlanpi-webui (1.21.18-1) unstable; urgency=medium
+
+  * Serve LibreSpeed on https://<host>:8443 and Grafana on
+    https://<host>:3443, each on its own origin, separate from the WebUI.
+    Both still need a WebUI sign-in. Cockpit opens directly on its own :9090
+    listener and login. Old /app/ URLs redirect. Needs wlanpi-core 2.4.9 for
+    the firewall ports (#174).
+  * Large LibreSpeed uploads no longer fail with a 413 at the sign-in check.
+  * A signed-in session ends within a minute of use after its account's
+    password changes, or the account is locked, expires or leaves sudo,
+    including changes made over SSH. If wlanpi-core can't answer, the
+    session carries on (#177).
+  * The CLI shell belongs to the session that started it and closes when
+    that session ends; other sessions can't attach to it. The WebUI's
+    Content-Security-Policy is stricter.
+  * Login backoff is kept per user and address, with a looser limit per
+    address, so failed sign-ins from elsewhere no longer hold an admin to
+    one try every few minutes. At most two sign-ins wait on PAM at once.
+  * Settings > Diagnostics shows whether system logs are kept across
+    reboots, how much space they use and which file sets it, and switches it
+    (#178).
+  * The Network page loads its cards faster by fetching their data in
+    parallel.
+  * Settings asks before changing the regulatory domain, Save stays off
+    until something changes, and confirmations start on Cancel. The CLI fits
+    phones and is readable in light mode, and background polling is quieter.
+  * Fix the Network wide card squeezing other cards at 640-655px wide, and
+    tidy labels, heading fonts and spacing.
+  * Upgrade htmx to 4.0.0 and Werkzeug to 3.1.9.
+
+ -- Josh Schmelzle <josh@joshschmelzle.com>  Tue, 20 Oct 2026 05:26:37 -0400
+
 wlanpi-webui (1.21.17-1) unstable; urgency=medium
 
   * Show Grafana on the dashboard and Apps page only once wlanpi-grafana
