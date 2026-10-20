@@ -38,7 +38,7 @@ testing = [
     "mypy",
     "pytest",
     "pytest-cov",
-    "coverage-badge",
+    "genbadge[coverage]",
     "pytest-mock",
 ]
 
