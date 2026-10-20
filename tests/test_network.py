@@ -1,6 +1,7 @@
 """Tests for the /network page backed by the wlanpi-core API (#108)."""
 
 import re
+import threading
 
 import pytest
 
@@ -142,6 +143,33 @@ class TestNetwork:
         assert b"MAC:</span> AA:BB:CC:DD:EE:FF" in resp.data
         assert b"Public IPv6" in resp.data
         assert b"2001:db8::1" in resp.data
+
+    def test_independent_core_calls_overlap(self, client, monkeypatch):
+        from flask import current_app
+
+        from wlanpi_webui.network import network as n
+
+        # The five fixed calls and both link calls must be in flight together;
+        # serial calls break the barrier on its timeout instead of hanging.
+        barrier = threading.Barrier(7, timeout=2)
+
+        def fake(path, params=None):
+            current_app.logger.debug(path)  # a token mint needs the app context
+            if path.endswith("/interfaces"):
+                return {"root": [{"ifname": "eth0"}, {"ifname": "wlan0"}]}
+            barrier.wait()
+            if "wlan-link" in path:
+                return {"connected": False}
+            if "link-stats" in path:
+                return {"link_detected": "yes"}
+            return {}
+
+        monkeypatch.setattr(n, "get_core_json", fake)
+        _login(client, monkeypatch)
+        resp = client.get("/network/cards")
+        assert resp.status_code == 200
+        assert resp.data.index(b"eth0 Link") < resp.data.index(b"wlan0 Link")
+        assert b"Not connected" in resp.data
 
     def test_shell_loads_without_core(self, client, monkeypatch):
         _login(client, monkeypatch)
