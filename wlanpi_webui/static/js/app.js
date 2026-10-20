@@ -159,6 +159,20 @@
     true
   );
 
+  // htmx 4 still runs a response's swap events, out-of-band parts and
+  // <title> when noSwap (htmx-config) skips its main swap; htmx 2 skipped all
+  // of it. Stop them first (capture) so no handler treats a 204 or an error
+  // page as a swap. htmx:finally:swap still fires.
+  document.addEventListener(
+    "htmx:before:swap",
+    function (evt) {
+      if (evt.detail.ctx.swap !== "none") return;
+      evt.preventDefault();
+      evt.stopImmediatePropagation();
+    },
+    true
+  );
+
   // ---- Focus and announcements across swaps -----------------------------
   // An innerHTML swap replaces a placeholder's children but not the busy
   // flag on the placeholder itself.
@@ -726,6 +740,12 @@
   // data-confirm-ok on the element names the confirm button.
   // Not a data attribute: htmx history snapshots would restore it set.
   var confirming = new WeakSet();
+  // htmx 4 queues a second request from the same control before it asks for
+  // confirmation, so a double click is dropped here, not in htmx:confirm.
+  document.addEventListener("htmx:config:request", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (ctx.confirm && confirming.has(ctx.sourceElement)) evt.preventDefault();
+  });
   // Once preventDefault() runs, htmx waits until issueRequest() or
   // dropRequest() is called; every path below calls exactly one of them.
   document.addEventListener("htmx:confirm", function (evt) {
@@ -733,12 +753,7 @@
     var question = detail.ctx.confirm;
     if (!question || !window.UIkit) return;
     evt.preventDefault();
-    // One dialog per control: a double click must not queue a second request.
     var source = detail.ctx.sourceElement;
-    if (confirming.has(source)) {
-      detail.dropRequest();
-      return;
-    }
     confirming.add(source);
     // UIkit inserts a string message as HTML; pass a node so the text is escaped.
     var body = document.createElement("div");

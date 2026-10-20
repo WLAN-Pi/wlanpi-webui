@@ -222,7 +222,7 @@
 
   // Also on an unchanged poll, which comes back 204 and doesn't swap: the
   // readings on the page are still current, so record them. Not on errors.
-  document.addEventListener("htmx:after:swap", function (evt) {
+  document.addEventListener("htmx:finally:swap", function (evt) {
     var ctx = evt.detail.ctx;
     if (ctx.target && ctx.target.id === "network-cards" && ctx.response.status < 400) {
       sample();
