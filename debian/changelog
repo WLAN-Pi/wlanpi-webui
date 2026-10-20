@@ -6,15 +6,16 @@ wlanpi-webui (1.21.18-1) unstable; urgency=medium
     listener and login. Old /app/ URLs redirect. Needs wlanpi-core 2.4.9 for
     the firewall ports (#174).
   * Large LibreSpeed uploads no longer fail with a 413 at the sign-in check.
-  * Sessions end within a minute when their account's password changes, or
-    the account is locked, expires or leaves sudo, including changes made
-    over SSH (#177).
+  * A signed-in session ends within a minute of use after its account's
+    password changes, or the account is locked, expires or leaves sudo,
+    including changes made over SSH. If wlanpi-core can't answer, the
+    session carries on (#177).
   * The CLI shell belongs to the session that started it and closes when
     that session ends; other sessions can't attach to it. The WebUI's
     Content-Security-Policy is stricter.
-  * Login backoff is kept per user and address, so failed sign-ins from one
-    address no longer slow down an admin elsewhere or a whole NAT, and at
-    most two sign-ins wait on PAM at once.
+  * Login backoff is kept per user and address, with a looser limit per
+    address, so failed sign-ins from elsewhere no longer hold an admin to
+    one try every few minutes. At most two sign-ins wait on PAM at once.
   * Settings > Diagnostics shows whether system logs are kept across
     reboots, how much space they use and which file sets it, and switches it
     (#178).
