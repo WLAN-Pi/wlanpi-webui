@@ -473,6 +473,20 @@ class TestLoginThrottle:
         assert b"Too many failed attempts" in resp.data
         assert len(calls) == auth.FREE["pair"]  # core never asked
 
+    def test_failure_keys_bound_the_username(self, app, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        long_name = "a" * 100_000
+        with app.test_client() as client:
+            assert _post_login(client, username=long_name).status_code == 401
+            assert _post_login(client, username=long_name + "b").status_code == 401
+            failures = app.extensions["wlanpi_auth"]["failures"]
+        user_keys = [k for k in failures if k.startswith("user:")]
+        assert user_keys == ["user:" + "a" * auth.MAX_USERNAME]
+        assert failures[user_keys[0]][0] == 2
+        assert max(len(k) for k in failures) < auth.MAX_USERNAME + 64
+
     def test_per_ip_across_usernames(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
 

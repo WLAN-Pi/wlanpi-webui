@@ -61,6 +61,8 @@ BUSY = "Too many sign-ins are being checked right now. Try again in a few second
 MAX_DELAY = 300
 FORGET_AFTER = 3600
 MAX_TRACKED = 4096
+# wlanpi-core refuses longer usernames, so a failure keys on no more than this.
+MAX_USERNAME = 128
 
 # Core statuses (and core HTTP errors, see _core_status) shown to the user.
 MESSAGES = {
@@ -322,6 +324,7 @@ def pam_change_password(
 def _throttle_keys(username: str) -> dict[str, str]:
     """Backoff keys for this client and username, by kind (see FREE)."""
     ip = request.remote_addr
+    username = username[:MAX_USERNAME]
     return {
         "pair": f"pair:{ip} {username}",
         "ip": f"ip:{ip}",
