@@ -26,9 +26,11 @@ Deployment:
 
 - `:80` - redirect to 443 
 - `:443` - flask (main WSGI app)
-- `:8081` - speedtest (html5 speedtest based on LibreSpeed)
+- `:8443` - speedtest (LibreSpeed) behind the WebUI sign-in
+- `:8081` - speedtest backend, also reachable directly over plain HTTP
 - `:9090` - cockpit (installed separately and handled by the WLAN Pi image build process)
-- `:3000` - grafana (installed separately and handled by the WLAN Pi image build process)
+- `:3443` - grafana behind the WebUI sign-in
+- `:3000` - grafana backend (installed separately and handled by the WLAN Pi image build process)
 - `:2501` - kismet (installed separately and handled by the WLAN Pi image build process)
 
 ## Run Package On WLAN Pi

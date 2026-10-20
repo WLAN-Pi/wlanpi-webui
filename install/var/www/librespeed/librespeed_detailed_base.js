@@ -550,8 +550,9 @@ function updateStats() {
 
 
 // Report the finished test to the WebUI, which stores it for the report page
-// and the notifications tab. Same origin, so the session cookie authenticates
-// it. Best-effort: never blocks or breaks the UI.
+// and the notifications tab. nginx forwards this one path from the LibreSpeed
+// origin to the WebUI with the session cookie. Best-effort: never blocks or
+// breaks the UI.
 function reportResult() {
     var result = {
         download_mbps: avg(dl_samples),
@@ -580,6 +581,9 @@ function reportResult() {
     }).catch(function () { /* best-effort */ });
 }
 
+// The results pages live on the WebUI, port 443 of this host.
+var WEBUI_ORIGIN = "https://" + location.hostname;
+
 function showResultCard(result, url) {
     var el = I("result_card");
     if (!el) return;
@@ -589,8 +593,8 @@ function showResultCard(result, url) {
         fmtStat(result.download_mbps, "Mbps") + " down, " +
         fmtStat(result.upload_mbps, "Mbps") + " up, " +
         fmtStat(result.ping_ms, "ms") + " ping</p>" +
-        '<p><a class="btn" href="' + url + '">View result</a> ' +
-        '<a class="btn" href="/app/librespeed/results">All results</a></p>';
+        '<p><a class="btn" href="' + WEBUI_ORIGIN + url + '">View result</a> ' +
+        '<a class="btn" href="' + WEBUI_ORIGIN + '/app/librespeed/results">All results</a></p>';
     el.style.display = "block";
 }
 

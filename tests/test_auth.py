@@ -719,8 +719,30 @@ class TestRequestHardening:
             for line in conf.splitlines()
             if "X-Frame-Options" in line and not line.strip().startswith("#")
         ]
-        # server level, plus the grafana and cockpit locations that override it
+        # server level on the WebUI, LibreSpeed and Grafana origins
         assert directives == ['add_header X-Frame-Options "SAMEORIGIN" always;'] * 3
+
+    @pytest.mark.parametrize(
+        "location, target",
+        [
+            (
+                "= /app/librespeed/librespeed_detailed.html",
+                "https://$host:8443$request_uri",
+            ),
+            ("= /app/grafana", "https://$host:3443/app/grafana/"),
+            ("/app/grafana/", "https://$host:3443$request_uri"),
+            ("= /app/cockpit", "https://$host:9090/app/cockpit/"),
+            ("/app/cockpit/", "https://$host:9090$request_uri"),
+        ],
+    )
+    def test_nginx_redirects_old_app_urls(self, location, target):
+        from pathlib import Path
+
+        conf = (
+            Path(__file__).parent.parent / "install/etc/nginx/wlanpi_webui.conf"
+        ).read_text()
+        block = f"location {location} {{\n        return 302 {target};\n    }}"
+        assert block in conf
 
     def test_non_ascii_csrf_is_rejected_not_500(self, client):
         _get_csrf(client)

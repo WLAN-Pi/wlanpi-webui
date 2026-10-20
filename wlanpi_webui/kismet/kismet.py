@@ -3,6 +3,7 @@ from flask import jsonify, redirect, request
 from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.kismet import bp
 from wlanpi_webui.utils import (
+    app_url,
     is_htmx,
     start_stop_service,
     system_service_running_state,
@@ -17,8 +18,7 @@ def kismet_status():
 
 @bp.route("/kismet")
 def kismet():
-    base = request.host.split(":")[0]
-    return redirect(f"http://{base}:2501", code=302)
+    return redirect(app_url(2501, scheme="http"), code=302)
 
 
 @bp.route("/<task>kismet", methods=["POST"])

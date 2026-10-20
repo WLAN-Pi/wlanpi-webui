@@ -16,7 +16,7 @@ from pathlib import Path
 from time import CLOCK_BOOTTIME, clock_gettime, time
 
 import requests
-from flask import current_app, redirect, request, session
+from flask import abort, current_app, redirect, request, session
 
 CA_CERT = "/etc/nginx/ssl/self-signed-wlanpi.cert"
 SERVER = "127.0.0.1"
@@ -440,6 +440,17 @@ def is_htmx(request):
     return request.headers.get("hx-request") == "true" and not request.headers.get(
         "hx-history-restore-request"
     )
+
+
+def app_url(port: int, path: str = "/", scheme: str = "https") -> str:
+    """URL for an app served on another port of the host the browser used."""
+    # Werkzeug blanks a malformed Host header, so urlsplit can't raise here.
+    host = urllib.parse.urlsplit(f"//{request.host}").hostname
+    if not host:
+        abort(400)
+    if ":" in host:
+        host = f"[{host}]"
+    return f"{scheme}://{host}:{port}{path}"
 
 
 def get_service_down_message(service: str):

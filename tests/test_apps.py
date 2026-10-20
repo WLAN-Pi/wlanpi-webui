@@ -93,7 +93,7 @@ class TestApps:
         assert b'<button type="button" hx-post="/stopprofiler"' in resp.data
         assert b'href="/kismet"' in resp.data
         assert b'href="/grafana_url"' in resp.data
-        assert b'href="/app/cockpit"' in resp.data
+        assert b'href="/cockpit"' in resp.data
         assert b'href="/grafana"' in resp.data
         # Grafana is the last card, after Cockpit
         assert resp.data.index(b"Grafana") > resp.data.index(b"Cockpit")
