@@ -1,8 +1,9 @@
 import ipaddress
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
-from flask import render_template, request
+from flask import current_app, render_template, request
 
 from wlanpi_webui.config import get_hostname
 from wlanpi_webui.network import bp
@@ -247,12 +248,40 @@ def network():
 @bp.route("/network/cards")
 def network_cards():
     """Network cards and detail, sourced from the wlanpi-core API."""
-    reach = get_core_json("/api/v1/utils/reachability")
-    net = get_core_json("/api/v1/network/info/") or {}
-    public_ip6 = get_core_json("/api/v1/network/info/publicip6")
-    routing = get_core_json("/api/v1/network/routing") or {}
-    leases = get_core_json("/api/v1/network/dhcp/leases") or {}
-    interfaces = get_core_json("/api/v1/network/interfaces") or {}
+    app = current_app._get_current_object()
+
+    def fetch(path):
+        # Pool threads have no app context, and minting a core token reads
+        # current_app. Not a request-context copy: that shares the request
+        # object across threads and closes it on pop.
+        with app.app_context():
+            return get_core_json(path)
+
+    # A pool per request, one thread per call (six plus up to four links): a
+    # shared pool would queue one tab's refresh behind another's slow calls.
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        interfaces = pool.submit(fetch, "/api/v1/network/interfaces")
+        others = pool.map(
+            fetch,
+            (
+                "/api/v1/utils/reachability",
+                "/api/v1/network/info/",
+                "/api/v1/network/info/publicip6",
+                "/api/v1/network/routing",
+                "/api/v1/network/dhcp/leases",
+            ),
+        )
+        names = _interface_names(interfaces.result() or {})[:4]
+        links = pool.map(
+            fetch,
+            [
+                f"/api/v1/network/interfaces/{name}/"
+                + ("wlan-link" if name.startswith("wlan") else "link-stats")
+                for name in names
+            ],
+        )
+        reach, net, public_ip6, routing, leases = others
+    net, routing, leases = net or {}, routing or {}, leases or {}
 
     if reach is None:
         reachability: list[str] = []
@@ -264,17 +293,11 @@ def network_cards():
         reachability_empty = "No reachability data returned."
 
     link_stats = []
-    for name in _interface_names(interfaces)[:4]:
-        if name.startswith("wlan"):
-            link = get_core_json(f"/api/v1/network/interfaces/{name}/wlan-link")
-            if link:
-                link_stats.append({"interface": name, "lines": _wlan_link_lines(link)})
-        else:
-            stats = get_core_json(f"/api/v1/network/interfaces/{name}/link-stats")
-            if stats:
-                link_stats.append(
-                    {"interface": name, "lines": _link_stats_lines(stats)}
-                )
+    for name, link in zip(names, links, strict=True):
+        if link and name.startswith("wlan"):
+            link_stats.append({"interface": name, "lines": _wlan_link_lines(link)})
+        elif link:
+            link_stats.append({"interface": name, "lines": _link_stats_lines(link)})
 
     resp_data = {
         "hostname": get_hostname(),
