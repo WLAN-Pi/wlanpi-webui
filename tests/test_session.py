@@ -317,6 +317,27 @@ class TestServerSideSessions:
         client.set_cookie("session", cookie)
         assert client.get("/auth/check").status_code == 401
 
+    def test_failed_revocation_write_is_seen_by_another_worker(
+        self, app, client, session_store, monkeypatch
+    ):
+        """A HUP reload overlap: one worker's failed write deletes the store."""
+        from wlanpi_webui.auth import auth
+
+        _login(client, monkeypatch)
+        cookie = client.get_cookie("session").value
+        other_worker = create_app().test_client()
+        other_worker.set_cookie("session", cookie)
+        assert other_worker.get("/auth/check").status_code == 200
+
+        def broken_replace(*a, **k):
+            raise OSError("disk full")
+
+        with monkeypatch.context() as broken:
+            broken.setattr(auth.os, "replace", broken_replace)
+            _logout(client)
+        assert not session_store.exists()
+        assert other_worker.get("/auth/check").status_code == 401
+
     def test_successful_change_clears_pending_username(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
 
@@ -457,3 +478,104 @@ class TestUnchangedPoll:
         resp = client.get("/alerts", headers={**POLL, "X-Wlanpi-Etag": etag})
         assert resp.status_code == 200
         assert "X-Wlanpi-Toast" in resp.headers
+
+
+class TestAccountCheck:
+    """Sessions end once core says the account may no longer sign in (#140, #141)."""
+
+    @pytest.fixture()
+    def core(self, monkeypatch):
+        """Fake core: PAM sign-in succeeds; /pam/account answers from `state`."""
+        import requests
+
+        from wlanpi_webui.auth import auth
+
+        state = {"active": True, "fingerprint": "aaaa", "error": None, "calls": 0}
+
+        def fake(method, url, json_body=None, timeout=10, **kwargs):
+            if url != auth.CORE_PAM_ACCOUNT_URL:
+                return FakeResponse({"status": "success"})
+            state["calls"] += 1
+            if state["error"]:
+                raise state["error"]
+            return FakeResponse(
+                {
+                    "active": state["active"],
+                    "password_fingerprint": state["fingerprint"],
+                }
+            )
+
+        state["timeout"] = requests.Timeout()
+        monkeypatch.setattr(auth, "make_api_request", fake)
+        return state
+
+    def _sign_in(self, client):
+        page = client.get("/login")
+        csrf = re.search(rb'name="csrf_token" value="([^"]+)"', page.data).group(1)
+        resp = client.post(
+            "/login",
+            data={"username": "wlanpi", "password": "x", "csrf_token": csrf.decode()},
+        )
+        assert resp.status_code == 302
+
+    def _due(self, app):
+        """Make the next request run the check, as if the interval had passed."""
+        app.extensions["wlanpi_auth"]["account_checked"].clear()
+
+    def test_fingerprint_stays_server_side(self, app, client, core):
+        self._sign_in(client)
+        (record,) = _registry(app).values()
+        assert record["fingerprint"] == "aaaa"
+        with client.session_transaction() as sess:
+            assert "aaaa" not in json.dumps(dict(sess))
+
+    def test_unchanged_account_keeps_session(self, app, client, core):
+        self._sign_in(client)
+        self._due(app)
+        assert client.get("/auth/check").status_code == 200
+        calls = core["calls"]
+        assert client.get("/auth/check").status_code == 200
+        assert core["calls"] == calls  # not again within the interval
+
+    @pytest.mark.parametrize(
+        "change",
+        [{"active": False}, {"fingerprint": "bbbb"}],
+        ids=["inactive", "passwd"],
+    )
+    def test_account_change_ends_session(self, app, client, core, change):
+        self._sign_in(client)
+        core.update(change)
+        assert client.get("/auth/check").status_code == 200  # within the interval
+        self._due(app)
+        _assert_expiry_revokes(app, client)
+
+    def test_auth_request_subrequests_are_throttled(self, app, client, core):
+        # nginx never hands a refreshed cookie back from auth_request, so the
+        # interval can't live in the cookie.
+        self._sign_in(client)
+        self._due(app)
+        copied = client.get_cookie("session").value
+        for _ in range(5):
+            client.set_cookie("session", copied)
+            assert client.get("/auth/check").status_code == 200
+        assert core["calls"] == 2  # sign-in, then one check
+
+    def test_core_unreachable_fails_open(self, app, client, core):
+        self._sign_in(client)
+        core["error"] = core["timeout"]
+        self._due(app)
+        assert client.get("/auth/check").status_code == 200
+
+    def test_fingerprint_learned_after_core_was_down_at_sign_in(
+        self, app, client, core
+    ):
+        core["error"] = core["timeout"]
+        self._sign_in(client)
+        core["error"] = None
+        self._due(app)
+        assert client.get("/auth/check").status_code == 200
+        (record,) = _registry(app).values()
+        assert record["fingerprint"] == "aaaa"
+        core["fingerprint"] = "bbbb"
+        self._due(app)
+        assert client.get("/auth/check").status_code == 401

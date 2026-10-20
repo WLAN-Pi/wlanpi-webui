@@ -17,6 +17,7 @@ import fcntl
 import hmac
 import json
 import os
+import pwd
 import secrets
 import tempfile
 import threading
@@ -40,15 +41,35 @@ from wlanpi_webui.utils import boot_clock, make_api_request, read_boot_id
 
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
 CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
+CORE_PAM_ACCOUNT_URL = f"{CORE_PAM_URL}/account"
 
-# Failed-login backoff: FREE_ATTEMPTS misses per client IP or username, then
-# the wait doubles from 1s up to MAX_DELAY. A key is forgotten after an hour
-# without failures, and at most MAX_TRACKED keys are kept.
-FREE_ATTEMPTS = 5
-IN_PROGRESS = "Another sign-in from this address is in progress. Try again."
+# How often a signed-in session asks core whether its account may still sign
+# in (still in sudo, not locked or expired, same password). The check runs
+# on a request, so a page load can wait up to ACCOUNT_CHECK_TIMEOUT for core.
+ACCOUNT_CHECK_INTERVAL = 60
+ACCOUNT_CHECK_TIMEOUT = 3
+
+# Failed-login backoff. Each key gets FREE misses, then the wait doubles from
+# 1s up to MAX_DELAY. A key is forgotten after an hour without failures, and at
+# most MAX_TRACKED keys are kept.
+# - pair (client IP and username): one person's typos.
+# - ip: one address spraying usernames; generous, since a class behind one NAT
+#   shares it.
+# - user: guessing spread over many addresses. It only holds back clients
+#   whose own pair has failed TYPO_ALLOWANCE times, so an admin who mistypes
+#   during an attack still gets in.
+FREE = {"pair": 5, "ip": 20, "user": 5}
+TYPO_ALLOWANCE = 3
+# PAM holds a gunicorn thread for ~2s on each wrong password; leave the other
+# threads (--threads 4) free for signed-in users.
+MAX_SIGNINS_IN_FLIGHT = 2
+IN_PROGRESS = "Another sign-in for this user from this address is in progress."
+BUSY = "Too many sign-ins are being checked right now. Try again in a few seconds."
 MAX_DELAY = 300
 FORGET_AFTER = 3600
 MAX_TRACKED = 4096
+# wlanpi-core refuses longer usernames, so a failure keys on no more than this.
+MAX_USERNAME = 128
 
 # Core statuses (and core HTTP errors, see _core_status) shown to the user.
 MESSAGES = {
@@ -83,6 +104,7 @@ def init_auth(app) -> None:
         "stamp": None,
         "failures": {},
         "in_flight": set(),
+        "account_checked": {},
     }
 
 
@@ -129,6 +151,11 @@ def _sessions() -> dict:
     if stamp is not None and stamp != state["stamp"]:
         state["sessions"] = _read_store(_store_path())
         state["stamp"] = stamp
+    elif stamp is None and state["stamp"] is not None:
+        # Another worker deleted the file after a failed write: a revocation
+        # may be lost with it, so trust nothing cached from before.
+        state["sessions"] = {}
+        state["stamp"] = None
     sessions: dict = state["sessions"]
     return sessions
 
@@ -200,12 +227,74 @@ def session_is_valid() -> bool:
     return bool(age <= current_app.config["MAX_SESSION_AGE"])
 
 
+def _account(username: str) -> tuple[bool, str | None] | None:
+    """Core's (active, password fingerprint) for `username`; None if unknown."""
+    try:
+        data = make_api_request(
+            "POST",
+            CORE_PAM_ACCOUNT_URL,
+            json_body={"username": username},
+            timeout=ACCOUNT_CHECK_TIMEOUT,
+        ).json()
+    except (requests.RequestException, ValueError):
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("active"), bool):
+        return None
+    fingerprint = data.get("password_fingerprint")
+    return data["active"], fingerprint if isinstance(fingerprint, str) else None
+
+
+def account_still_allowed() -> bool:
+    """False once the session's account left sudo, was locked or expired, or
+    had its password changed (also outside the WebUI, e.g. passwd over SSH).
+
+    Asks core at most every ACCOUNT_CHECK_INTERVAL seconds per session. Fails
+    open: if core can't answer, the session carries on until the next check.
+    The time of the last check stays in process memory, not the cookie: nginx
+    auth_request subrequests never pass a refreshed cookie back to the browser.
+    """
+    sid = session.get("sid")
+    now = boot_clock()
+    state = _state()
+    with state["lock"]:
+        checked = state["account_checked"]
+        if now - checked.get(sid, float("-inf")) < ACCOUNT_CHECK_INTERVAL:
+            return True
+        registered = _sessions()
+        for gone in [s for s in checked if s not in registered]:
+            del checked[gone]
+        checked[sid] = now  # claimed: parallel requests skip the check
+    status = _account(session["user"])
+    if status is None:
+        return True
+    active, fingerprint = status
+    if not active:
+        return False
+    known = _sessions().get(sid, {}).get("fingerprint")
+    if known is None and fingerprint is not None:
+        # Core couldn't answer at sign-in: remember the first fingerprint seen.
+        with _update_sessions() as sessions:
+            if sid in sessions:
+                sessions[sid] = {**sessions[sid], "fingerprint": fingerprint}
+        return True
+    return known is None or known == fingerprint
+
+
+def session_registered(sid: str | None) -> bool:
+    """True while `sid` is in the registry: not signed out or revoked."""
+    return sid in _sessions()
+
+
 def end_session() -> None:
-    """Revoke the current session server-side and clear the cookie."""
+    """Revoke the current session server-side, close its shell, clear the cookie."""
+    from wlanpi_webui.cli.cli import close_shell  # cli imports this module
+
     sid = session.get("sid")
     if sid in _sessions():
         with _update_sessions() as sessions:
             sessions.pop(sid, None)
+    # After the revocation: a racing /cli/start rechecks it under the CLI lock.
+    close_shell(sid)
     session.clear()
 
 
@@ -302,45 +391,55 @@ def pam_change_password(
     )
 
 
-def _throttle_keys(username: str) -> list[str]:
-    """The client IP key, then the username key (if any)."""
-    keys = [f"ip:{request.remote_addr}"]
-    if username:
-        keys.append(f"user:{username}")
-    return keys
+def _throttle_keys(username: str) -> dict[str, str]:
+    """Backoff keys for this client and username, by kind (see FREE)."""
+    ip = request.remote_addr
+    username = username[:MAX_USERNAME]
+    return {
+        "pair": f"pair:{ip} {username}",
+        "ip": f"ip:{ip}",
+        "user": f"user:{username}",
+    }
 
 
-def _throttle_wait(keys: list[str]) -> int:
-    """Seconds until this client may try again (0 = now).
+def _recent(failures: dict, key: str, now: float) -> tuple[int, float]:
+    count, last = failures.get(key, (0, 0.0))
+    return (count, last) if now - last <= FORGET_AFTER else (0, last)
 
-    The username key only applies once the client's own IP has failed
-    recently. Otherwise anyone hammering ``wlanpi`` would lock the admin's
-    browser out too; guessing spread across many IPs is still throttled after
-    each IP's first miss.
-    """
+
+def _throttle_wait(keys: dict[str, str]) -> int:
+    """Seconds until this client may try again (0 = now)."""
     now = boot_clock()
     failures = _state()["failures"]
-    ip_count, ip_last = failures.get(keys[0], (0, 0.0))
-    active = keys if ip_count and now - ip_last <= FORGET_AFTER else keys[:1]
+    kinds = ["pair", "ip"]
+    if _recent(failures, keys["pair"], now)[0] >= TYPO_ALLOWANCE:
+        kinds.append("user")
     wait = 0.0
-    for key in active:
-        count, last = failures.get(key, (0, 0.0))
-        if count < FREE_ATTEMPTS or now - last > FORGET_AFTER:
+    for kind in kinds:
+        count, last = _recent(failures, keys[kind], now)
+        if count < FREE[kind]:
             continue
-        delay = min(MAX_DELAY, 2 ** (count - FREE_ATTEMPTS))
+        delay = min(MAX_DELAY, 2 ** (count - FREE[kind]))
         wait = max(wait, last + delay - now)
     return min(MAX_DELAY, int(wait + 0.999))
 
 
-def _record_failure(keys: list[str], username: str) -> None:
+def _logged_username(username: str) -> str:
+    """The username for logs, unless it names no account (it may be a password)."""
+    try:
+        pwd.getpwnam(username)
+    except (KeyError, ValueError):
+        return "<unknown user>"
+    return repr(username)
+
+
+def _record_failure(keys: dict[str, str], username: str) -> None:
     now = boot_clock()
     state = _state()
     failures = state["failures"]
     with state["lock"]:
-        for key in keys:
-            count, last = failures.get(key, (0, 0.0))
-            if now - last > FORGET_AFTER:
-                count = 0
+        for key in keys.values():
+            count, _ = _recent(failures, key, now)
             failures[key] = (count + 1, now)
         if len(failures) > MAX_TRACKED:
             for key in [k for k, (_, t) in failures.items() if now - t > FORGET_AFTER]:
@@ -348,42 +447,44 @@ def _record_failure(keys: list[str], username: str) -> None:
             while len(failures) > MAX_TRACKED:
                 del failures[min(failures, key=lambda k: failures[k][1])]
     current_app.logger.warning(
-        "failed login for %r from %s", username, request.remote_addr
+        "failed login for %s from %s", _logged_username(username), request.remote_addr
     )
 
 
 @contextmanager
-def _attempt(keys: list[str]):
-    """Allow one sign-in attempt per client IP (and username) at a time.
+def _attempt(keys: dict[str, str]):
+    """Admit one sign-in attempt, or yield the message saying why it can't run.
 
-    gunicorn serves requests on several threads, so parallel guesses would
-    all pass the throttle check before the first failure is recorded. Yields
-    False when this IP already has an attempt waiting on PAM. Nothing blocks:
-    a flood from one address can't tie up the worker threads.
+    gunicorn serves requests on several threads, so parallel guesses for one
+    username from one address would all pass the throttle check before the
+    first failure is recorded. Nothing blocks: refused attempts return at once.
     """
     state = _state()
-    now = boot_clock()
     with state["lock"]:
-        ip_count, ip_last = state["failures"].get(keys[0], (0, 0.0))
-        # Mirror _throttle_wait: the username key counts once this IP has
-        # failed, so failed IPs guessing one username take turns too, while an
-        # admin on a clean address never waits on the username.
-        held = keys if ip_count and now - ip_last <= FORGET_AFTER else keys[:1]
-        busy = any(key in state["in_flight"] for key in held)
-        if not busy:
-            state["in_flight"].update(held)
+        # Throttled requests are refused before they take a slot, so a flood
+        # of them can't keep the slots full.
+        wait = _throttle_wait(keys)
+        if wait:
+            refused: str | None = _throttled_message(wait)
+        elif keys["pair"] in state["in_flight"]:
+            refused = IN_PROGRESS
+        elif len(state["in_flight"]) >= MAX_SIGNINS_IN_FLIGHT:
+            refused = BUSY
+        else:
+            refused = None
+            state["in_flight"].add(keys["pair"])
     try:
-        yield not busy
+        yield refused
     finally:
-        if not busy:
+        if refused is None:
             with state["lock"]:
-                state["in_flight"].difference_update(held)
+                state["in_flight"].discard(keys["pair"])
 
 
-def _clear_failures(keys: list[str]) -> None:
+def _clear_failures(keys: dict[str, str]) -> None:
     state = _state()
     with state["lock"]:
-        for key in keys:
+        for key in keys.values():
             state["failures"].pop(key, None)
 
 
@@ -395,15 +496,23 @@ def _login_session(username: str) -> None:
     """Start a fresh session and register it server-side."""
     session.clear()
     sid = secrets.token_urlsafe(32)
+    account = _account(username)
     now = boot_clock()
     with _update_sessions() as sessions:
-        sessions[sid] = {"user": username, "created": now}
+        sessions[sid] = {
+            "user": username,
+            "created": now,
+            # Server-side only: never put it in the cookie.
+            "fingerprint": account[1] if account else None,
+        }
     session["sid"] = sid
     session["user"] = username
     session["csrf_token"] = secrets.token_urlsafe(32)
     session["boot_id"] = read_boot_id()
     session["last_seen"] = now
     session.permanent = True
+    with _state()["lock"]:
+        _state()["account_checked"][sid] = now
 
 
 def _revoke_user_sessions(username: str) -> None:
@@ -420,12 +529,9 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         keys = _throttle_keys(username)
-        with _attempt(keys) as allowed:
-            if not allowed:
-                return _render_login(IN_PROGRESS, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_login(_throttled_message(wait), 429)
+        with _attempt(keys) as refused:
+            if refused:
+                return _render_login(refused, 429)
             # Control characters never name an account (PAM would cut at a NUL).
             status = (
                 pam_authenticate(username, password)
@@ -464,12 +570,9 @@ def change_password():
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("new_password_confirm", "")
         keys = _throttle_keys(username)
-        with _attempt(keys) as allowed:
-            if not allowed:
-                return _render_change(IN_PROGRESS, username, 429)
-            wait = _throttle_wait(keys)
-            if wait:
-                return _render_change(_throttled_message(wait), username, 429)
+        with _attempt(keys) as refused:
+            if refused:
+                return _render_change(refused, username, 429)
             if new_password != confirm_password:
                 error = "New passwords do not match."
             elif new_password == current_password:

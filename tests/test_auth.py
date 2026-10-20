@@ -336,7 +336,8 @@ class TestLoginThrottle:
         calls = []
 
         def fake(*args, **kwargs):
-            calls.append(kwargs["json_body"]["username"])
+            if kwargs["json_body"].keys() != {"username"}:  # not the account check
+                calls.append(kwargs["json_body"]["username"])
             return FakeResponse({"status": status})
 
         monkeypatch.setattr(auth, "make_api_request", fake)
@@ -393,27 +394,63 @@ class TestLoginThrottle:
         assert sorted(r.status_code for r in results) == [401, 429]
         assert len(peak) == 1
 
-    def test_failed_addresses_take_turns_on_a_username(self, app, monkeypatch):
-        # Several IPs that have already failed, guessing one username at once:
-        # only one reaches PAM, or the per-username backoff is raced.
+    def test_concurrent_signins_are_capped(self, app, monkeypatch):
+        # Each wrong password holds a gunicorn thread in PAM for ~2s; a burst
+        # from many addresses must leave threads free for signed-in users.
+        import threading
+
         from conftest import join_all
 
         from wlanpi_webui.auth import auth
 
-        ips = ["192.0.2.20", "192.0.2.21", "192.0.2.22"]
-        self._core(monkeypatch)
-        for ip in ips:
-            _post_login(app.test_client(), ip=ip)
-        threads, results, peak, release = self._parallel_guesses(app, monkeypatch, ips)
-        for t in threads[1:]:
-            t.join(5)
-            assert not t.is_alive()
+        in_pam = threading.Semaphore(0)
+        release = threading.Event()
+
+        def fake(*args, **kwargs):
+            in_pam.release()
+            assert release.wait(5), "test never released"
+            return FakeResponse({"status": "failure"})
+
+        monkeypatch.setattr(auth, "make_api_request", fake)
+        results = []
+
+        def guess(ip):
+            results.append(_post_login(app.test_client(), ip=ip))
+
+        held = [
+            threading.Thread(target=guess, args=(f"192.0.2.{30 + i}",))
+            for i in range(auth.MAX_SIGNINS_IN_FLIGHT)
+        ]
+        for t in held:
+            t.start()
+            assert in_pam.acquire(timeout=5)
+        extra = threading.Thread(target=guess, args=("192.0.2.40",))
+        extra.start()
+        extra.join(5)  # refused without waiting on the others
+        assert not extra.is_alive()
+        assert results[0].status_code == 429
+        assert b"Too many sign-ins" in results[0].data
         release.set()
-        join_all(*threads)
-        assert len(peak) == 1
-        assert sorted(r.status_code for r in results) == [401, 429, 429]
-        assert b"in progress" in next(r for r in results if r.status_code == 429).data
-        assert auth.FREE_ATTEMPTS > 1  # the setup failures stay under the backoff
+        join_all(*held)
+        assert sorted(r.status_code for r in results) == [401] * len(held) + [429]
+
+    def test_throttled_requests_take_no_slot(self, client, monkeypatch):
+        # Otherwise a flood of already-throttled requests keeps the cap full.
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE["pair"]):
+            _post_login(client)
+        in_flight = client.application.extensions["wlanpi_auth"]["in_flight"]
+        seen = []
+        render = auth._render_login
+        monkeypatch.setattr(
+            auth,
+            "_render_login",
+            lambda *a: seen.append(len(in_flight)) or render(*a),
+        )
+        assert _post_login(client).status_code == 429
+        assert seen == [0]
 
     def test_other_addresses_are_not_held_up(self, app, monkeypatch):
         # One client's guess in PAM must not block sign-in from elsewhere.
@@ -430,31 +467,68 @@ class TestLoginThrottle:
         from wlanpi_webui.auth import auth
 
         calls = self._core(monkeypatch)
-        for _ in range(auth.FREE_ATTEMPTS):
+        for _ in range(auth.FREE["pair"]):
             assert _post_login(client).status_code == 401
         resp = _post_login(client)
         assert resp.status_code == 429
         assert b"Too many failed attempts" in resp.data
-        assert len(calls) == auth.FREE_ATTEMPTS  # core never asked
+        assert len(calls) == auth.FREE["pair"]  # core never asked
+
+    def test_failure_keys_bound_the_username(self, app, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        long_name = "a" * 100_000
+        with app.test_client() as client:
+            assert _post_login(client, username=long_name).status_code == 401
+            assert _post_login(client, username=long_name + "b").status_code == 401
+            failures = app.extensions["wlanpi_auth"]["failures"]
+        user_keys = [k for k in failures if k.startswith("user:")]
+        assert user_keys == ["user:" + "a" * auth.MAX_USERNAME]
+        assert failures[user_keys[0]][0] == 2
+        assert max(len(k) for k in failures) < auth.MAX_USERNAME + 64
 
     def test_per_ip_across_usernames(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
 
         self._core(monkeypatch)
-        for i in range(auth.FREE_ATTEMPTS):
+        for i in range(auth.FREE["ip"]):
             _post_login(client, username=f"user{i}")
         assert _post_login(client, username="fresh").status_code == 429
         assert _post_login(client, username="fresh", ip="192.0.2.99").status_code == 401
 
-    def test_per_username_across_ips(self, client, monkeypatch):
-        """Spread guessing is throttled after each new IP's first miss."""
+    def test_one_users_typos_do_not_block_others_behind_the_same_nat(
+        self, client, monkeypatch
+    ):
         from wlanpi_webui.auth import auth
 
         self._core(monkeypatch)
-        for i in range(auth.FREE_ATTEMPTS):
+        for _ in range(auth.FREE["pair"]):
+            _post_login(client, username="student1")
+        assert _post_login(client, username="student1").status_code == 429
+        assert _post_login(client, username="student2").status_code == 401
+
+    def test_per_username_across_ips(self, client, monkeypatch):
+        """Spread guessing gets TYPO_ALLOWANCE tries per new IP, then backs off."""
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for i in range(auth.FREE["user"]):
             _post_login(client, ip=f"192.0.2.{i + 20}")
-        assert _post_login(client, ip="192.0.2.99").status_code == 401
+        for _ in range(auth.TYPO_ALLOWANCE):
+            assert _post_login(client, ip="192.0.2.99").status_code == 401
         assert _post_login(client, ip="192.0.2.99").status_code == 429
+
+    def test_admin_typo_during_an_attack_still_gets_in(self, client, monkeypatch):
+        from wlanpi_webui.auth import auth
+
+        self._core(monkeypatch)
+        for _ in range(auth.FREE["user"] + 10):
+            _post_login(client, ip="192.0.2.66")
+        for _ in range(auth.TYPO_ALLOWANCE - 1):
+            assert _post_login(client, ip="192.0.2.5").status_code == 401
+        self._core(monkeypatch, status="success")
+        assert _post_login(client, ip="192.0.2.5").status_code == 302
 
     def test_username_backoff_does_not_lock_out_a_clean_client(
         self, client, monkeypatch
@@ -463,7 +537,7 @@ class TestLoginThrottle:
         from wlanpi_webui.auth import auth
 
         self._core(monkeypatch)
-        for _ in range(auth.FREE_ATTEMPTS + 3):
+        for _ in range(auth.FREE["pair"] + 3):
             _post_login(client, ip="192.0.2.66")
         calls = self._core(monkeypatch, status="success")
         assert _post_login(client, ip="192.0.2.5").status_code == 302
@@ -473,7 +547,7 @@ class TestLoginThrottle:
         from wlanpi_webui.auth import auth
 
         self._core(monkeypatch)
-        for _ in range(auth.FREE_ATTEMPTS):
+        for _ in range(auth.FREE["pair"]):
             _post_login(client)
         now = auth.boot_clock()
         monkeypatch.setattr(auth, "boot_clock", lambda: now + 2)  # past the 1s delay
@@ -483,7 +557,7 @@ class TestLoginThrottle:
         from wlanpi_webui.auth import auth
 
         self._core(monkeypatch)
-        for _ in range(auth.FREE_ATTEMPTS - 1):
+        for _ in range(auth.FREE["pair"] - 1):
             _post_login(client)
         self._core(monkeypatch, status="success")
         assert _post_login(client).status_code == 302
@@ -497,13 +571,27 @@ class TestLoginThrottle:
             "make_api_request",
             lambda *a, **k: (_ for _ in ()).throw(requests_module.ConnectionError),
         )
-        for _ in range(auth.FREE_ATTEMPTS + 1):
+        for _ in range(auth.FREE["pair"] + 1):
             assert _post_login(client).status_code == 401
 
     def test_failure_is_logged_with_client_ip(self, client, monkeypatch, caplog):
+        from wlanpi_webui.auth import auth
+
+        def getpwnam(name):
+            if name != "wlanpi":
+                raise KeyError(name)
+
+        monkeypatch.setattr(auth.pwd, "getpwnam", getpwnam)
         self._core(monkeypatch)
-        _post_login(client, username="bad\nname", ip="192.0.2.77")
-        assert "failed login for 'bad\\nname' from 192.0.2.77" in caplog.text
+        _post_login(client, username="wlanpi", ip="192.0.2.77")
+        assert "failed login for 'wlanpi' from 192.0.2.77" in caplog.text
+
+    def test_unknown_username_is_not_logged(self, client, monkeypatch, caplog):
+        # A password typed into the username field must not reach the journal.
+        self._core(monkeypatch)
+        _post_login(client, username="Hunter2-oops", ip="192.0.2.77")
+        assert "failed login for <unknown user> from 192.0.2.77" in caplog.text
+        assert "Hunter2" not in caplog.text
 
     def test_tracked_keys_are_bounded(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
@@ -526,12 +614,12 @@ class TestLoginThrottle:
             "new_password_confirm": "n3w-Pass",
             "csrf_token": csrf,
         }
-        for _ in range(auth.FREE_ATTEMPTS):
+        for _ in range(auth.FREE["pair"]):
             assert client.post("/change_password", data=data).status_code == 400
         resp = client.post("/change_password", data=data)
         assert resp.status_code == 429
         assert b"Too many failed attempts" in resp.data
-        assert len(calls) == auth.FREE_ATTEMPTS  # core never asked
+        assert len(calls) == auth.FREE["pair"]  # core never asked
 
 
 class TestCoreErrorMessages:

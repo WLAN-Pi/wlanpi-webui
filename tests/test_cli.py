@@ -67,6 +67,11 @@ def _csrf(client):
         return sess["csrf_token"]
 
 
+def _sid(client):
+    with client.session_transaction() as sess:
+        return sess["sid"]
+
+
 def _read_until(client, needle, count, tries=40):
     """Poll /cli/output until `needle` has shown up `count` times."""
     output = b""
@@ -167,7 +172,8 @@ class TestCli:
         created = []
 
         class FakeSession:
-            def __init__(self):
+            def __init__(self, owner):
+                self.owner = owner
                 self.last = time.time()
                 self.closed = False
                 created.append(self)
@@ -217,7 +223,7 @@ class TestCli:
         join_all(first, second)
 
         assert len(created) == 1
-        assert sorted(r.get_json()["resumed"] for r in results) == [False, True]
+        assert sorted(r.status_code for r in results) == [200, 409]
 
     def test_start_during_stop_gets_a_new_shell(self, app, monkeypatch):
         # A tab mounting /cli while another tab's stop is closing the shell
@@ -234,6 +240,7 @@ class TestCli:
 
         class ClosingSession:
             last = time.time()
+            owner = None
 
             def drain(self):
                 pass
@@ -242,8 +249,10 @@ class TestCli:
                 closing.set()
                 assert release.wait(5), "test never released"
 
-        cli_module._session = ClosingSession()
         c1, c2 = self._clients(app, monkeypatch)
+        closing_session = ClosingSession()
+        closing_session.owner = _sid(c1)
+        cli_module._session = closing_session
         stops, starts = [], []
 
         stop = threading.Thread(target=self._post, args=(c1, "/cli/stop", stops))
@@ -290,3 +299,105 @@ class TestCli:
         )
         body = client.get("/cli/output?since=0").get_json()
         assert b"no sudo" not in base64.b64decode(body["data"])
+
+    def test_other_sessions_cannot_reach_the_shell(self, app, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        owner, other = self._clients(app, monkeypatch)
+        assert (
+            owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)}).status_code
+            == 200
+        )
+        headers = {"X-CSRF-Token": _csrf(other)}
+
+        assert other.post("/cli/start", headers=headers).status_code == 409
+        assert other.get("/cli/output?since=0").get_json()["alive"] is False
+        payload = {"data": base64.b64encode(b"id\n").decode()}
+        assert (
+            other.post("/cli/input", json=payload, headers=headers).status_code == 409
+        )
+        assert other.post("/cli/resize", json={}, headers=headers).status_code == 409
+        assert other.post("/cli/stop", headers=headers).status_code == 204
+        assert cli_module._session is created[0]
+        assert not created[0].closed
+
+    def test_logout_closes_the_shell(self, client, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        assert (
+            client.post("/cli/start", headers={"X-CSRF-Token": csrf}).status_code == 200
+        )
+        client.post("/logout", data={"csrf_token": csrf})
+        assert created[0].closed
+        assert cli_module._session is None
+
+    def test_idle_sign_out_closes_the_shell(self, client, monkeypatch):
+        # The owner's next request, often a /cli/output poll, ends the session.
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        _login(client, monkeypatch)
+        assert (
+            client.post(
+                "/cli/start", headers={"X-CSRF-Token": _csrf(client)}
+            ).status_code
+            == 200
+        )
+        with client.session_transaction() as sess:
+            sess["last_seen"] -= client.application.config["IDLE_TIMEOUT"] + 1
+        assert client.get("/cli/output").status_code == 302  # to /login
+        assert created[0].closed
+        assert cli_module._session is None
+
+    def test_revoked_owner_does_not_hold_the_shell(self, app, monkeypatch):
+        # A password change revokes the user's other sessions; their shell
+        # must not lock the new session out.
+        created = self._fake_session(monkeypatch)
+        owner, changer = self._clients(app, monkeypatch)
+        assert (
+            owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)}).status_code
+            == 200
+        )
+        resp = changer.post(
+            "/change_password",
+            data={
+                "username": "wlanpi",
+                "current_password": "old",
+                "new_password": "new-Pass-9",
+                "new_password_confirm": "new-Pass-9",
+                "csrf_token": _csrf(changer),
+            },
+        )
+        assert resp.status_code == 302
+        started = changer.post("/cli/start", headers={"X-CSRF-Token": _csrf(changer)})
+        assert started.get_json() == {"ok": True, "resumed": False}
+        assert created[0].closed
+        assert len(created) == 2
+
+    def test_start_racing_sign_out_creates_no_shell(self, client, monkeypatch):
+        # The start passed the session check, then a sign-out revoked the
+        # session before the start reached the CLI lock.
+        from wlanpi_webui.auth import auth
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        _login(client, monkeypatch)
+        real = cli_module._lock
+
+        class SignOutFirst:
+            def __enter__(self):
+                with auth._update_sessions() as sessions:
+                    sessions.clear()
+                return real.__enter__()
+
+            def __exit__(self, *exc):
+                return real.__exit__(*exc)
+
+        monkeypatch.setattr(cli_module, "_lock", SignOutFirst())
+        resp = client.post("/cli/start", headers={"X-CSRF-Token": _csrf(client)})
+        assert resp.status_code == 401
+        assert created == []

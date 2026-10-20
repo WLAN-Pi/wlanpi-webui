@@ -1,15 +1,22 @@
+import requests
 from flask import redirect, render_template, request, session
 
 from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.config import Config
 from wlanpi_webui.settings import bp
 from wlanpi_webui.utils import (
+    CORE_API_BASE,
     get_core_json,
     get_safe_referrer_target,
     is_htmx,
+    make_api_request,
     post_core_json,
     queue_toast,
 )
+
+CORE_JOURNAL_PATH = "/api/v1/system/journal"
+# The drop-in wlanpi-core writes; any other source overrides the toggle.
+CORE_JOURNAL_DROPIN = "/etc/systemd/journald.conf.d/90-wlanpi-journal.conf"
 
 
 def _reg_label(country: str) -> str:
@@ -27,6 +34,7 @@ def settings():
     reg = get_core_json("/api/v1/system/reg-domain") or {}
     reg_list = get_core_json("/api/v1/system/reg-domain/list") or {}
     ntp = get_core_json("/api/v1/system/ntp") or {}
+    journal = get_core_json(CORE_JOURNAL_PATH) or {}
 
     reg_country = (reg.get("country") or "").upper()
     resp_data = {
@@ -47,6 +55,13 @@ def settings():
         "reg_label": _reg_label(reg_country),
         "reg_countries": reg_list.get("countries") or [],
         "ntp_enabled": bool(ntp.get("ntp_service")),
+        "journal_storage": journal.get("storage"),
+        "journal_usage": journal.get("disk_usage_bytes"),
+        "journal_override": (
+            (journal.get("source") or "systemd defaults")
+            if journal and journal.get("source") != CORE_JOURNAL_DROPIN
+            else None
+        ),
     }
     if is_htmx(request):
         return render_template("/partials/settings.html", **resp_data)
@@ -89,6 +104,37 @@ def set_ntp():
         )
     else:
         queue_toast("Could not change automatic time sync.", "warning")
+    return redirect(get_safe_referrer_target())
+
+
+@bp.route("/settings/journal", methods=["POST"])
+@csrf_required
+def set_journal():
+    storage = request.form.get("storage")
+    if storage not in ("persistent", "volatile"):
+        queue_toast("Choose whether to keep system logs.", "warning")
+        return redirect(get_safe_referrer_target())
+    try:
+        make_api_request(
+            "POST",
+            f"{CORE_API_BASE}{CORE_JOURNAL_PATH}",
+            json_body={"storage": storage},
+        )
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 409:
+            # Core names the drop-in that still overrides the setting.
+            queue_toast(f"Not changed: {exc.response.text[:300]}", "warning")
+        else:
+            queue_toast("Could not change where system logs are kept.", "warning")
+    except requests.RequestException:
+        queue_toast("Could not change where system logs are kept.", "warning")
+    else:
+        queue_toast(
+            "System logs are now kept across reboots."
+            if storage == "persistent"
+            else "System logs are now kept in memory and cleared at reboot.",
+            "success",
+        )
     return redirect(get_safe_referrer_target())
 
 

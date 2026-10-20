@@ -52,11 +52,19 @@ BACKGROUND_ENDPOINTS = {
 
 STATIC_ENDPOINTS = ("static", "img")
 
-# Scripts load only from this origin: no inline <script>, no on* handler
-# attributes, no eval. WebAssembly (the beacon engine) still compiles.
+# Everything loads from this origin. Scripts: no inline <script>, no on*
+# handler attributes, no eval. Styles may be inline (UIkit, htmx and xterm.js
+# set them); images may be data: URLs (UIkit icons, the profiler QR code).
 CONTENT_SECURITY_POLICY = (
-    "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'self'; "
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; object-src 'none'; base-uri 'self'; "
     "form-action 'self'; frame-ancestors 'self'"
+)
+# Pages that compile WebAssembly. A policy belongs to the document it loaded
+# with, so these pages must be opened with a full page load, not an htmx swap.
+WASM_ENDPOINTS = {"about.beacon"}
+WASM_CONTENT_SECURITY_POLICY = CONTENT_SECURITY_POLICY.replace(
+    "script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'"
 )
 
 
@@ -85,7 +93,12 @@ def create_app(config_class=Config):
 
     app.logger.debug("registering auth blueprint")
     from wlanpi_webui.auth import bp as auth_bp
-    from wlanpi_webui.auth.auth import end_session, init_auth, session_is_valid
+    from wlanpi_webui.auth.auth import (
+        account_still_allowed,
+        end_session,
+        init_auth,
+        session_is_valid,
+    )
 
     init_auth(app)
     app.register_blueprint(auth_bp)
@@ -224,6 +237,9 @@ def create_app(config_class=Config):
         if last_seen is not None and now - last_seen > app.config["IDLE_TIMEOUT"]:
             end_session()  # idle for too long
             return None
+        if not account_still_allowed():
+            end_session()  # left sudo, locked, expired, or password changed
+            return None
         if request.endpoint not in BACKGROUND_ENDPOINTS and not request.headers.get(
             POLL_HEADER
         ):
@@ -260,7 +276,11 @@ def create_app(config_class=Config):
 
     @app.after_request
     def set_content_security_policy(response):
-        response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+        response.headers["Content-Security-Policy"] = (
+            WASM_CONTENT_SECURITY_POLICY
+            if request.endpoint in WASM_ENDPOINTS
+            else CONTENT_SECURITY_POLICY
+        )
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
 

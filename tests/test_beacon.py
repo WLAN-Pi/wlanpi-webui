@@ -102,6 +102,27 @@ class TestUnlocked:
         assert b"beacon-stage" in resp.data
         assert b"beacon.js" in resp.data
 
+    def test_only_this_page_may_compile_wasm(
+        self, client, monkeypatch, flag_path, wad_path
+    ):
+        self._arm(flag_path)
+        wad_path.write_bytes(b"IWAD")
+        _login(client, monkeypatch)
+        csp = client.get("/beacon").headers["Content-Security-Policy"]
+        assert "script-src 'self' 'wasm-unsafe-eval';" in csp
+        assert "default-src 'self'" in csp
+        assert "wasm" not in client.get("/").headers["Content-Security-Policy"]
+
+    def test_tile_is_a_full_page_load(self, client, monkeypatch, flag_path):
+        # The browser keeps the policy of the page it loaded; an htmx swap
+        # into the dashboard would run without 'wasm-unsafe-eval'.
+        self._arm(flag_path)
+        _login(client, monkeypatch)
+        page = client.get("/").data.decode()
+        tile = re.search(r'<a id="beacon-tile"[^>]*>', page).group(0)
+        assert 'href="/beacon"' in tile
+        assert "hx-get" not in tile
+
     def test_page_htmx_returns_partial(self, client, monkeypatch, flag_path, wad_path):
         self._arm(flag_path)
         wad_path.write_bytes(b"IWAD")
