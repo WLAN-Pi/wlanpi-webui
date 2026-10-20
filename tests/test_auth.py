@@ -719,7 +719,6 @@ class TestRequestHardening:
             for line in conf.splitlines()
             if "X-Frame-Options" in line and not line.strip().startswith("#")
         ]
-        # server level on the WebUI, LibreSpeed and Grafana origins
         assert directives == ['add_header X-Frame-Options "SAMEORIGIN" always;'] * 3
 
     @pytest.mark.parametrize(

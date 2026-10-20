@@ -443,7 +443,6 @@ def is_htmx(request):
 
 
 def app_url(port: int, path: str = "/", scheme: str = "https") -> str:
-    """URL for an app served on another port of the host the browser used."""
     # Werkzeug blanks a malformed Host header, so urlsplit can't raise here.
     host = urllib.parse.urlsplit(f"//{request.host}").hostname
     if not host:

@@ -38,17 +38,13 @@ def old_report(rest=None):
     return redirect(target, code=301)
 
 
-def _same_origin() -> bool:
-    """True when the request came from this origin, not another one.
+THIS_ORIGIN_FETCH_SITES = ("same-origin", "none")
 
-    The LibreSpeed page is a static file with no CSRF token, so the report
-    endpoint leans on the session cookie (already required) plus this check and
-    a JSON content type, which a cross-site form post cannot set. Same-site is
-    not enough: Grafana and Cockpit are same-site on their own ports.
-    """
+
+def _csrf_exempt_report_from_this_origin() -> bool:
     site = request.headers.get("Sec-Fetch-Site")
     if site:
-        return site in ("same-origin", "none")
+        return site in THIS_ORIGIN_FETCH_SITES
     origin = request.headers.get("Origin")
     if not origin:
         return True
@@ -130,7 +126,7 @@ def _result_rows(results: list[dict]) -> list[dict]:
 @bp.route("/app/librespeed/results", methods=["POST"])
 def save_speedtest_report():
     """Store a speedtest result posted by the LibreSpeed page."""
-    if not _same_origin():
+    if not _csrf_exempt_report_from_this_origin():
         abort(403)
     result = save_speedtest_result(request.get_json(silent=True))
     if result is None:

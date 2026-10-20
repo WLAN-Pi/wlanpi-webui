@@ -207,8 +207,7 @@ def grafana_service():
 
 
 @bp.route("/grafana")
-def grafana():
-    """The Grafana data-streams page (the Grafana UI itself is on port 3443)."""
+def grafana_data_streams():
     resp_data = {"grafana_data_streams": get_data_streams()}
     if is_htmx(request):
         return render_template("/partials/grafana.html", **resp_data)
