@@ -317,6 +317,27 @@ class TestServerSideSessions:
         client.set_cookie("session", cookie)
         assert client.get("/auth/check").status_code == 401
 
+    def test_failed_revocation_write_is_seen_by_another_worker(
+        self, app, client, session_store, monkeypatch
+    ):
+        """A HUP reload overlap: one worker's failed write deletes the store."""
+        from wlanpi_webui.auth import auth
+
+        _login(client, monkeypatch)
+        cookie = client.get_cookie("session").value
+        other_worker = create_app().test_client()
+        other_worker.set_cookie("session", cookie)
+        assert other_worker.get("/auth/check").status_code == 200
+
+        def broken_replace(*a, **k):
+            raise OSError("disk full")
+
+        with monkeypatch.context() as broken:
+            broken.setattr(auth.os, "replace", broken_replace)
+            _logout(client)
+        assert not session_store.exists()
+        assert other_worker.get("/auth/check").status_code == 401
+
     def test_successful_change_clears_pending_username(self, client, monkeypatch):
         from wlanpi_webui.auth import auth
 

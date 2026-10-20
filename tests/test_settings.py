@@ -298,3 +298,147 @@ class TestCurrentValueNotInList:
                 rb'<form[^>]*hx-post="/settings/' + path + rb'"[^>]*>', html
             )
             assert b"data-dirty-submit" in form.group(0)
+
+
+class TestJournalStorage:
+    DROPIN = "/etc/systemd/journald.conf.d/90-wlanpi-journal.conf"
+
+    def _page(self, client, monkeypatch, journal):
+        from wlanpi_webui.settings import settings as s
+
+        monkeypatch.setattr(
+            s,
+            "get_core_json",
+            lambda path, params=None: journal if path.endswith("/journal") else {},
+        )
+        _login(client, monkeypatch)
+        return client.get("/settings").data.decode()
+
+    def test_on_by_wlanpi_core(self, client, monkeypatch):
+        page = self._page(
+            client,
+            monkeypatch,
+            {
+                "storage": "persistent",
+                "source": self.DROPIN,
+                "disk_usage_bytes": 25165824,
+            },
+        )
+        assert "Keep system logs across reboots:</span>\n        On" in page
+        assert "25.2 MB" in page
+        assert "Set by:" not in page
+        assert 'name="storage" value="volatile"' in page
+
+    def test_off_and_overridden(self, client, monkeypatch):
+        page = self._page(
+            client,
+            monkeypatch,
+            {
+                "storage": "volatile",
+                "source": "/etc/systemd/journald.conf.d/99-local.conf",
+                "disk_usage_bytes": None,
+            },
+        )
+        assert "Off" in page
+        assert "Set by:</span> /etc/systemd/journald.conf.d/99-local.conf" in page
+        assert "Journal size" not in page
+        assert 'name="storage" value="persistent"' in page
+
+    def test_systemd_default(self, client, monkeypatch):
+        page = self._page(
+            client,
+            monkeypatch,
+            {"storage": "auto", "source": None, "disk_usage_bytes": 0},
+        )
+        assert "Auto (systemd decides)" in page
+        assert "Set by:</span> systemd defaults" in page
+
+    def test_storage_none_is_off(self, client, monkeypatch):
+        page = self._page(
+            client,
+            monkeypatch,
+            {"storage": "none", "source": None, "disk_usage_bytes": 0},
+        )
+        assert "Off (the journal keeps no logs)" in page
+        assert "systemd decides" not in page
+        assert 'name="storage" value="persistent"' in page
+
+    def test_core_unavailable_hides_the_toggle(self, client, monkeypatch):
+        page = self._page(client, monkeypatch, None)
+        assert "Log storage is unavailable" in page
+        assert "/settings/journal" not in page
+
+    def _post(self, client, monkeypatch, storage, outcome):
+        from wlanpi_webui.settings import settings as s
+
+        calls = []
+
+        def fake(method, url, json_body=None, **kwargs):
+            calls.append((method, url, json_body))
+            if isinstance(outcome, Exception):
+                raise outcome
+            return FakeResponse(outcome)
+
+        monkeypatch.setattr(s, "make_api_request", fake)
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/settings/journal",
+            data={"storage": storage, "csrf_token": _csrf(client)},
+            headers={"Referer": "https://wlanpi.local/settings"},
+        )
+        assert resp.status_code == 302
+        with client.session_transaction() as sess:
+            toast = sess["wlanpi_toast"]
+        return calls, toast
+
+    def test_turn_on_posts_persistent(self, client, monkeypatch):
+        calls, toast = self._post(client, monkeypatch, "persistent", {})
+        assert calls == [
+            (
+                "POST",
+                "https://127.0.0.1:31415/api/v1/system/journal",
+                {"storage": "persistent"},
+            )
+        ]
+        assert toast == {
+            "message": "System logs are now kept across reboots.",
+            "status": "success",
+        }
+
+    def test_override_shows_cores_message(self, client, monkeypatch):
+        import requests
+
+        response = requests.Response()
+        response.status_code = 409
+        response._content = b"Storage=volatile set in /etc/x.conf overrides y"
+        error = requests.HTTPError(response=response)
+        _, toast = self._post(client, monkeypatch, "persistent", error)
+        assert toast["status"] == "warning"
+        assert toast["message"] == (
+            "Not changed: Storage=volatile set in /etc/x.conf overrides y"
+        )
+
+    @pytest.mark.parametrize("status", [422, 503])
+    def test_core_error_is_a_warning(self, client, monkeypatch, status):
+        import requests
+
+        response = requests.Response()
+        response.status_code = status
+        error = requests.HTTPError(response=response)
+        _, toast = self._post(client, monkeypatch, "volatile", error)
+        assert toast == {
+            "message": "Could not change where system logs are kept.",
+            "status": "warning",
+        }
+
+    def test_unknown_value_is_not_sent(self, client, monkeypatch):
+        calls, toast = self._post(client, monkeypatch, "auto", {})
+        assert calls == []
+        assert toast["status"] == "warning"
+
+    def test_requires_csrf(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        assert (
+            client.post("/settings/journal", data={"storage": "volatile"}).status_code
+            == 400
+        )

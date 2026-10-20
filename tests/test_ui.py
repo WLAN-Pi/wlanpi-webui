@@ -240,10 +240,14 @@ class TestContentSecurityPolicy:
     def test_policy_on_every_response(self, client, path):
         # after_request covers pages, error pages and JSON alike
         resp = client.get(path)
-        csp = resp.headers["Content-Security-Policy"]
-        assert "script-src 'self' 'wasm-unsafe-eval'" in csp
-        assert "object-src 'none'" in csp
-        assert "'unsafe-inline'" not in csp
+        policy = dict(
+            d.strip().split(" ", 1)
+            for d in resp.headers["Content-Security-Policy"].split(";")
+        )
+        assert policy["default-src"] == "'self'"
+        assert policy["script-src"] == "'self'"
+        assert policy["object-src"] == "'none'"
+        assert "connect-src" not in policy  # falls back to default-src
         assert resp.headers["X-Content-Type-Options"] == "nosniff"
 
     # script-src 'self' blocks inline <script>, on* attributes, javascript:
