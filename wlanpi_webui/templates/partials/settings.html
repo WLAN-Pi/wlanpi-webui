@@ -116,7 +116,7 @@
     {% set persistent = journal_storage == "persistent" %}
     <ul class="uk-list uk-list-divider data-list">
       <li><span class="data-key">Keep system logs across reboots:</span>
-        {% if persistent %}On{% elif journal_storage == "volatile" %}Off{% else %}{{ journal_storage | capitalize }} (systemd decides){% endif %}</li>
+        {% if persistent %}On{% elif journal_storage == "volatile" %}Off{% elif journal_storage == "none" %}Off (the journal keeps no logs){% else %}{{ journal_storage | capitalize }} (systemd decides){% endif %}</li>
       {% if journal_usage is not none %}
       <li><span class="data-key">Journal size:</span> {{ journal_usage | filesizeformat }}</li>
       {% endif %}

@@ -353,6 +353,16 @@ class TestJournalStorage:
         assert "Auto (systemd decides)" in page
         assert "Set by:</span> systemd defaults" in page
 
+    def test_storage_none_is_off(self, client, monkeypatch):
+        page = self._page(
+            client,
+            monkeypatch,
+            {"storage": "none", "source": None, "disk_usage_bytes": 0},
+        )
+        assert "Off (the journal keeps no logs)" in page
+        assert "systemd decides" not in page
+        assert 'name="storage" value="persistent"' in page
+
     def test_core_unavailable_hides_the_toggle(self, client, monkeypatch):
         page = self._page(client, monkeypatch, None)
         assert "Log storage is unavailable" in page
