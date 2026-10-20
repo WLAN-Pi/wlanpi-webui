@@ -6,6 +6,7 @@ from flask import jsonify, redirect, render_template, request
 from wlanpi_webui.auth.auth import csrf_required, hx_post_button, service_toggle_anchor
 from wlanpi_webui.grafana import bp
 from wlanpi_webui.utils import (
+    app_url,
     is_htmx,
     start_stop_service,
     system_service_active_state,
@@ -18,7 +19,7 @@ GRAFANA_HEALTH_URL = "https://127.0.0.1:3000/api/health"
 
 @bp.route("/grafana_url")
 def grafana_url():
-    return redirect("/app/grafana")
+    return redirect(app_url(3443, "/app/grafana/"))
 
 
 # Grafana data-stream services: (unit, name, stop route, start route)
@@ -207,7 +208,7 @@ def grafana_service():
 
 @bp.route("/grafana")
 def grafana():
-    """The Grafana data-streams page (the Grafana UI itself lives at /app/grafana)."""
+    """The Grafana data-streams page (the Grafana UI itself is on port 3443)."""
     resp_data = {"grafana_data_streams": get_data_streams()}
     if is_htmx(request):
         return render_template("/partials/grafana.html", **resp_data)

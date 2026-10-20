@@ -6,6 +6,7 @@ from wlanpi_webui.auth.auth import csrf_required
 from wlanpi_webui.librespeed import bp
 from wlanpi_webui.utils import (
     SPEEDTEST_NOTE_MAX,
+    app_url,
     format_speedtest_tested_at,
     get_speedtest_result,
     is_htmx,
@@ -18,7 +19,7 @@ from wlanpi_webui.utils import (
 
 @bp.route("/speedtest/librespeed")
 def librespeed():
-    return redirect("/app/librespeed/librespeed_detailed.html")
+    return redirect(app_url(8443, "/app/librespeed/librespeed_detailed.html"))
 
 
 @bp.route("/speedtest/librespeed/details")
@@ -38,15 +39,16 @@ def old_report(rest=None):
 
 
 def _same_origin() -> bool:
-    """True when the request came from this origin, not another site.
+    """True when the request came from this origin, not another one.
 
     The LibreSpeed page is a static file with no CSRF token, so the report
     endpoint leans on the session cookie (already required) plus this check and
-    a JSON content type, which a cross-site form post cannot set.
+    a JSON content type, which a cross-site form post cannot set. Same-site is
+    not enough: Grafana and Cockpit are same-site on their own ports.
     """
     site = request.headers.get("Sec-Fetch-Site")
     if site:
-        return site in ("same-origin", "same-site", "none")
+        return site in ("same-origin", "none")
     origin = request.headers.get("Origin")
     if not origin:
         return True

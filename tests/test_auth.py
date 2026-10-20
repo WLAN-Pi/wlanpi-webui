@@ -719,7 +719,7 @@ class TestRequestHardening:
             for line in conf.splitlines()
             if "X-Frame-Options" in line and not line.strip().startswith("#")
         ]
-        # server level, plus the grafana and cockpit locations that override it
+        # server level on the WebUI, LibreSpeed and Grafana origins
         assert directives == ['add_header X-Frame-Options "SAMEORIGIN" always;'] * 3
 
     def test_non_ascii_csrf_is_rejected_not_500(self, client):

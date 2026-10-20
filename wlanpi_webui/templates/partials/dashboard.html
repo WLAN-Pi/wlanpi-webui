@@ -68,7 +68,7 @@
       <span class="launcher-tile-icon" uk-icon="icon: database; ratio: 1.8"></span>
       <span class="launcher-tile-label">Grafana</span>
     </a>{% endif %}
-    {% if cockpit_installed %}{{ launch("/app/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
+    {% if cockpit_installed %}{{ launch("/cockpit", "desktop", "Cockpit", new_tab=True) }}{% endif %}
     {{ packetstorm_tile(hidden=True) }}
     {% if beacon_armed %}{{ beacon_tile(hidden=True) }}{% endif %}
   </div>

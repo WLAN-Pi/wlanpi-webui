@@ -3,8 +3,10 @@ from unittest.mock import patch
 
 import pytest
 from flask import session
+from werkzeug.exceptions import BadRequest
 
 from wlanpi_webui.utils import (
+    app_url,
     get_safe_redirect_target,
     service_friendly_name,
     start_stop_service,
@@ -19,6 +21,27 @@ def app(tmp_path, monkeypatch):
     from wlanpi_webui.app import create_app
 
     return create_app()
+
+
+class TestAppUrl:
+    @pytest.mark.parametrize(
+        "host, origin",
+        [
+            ("192.0.2.1", "https://192.0.2.1:3443"),
+            ("192.0.2.1:8080", "https://192.0.2.1:3443"),
+            ("WLANPI.local", "https://wlanpi.local:3443"),
+            ("[fe80::1]", "https://[fe80::1]:3443"),
+            ("[fe80::1]:443", "https://[fe80::1]:3443"),
+        ],
+    )
+    def test_keeps_the_host_and_swaps_the_port(self, app, host, origin):
+        with app.test_request_context(headers={"Host": host}):
+            assert app_url(3443, "/x") == f"{origin}/x"
+
+    def test_bad_host_is_rejected(self, app):
+        with app.test_request_context(headers={"Host": "[fe80::1"}):
+            with pytest.raises(BadRequest):
+                app_url(3443)
 
 
 class TestGetSafeRedirectTarget:

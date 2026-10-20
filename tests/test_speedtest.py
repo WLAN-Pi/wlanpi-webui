@@ -102,6 +102,15 @@ class TestSpeedtestReport:
         )
         assert resp.status_code == 403
 
+    def test_post_rejects_another_port_on_this_host(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/app/librespeed/results",
+            json=PAYLOAD,
+            headers={"Sec-Fetch-Site": "same-site"},
+        )
+        assert resp.status_code == 403
+
     def test_requires_login(self, client):
         assert client.post("/app/librespeed/results", json=PAYLOAD).status_code in (
             302,

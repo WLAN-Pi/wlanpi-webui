@@ -96,8 +96,8 @@ class TestRedirects:
         _login(client, monkeypatch)
         resp = client.get("/speedtest/librespeed")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith(
-            "/app/librespeed/librespeed_detailed.html"
+        assert resp.headers["Location"] == (
+            "https://localhost:8443/app/librespeed/librespeed_detailed.html"
         )
 
     def test_speedtest_details_redirects_to_app(self, client, monkeypatch):
@@ -110,19 +110,19 @@ class TestRedirects:
         _login(client, monkeypatch)
         resp = client.get("/cockpit")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/app/cockpit")
+        assert resp.headers["Location"] == "https://localhost:9090/app/cockpit/"
 
     def test_grafana_url_redirects_to_app(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/grafana_url")
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/app/grafana")
+        assert resp.headers["Location"] == "https://localhost:3443/app/grafana/"
 
     def test_kismet_redirects_to_its_port(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/kismet")
         assert resp.status_code == 302
-        assert ":2501" in resp.headers["Location"]
+        assert resp.headers["Location"] == "http://localhost:2501/"
 
     def test_kismet_status_reports_running(self, client, monkeypatch):
         from wlanpi_webui.kismet import kismet as k
