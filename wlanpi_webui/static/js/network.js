@@ -220,17 +220,11 @@
     render();
   }
 
-  document.body.addEventListener("htmx:afterSwap", function (evt) {
-    if (evt.detail && evt.detail.target && evt.detail.target.id === "network-cards") {
-      sample();
-    }
-  });
-
-  // An unchanged poll comes back 204 and doesn't swap; the readings on the
-  // page are still current, so record them.
-  document.body.addEventListener("htmx:afterRequest", function (evt) {
-    var d = evt.detail;
-    if (d && d.xhr && d.xhr.status === 204 && d.target && d.target.id === "network-cards") {
+  // Also on an unchanged poll, which comes back 204 and doesn't swap: the
+  // readings on the page are still current, so record them. Not on errors.
+  document.addEventListener("htmx:finally:swap", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (ctx.target && ctx.target.id === "network-cards" && ctx.response.status < 400) {
       sample();
     }
   });

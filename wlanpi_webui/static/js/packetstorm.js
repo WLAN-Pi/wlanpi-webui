@@ -2132,7 +2132,7 @@
     }
   }
   function onBeforeSwap(evt) {
-    var target = evt.detail && evt.detail.target;
+    var target = evt.detail.ctx.target;
     if (target && (target.id === "content" || (target.closest && target.closest("#content")))) {
       teardown();
     }
@@ -2159,7 +2159,7 @@
   document.addEventListener("keyup", onKeyUp);
   document.addEventListener("visibilitychange", onVis);
   window.addEventListener("pagehide", teardown);
-  document.addEventListener("htmx:beforeSwap", onBeforeSwap);
+  document.addEventListener("htmx:before:swap", onBeforeSwap);
   overlay.addEventListener("click", onOverlayTap);
   document.addEventListener("keydown", startPlay);
   document.addEventListener("pointerdown", startPlay);
@@ -2172,7 +2172,7 @@
     document.removeEventListener("keyup", onKeyUp);
     document.removeEventListener("visibilitychange", onVis);
     window.removeEventListener("pagehide", teardown);
-    document.removeEventListener("htmx:beforeSwap", onBeforeSwap);
+    document.removeEventListener("htmx:before:swap", onBeforeSwap);
     overlay.removeEventListener("click", onOverlayTap);
     document.removeEventListener("keydown", startPlay);
     document.removeEventListener("pointerdown", startPlay);

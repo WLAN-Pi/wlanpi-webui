@@ -542,7 +542,7 @@
     } catch (e) {
       /* ignore */
     }
-    document.removeEventListener("htmx:beforeSwap", onBeforeSwap);
+    document.removeEventListener("htmx:before:swap", onBeforeSwap);
     window.removeEventListener("pagehide", teardown);
     if (window.__beacon === teardown) {
       window.__beacon = null;
@@ -550,7 +550,7 @@
   }
 
   function onBeforeSwap(evt) {
-    var target = evt.detail && evt.detail.target;
+    var target = evt.detail.ctx.target;
     if (
       target &&
       (target.id === "content" ||
@@ -650,7 +650,7 @@
     setupTouch();
     setupDpad();
     updateRotate();
-    document.addEventListener("htmx:beforeSwap", onBeforeSwap);
+    document.addEventListener("htmx:before:swap", onBeforeSwap);
     window.addEventListener("pagehide", teardown);
   }
 

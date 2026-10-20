@@ -35,7 +35,7 @@
 
   // The cookie-less first visit renders the light-theme label before the
   // stored theme is known; correct it as each page fragment loads.
-  document.addEventListener("htmx:load", syncThemeButtons);
+  document.addEventListener("htmx:after:process", syncThemeButtons);
 
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
@@ -141,7 +141,7 @@
     }
   }
 
-  document.addEventListener("htmx:pushedIntoHistory", function (evt) {
+  document.addEventListener("htmx:after:history:push", function (evt) {
     if (evt.detail && evt.detail.path) {
       syncNav(evt.detail.path);
     }
@@ -159,11 +159,25 @@
     true
   );
 
+  // htmx 4 still runs a response's swap events, out-of-band parts and
+  // <title> when noSwap (htmx-config) skips its main swap; htmx 2 skipped all
+  // of it. Stop them first (capture) so no handler treats a 204 or an error
+  // page as a swap. htmx:finally:swap still fires.
+  document.addEventListener(
+    "htmx:before:swap",
+    function (evt) {
+      if (evt.detail.ctx.swap !== "none") return;
+      evt.preventDefault();
+      evt.stopImmediatePropagation();
+    },
+    true
+  );
+
   // ---- Focus and announcements across swaps -----------------------------
   // An innerHTML swap replaces a placeholder's children but not the busy
   // flag on the placeholder itself.
-  document.addEventListener("htmx:afterSwap", function (evt) {
-    var t = evt.detail && evt.detail.target;
+  document.addEventListener("htmx:after:swap", function (evt) {
+    var t = evt.detail.ctx.target;
     if (t && t.getAttribute && t.getAttribute("aria-busy") === "true") {
       t.removeAttribute("aria-busy");
       if (t.getAttribute("aria-label") === "Loading") {
@@ -187,8 +201,8 @@
   // slot is enough even with several cards loading at once. Search from the
   // target's parent: an outerHTML swap detaches the target itself.
   var pendingFocus = null;
-  document.addEventListener("htmx:beforeSwap", function (evt) {
-    var t = evt.detail && evt.detail.target;
+  document.addEventListener("htmx:before:swap", function (evt) {
+    var t = evt.detail.ctx.target;
     var active = document.activeElement;
     var key =
       t && t.id !== "content" && active && active !== document.body && t.contains(active)
@@ -196,7 +210,7 @@
         : null;
     pendingFocus = key ? { key: key, scope: t.parentElement || document } : null;
   });
-  document.addEventListener("htmx:afterSwap", function () {
+  document.addEventListener("htmx:after:swap", function () {
     var p = pendingFocus;
     pendingFocus = null;
     var el = p && p.scope.querySelector(p.key);
@@ -219,9 +233,12 @@
   // screen readers announce the new page; unless page code (the CLI, games)
   // already focused something inside it. A nav tap on a phone also closes the
   // menu, which holds focus until it is fully hidden.
-  document.addEventListener("htmx:afterSettle", function (evt) {
-    var t = evt.detail && evt.detail.target;
-    if (!t || t.id !== "content") return;
+  document.addEventListener("htmx:after:swap", function (evt) {
+    var swapped = evt.detail.ctx.target;
+    if (!swapped || swapped.id !== "content") return;
+    // Back/Forward replaces #content itself (outerSync), so use the live one.
+    var t = document.getElementById("content");
+    if (!t) return;
     syncTitle();
 
     function focusHeading() {
@@ -246,6 +263,15 @@
     focusHeading();
   });
   window.addEventListener("load", syncTitle);
+
+  // Back/Forward swaps in a whole page: htmx applies its <title> after
+  // htmx:after:swap, and the nav outside #content isn't replaced.
+  document.addEventListener("htmx:finally:swap", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (!ctx.request.headers["HX-History-Restore-Request"]) return;
+    syncTitle();
+    syncNav(location.pathname);
+  });
 
   // ---- Feed polling (network cards, system health) ----------------------
   // htmx has no native pause/interval control, so intervals live here.
@@ -283,57 +309,47 @@
   }
 
   // Background polls tell the server so they don't count as activity and an
-  // open tab can still reach the idle timeout. htmx sends load and "every Ns"
-  // triggers with no event; interval refreshes mark theirs (wlanpiFire).
-  // An element's first request is its load; later ones are interval ticks.
-  var polledOnce = new WeakSet();
+  // open tab can still reach the idle timeout. htmx triggers them with a
+  // "load" or "every" event; interval refreshes mark theirs (wlanpiFire).
   // Last X-Wlanpi-Etag per request, echoed on the next tick so the server can
   // answer 204 (no swap) when the markup hasn't changed.
   var pollEtags = {};
 
-  function pollKey(d) {
-    var elt = d.elt;
-    var target = d.target || elt;
+  function pollKey(ctx) {
+    var elt = ctx.sourceElement;
+    var target = ctx.target || elt;
     return (
       (elt.getAttribute("hx-get") || "") + "|" + ((target && target.id) || "")
     );
   }
 
-  document.addEventListener("htmx:configRequest", function (evt) {
-    var d = evt.detail;
-    var te = d.triggeringEvent;
-    var trigger =
-      (d.elt && d.elt.getAttribute && d.elt.getAttribute("hx-trigger")) || "";
-    var interval = te
-      ? !!(te.detail && te.detail.wlanpiPoll)
-      : /\bevery\b/.test(trigger) &&
-        (!/\bload\b/.test(trigger) || polledOnce.has(d.elt));
-    var poll = interval || (!te && /\bload\b/.test(trigger));
-    if (d.elt) polledOnce.add(d.elt);
-    if (!poll) return;
+  document.addEventListener("htmx:config:request", function (evt) {
+    var ctx = evt.detail.ctx;
+    var te = ctx.sourceEvent || {};
+    var interval =
+      te.type === "every" || !!(te.detail && te.detail.wlanpiPoll);
+    if (!interval && te.type !== "load") return;
     // A hidden tab skips its ticks (saves the Pi and a PAN link); the next
     // tick after it's shown again catches up.
     if (interval && document.hidden) {
       evt.preventDefault();
       return;
     }
-    d.headers["X-Wlanpi-Poll"] = "1";
-    var etag = interval && pollEtags[pollKey(d)];
-    if (etag) d.headers["X-Wlanpi-Etag"] = etag;
+    ctx.request.headers["X-Wlanpi-Poll"] = "1";
+    var etag = interval && pollEtags[pollKey(ctx)];
+    if (etag) ctx.request.headers["X-Wlanpi-Etag"] = etag;
   });
 
-  // beforeSwap, not afterRequest: an outerHTML swap detaches the element, and
-  // events fired on it after that never reach document.
-  document.addEventListener("htmx:beforeSwap", function (evt) {
-    var d = evt.detail;
-    if (!d || !d.elt || !d.xhr || !d.elt.getAttribute) return;
+  document.addEventListener("htmx:after:request", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (!ctx.sourceElement || !ctx.sourceElement.getAttribute) return;
     // Any other response for the same request (a manual refresh) drops the
     // stored hash, so a poll can't skip a swap the DOM no longer matches.
-    var etag = d.xhr.getResponseHeader("X-Wlanpi-Etag");
-    var key = pollKey(d);
+    var etag = ctx.response.headers.get("X-Wlanpi-Etag");
+    var key = pollKey(ctx);
     if (etag) {
       pollEtags[key] = etag;
-    } else if (d.xhr.status !== 204) {
+    } else if (ctx.response.status !== 204) {
       delete pollEtags[key];
     }
   });
@@ -397,9 +413,9 @@
     return el.closest("[data-poll-id]");
   }
 
-  document.addEventListener("htmx:load", function (evt) {
-    var root = (evt.detail && evt.detail.elt) || document;
-    if (!root.querySelectorAll) return;
+  document.addEventListener("htmx:after:process", function (evt) {
+    var root = evt.target === document ? document.body : evt.target;
+    if (!root || !root.querySelectorAll) return;
     var found = root.matches && root.matches("[data-poll-id]") ? [root] : [];
     found = found.concat(
       Array.prototype.slice.call(root.querySelectorAll("[data-poll-id]"))
@@ -426,10 +442,14 @@
     });
   }
 
-  document.addEventListener("htmx:load", function (evt) {
-    var root = (evt.detail && evt.detail.elt) || document;
-    if (!root.querySelectorAll) return;
-    root.querySelectorAll("form[data-dirty-submit]").forEach(function (form) {
+  document.addEventListener("htmx:after:process", function (evt) {
+    var root = evt.target === document ? document.body : evt.target;
+    if (!root || !root.querySelectorAll) return;
+    var forms = Array.prototype.slice.call(
+      root.querySelectorAll("form[data-dirty-submit]")
+    );
+    if (root.matches && root.matches("form[data-dirty-submit]")) forms.push(root);
+    forms.forEach(function (form) {
       Array.prototype.forEach.call(form.elements, function (el) {
         if (el.tagName === "SELECT") el.dataset.initial = el.value;
       });
@@ -528,7 +548,7 @@
 
   // Lay out synchronously after a swap, before the browser paints, so cards
   // never flash in the row-aligned fallback grid; debounce only resize.
-  document.addEventListener("htmx:afterSwap", function () {
+  document.addEventListener("htmx:after:swap", function () {
     window.wlanpiMasonry();
   });
   window.addEventListener("load", function () {
@@ -720,13 +740,20 @@
   // data-confirm-ok on the element names the confirm button.
   // Not a data attribute: htmx history snapshots would restore it set.
   var confirming = new WeakSet();
+  // htmx 4 queues a second request from the same control before it asks for
+  // confirmation, so a double click is dropped here, not in htmx:confirm.
+  document.addEventListener("htmx:config:request", function (evt) {
+    var ctx = evt.detail.ctx;
+    if (ctx.confirm && confirming.has(ctx.sourceElement)) evt.preventDefault();
+  });
+  // Once preventDefault() runs, htmx waits until issueRequest() or
+  // dropRequest() is called; every path below calls exactly one of them.
   document.addEventListener("htmx:confirm", function (evt) {
-    var question = evt.detail && evt.detail.question;
+    var detail = evt.detail;
+    var question = detail.ctx.confirm;
     if (!question || !window.UIkit) return;
     evt.preventDefault();
-    // One dialog per control: a double click must not queue a second request.
-    var source = evt.detail.elt;
-    if (confirming.has(source)) return;
+    var source = detail.ctx.sourceElement;
     confirming.add(source);
     // UIkit inserts a string message as HTML; pass a node so the text is escaped.
     var body = document.createElement("div");
@@ -741,6 +768,7 @@
       });
     } catch (e) {
       confirming.delete(source);
+      detail.dropRequest();
       throw e;
     }
     // These guard reboots and deletions: start on Cancel, so a stray Enter
@@ -758,10 +786,12 @@
       function () {
         confirming.delete(source);
         // Navigated away (e.g. Back) while the dialog was open: drop it.
-        if (source.isConnected) evt.detail.issueRequest(true);
+        if (source.isConnected) detail.issueRequest();
+        else detail.dropRequest();
       },
       function () {
         confirming.delete(source);
+        detail.dropRequest();
       }
     );
   });
@@ -833,10 +863,11 @@
   // hook carries the active-alert keys for the navbar bell.
   // Listen on document: app.js loads in <head>, so document.body is still
   // null when this file runs. htmx events bubble.
-  document.addEventListener("htmx:afterSettle", function (evt) {
-    var xhr = evt.detail && evt.detail.xhr;
-    if (xhr && xhr.getResponseHeader) {
-      var alerts = xhr.getResponseHeader("X-Wlanpi-Alerts");
+  document.addEventListener("htmx:after:swap", function (evt) {
+    var response = evt.detail.ctx.response;
+    var headers = response && response.headers;
+    if (headers) {
+      var alerts = headers.get("X-Wlanpi-Alerts");
       if (alerts !== null) {
         var bell = document.getElementById("alerts-bell");
         if (bell) bell.dataset.alertKeys = alerts;
@@ -845,8 +876,8 @@
     }
     syncAlertsSeenFromPage();
 
-    if (!xhr || !xhr.getResponseHeader) return;
-    var raw = xhr.getResponseHeader("X-Wlanpi-Toast");
+    if (!headers) return;
+    var raw = headers.get("X-Wlanpi-Toast");
     if (!raw) return;
     var toast;
     try {
@@ -866,7 +897,7 @@
     }
   }
 
-  document.addEventListener("htmx:afterSwap", function () {
+  document.addEventListener("htmx:after:swap", function () {
     renderNotifications();
   });
   window.addEventListener("load", function () {
@@ -889,23 +920,21 @@
     window.location.assign("/login?reason=expired");
   }
 
-  document.addEventListener("htmx:beforeSwap", function (evt) {
-    var xhr = evt.detail && evt.detail.xhr;
-    if (!xhr) {
-      return;
-    }
-    var url = xhr.responseURL || "";
-    if (xhr.status === 401 || url.indexOf("/login") !== -1) {
-      evt.detail.shouldSwap = false;
+  // after:request runs for every response, before any swap or history push.
+  document.addEventListener("htmx:after:request", function (evt) {
+    var response = evt.detail.ctx.response;
+    var url = (response && response.raw && response.raw.url) || "";
+    if (response && (response.status === 401 || url.indexOf("/login") !== -1)) {
+      evt.preventDefault();
       redirectToLogin();
     }
   });
 
-  document.addEventListener("htmx:responseError", function (evt) {
-    var xhr = evt.detail && evt.detail.xhr;
-    if (xhr && xhr.status === 401) {
-      redirectToLogin();
-    }
+  // An error status isn't swapped (htmx-config noSwap); don't push its URL
+  // either, or the address bar would name a page that isn't showing.
+  document.addEventListener("htmx:before:history:update", function (evt) {
+    var response = evt.detail.response;
+    if (response && response.status >= 400) evt.preventDefault();
   });
 
   // Kismet opens in a new tab, but only when the service is up; otherwise
@@ -1000,7 +1029,7 @@
         window.htmx.ajax("GET", "/packetstorm", {
           target: "#content",
           swap: "innerHTML",
-          pushUrl: true,
+          push: "true",
         });
       }
     });
@@ -1065,7 +1094,7 @@
       });
     }
 
-    document.addEventListener("htmx:afterSwap", setupEgg);
+    document.addEventListener("htmx:after:swap", setupEgg);
     window.addEventListener("load", setupEgg);
     setupEgg();
   })();

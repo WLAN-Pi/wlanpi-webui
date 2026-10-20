@@ -436,7 +436,10 @@ def post_core_json(
 
 
 def is_htmx(request):
-    return request.headers.get("hx-request") == "true"
+    # Back/Forward asks for the full page and keeps only its #content.
+    return request.headers.get("hx-request") == "true" and not request.headers.get(
+        "hx-history-restore-request"
+    )
 
 
 def get_service_down_message(service: str):

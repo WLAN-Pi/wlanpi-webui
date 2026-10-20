@@ -305,9 +305,9 @@
     );
   }
 
-  document.addEventListener("htmx:afterSwap", init);
-  document.addEventListener("htmx:beforeSwap", function (evt) {
-    var target = evt.detail && evt.detail.target;
+  document.addEventListener("htmx:after:swap", init);
+  document.addEventListener("htmx:before:swap", function (evt) {
+    var target = evt.detail.ctx.target;
     if (
       target &&
       (target.id === "content" || (target.closest && target.closest("#content")))
