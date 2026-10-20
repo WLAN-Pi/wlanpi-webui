@@ -41,6 +41,13 @@ from wlanpi_webui.utils import boot_clock, make_api_request, read_boot_id
 
 CORE_PAM_URL = "https://127.0.0.1:31415/api/v1/auth/pam"
 CORE_PAM_CHANGE_URL = f"{CORE_PAM_URL}/change"
+CORE_PAM_ACCOUNT_URL = f"{CORE_PAM_URL}/account"
+
+# How often a signed-in session asks core whether its account may still sign
+# in (still in sudo, not locked or expired, same password). The check runs
+# on a request, so a page load can wait up to ACCOUNT_CHECK_TIMEOUT for core.
+ACCOUNT_CHECK_INTERVAL = 60
+ACCOUNT_CHECK_TIMEOUT = 3
 
 # Failed-login backoff. Each key gets FREE misses, then the wait doubles from
 # 1s up to MAX_DELAY. A key is forgotten after an hour without failures, and at
@@ -97,6 +104,7 @@ def init_auth(app) -> None:
         "stamp": None,
         "failures": {},
         "in_flight": set(),
+        "account_checked": {},
     }
 
 
@@ -217,6 +225,59 @@ def session_is_valid() -> bool:
         return False
     age = boot_clock() - record["created"]
     return bool(age <= current_app.config["MAX_SESSION_AGE"])
+
+
+def _account(username: str) -> tuple[bool, str | None] | None:
+    """Core's (active, password fingerprint) for `username`; None if unknown."""
+    try:
+        data = make_api_request(
+            "POST",
+            CORE_PAM_ACCOUNT_URL,
+            json_body={"username": username},
+            timeout=ACCOUNT_CHECK_TIMEOUT,
+        ).json()
+    except (requests.RequestException, ValueError):
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("active"), bool):
+        return None
+    fingerprint = data.get("password_fingerprint")
+    return data["active"], fingerprint if isinstance(fingerprint, str) else None
+
+
+def account_still_allowed() -> bool:
+    """False once the session's account left sudo, was locked or expired, or
+    had its password changed (also outside the WebUI, e.g. passwd over SSH).
+
+    Asks core at most every ACCOUNT_CHECK_INTERVAL seconds per session. Fails
+    open: if core can't answer, the session carries on until the next check.
+    The time of the last check stays in process memory, not the cookie: nginx
+    auth_request subrequests never pass a refreshed cookie back to the browser.
+    """
+    sid = session.get("sid")
+    now = boot_clock()
+    state = _state()
+    with state["lock"]:
+        checked = state["account_checked"]
+        if now - checked.get(sid, float("-inf")) < ACCOUNT_CHECK_INTERVAL:
+            return True
+        registered = _sessions()
+        for gone in [s for s in checked if s not in registered]:
+            del checked[gone]
+        checked[sid] = now  # claimed: parallel requests skip the check
+    status = _account(session["user"])
+    if status is None:
+        return True
+    active, fingerprint = status
+    if not active:
+        return False
+    known = _sessions().get(sid, {}).get("fingerprint")
+    if known is None and fingerprint is not None:
+        # Core couldn't answer at sign-in: remember the first fingerprint seen.
+        with _update_sessions() as sessions:
+            if sid in sessions:
+                sessions[sid] = {**sessions[sid], "fingerprint": fingerprint}
+        return True
+    return known is None or known == fingerprint
 
 
 def session_registered(sid: str | None) -> bool:
@@ -435,15 +496,23 @@ def _login_session(username: str) -> None:
     """Start a fresh session and register it server-side."""
     session.clear()
     sid = secrets.token_urlsafe(32)
+    account = _account(username)
     now = boot_clock()
     with _update_sessions() as sessions:
-        sessions[sid] = {"user": username, "created": now}
+        sessions[sid] = {
+            "user": username,
+            "created": now,
+            # Server-side only: never put it in the cookie.
+            "fingerprint": account[1] if account else None,
+        }
     session["sid"] = sid
     session["user"] = username
     session["csrf_token"] = secrets.token_urlsafe(32)
     session["boot_id"] = read_boot_id()
     session["last_seen"] = now
     session.permanent = True
+    with _state()["lock"]:
+        _state()["account_checked"][sid] = now
 
 
 def _revoke_user_sessions(username: str) -> None:

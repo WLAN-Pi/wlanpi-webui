@@ -336,7 +336,8 @@ class TestLoginThrottle:
         calls = []
 
         def fake(*args, **kwargs):
-            calls.append(kwargs["json_body"]["username"])
+            if kwargs["json_body"].keys() != {"username"}:  # not the account check
+                calls.append(kwargs["json_body"]["username"])
             return FakeResponse({"status": status})
 
         monkeypatch.setattr(auth, "make_api_request", fake)
