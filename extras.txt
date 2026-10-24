@@ -8,7 +8,7 @@ ast-serialize==0.11.2
     # via mypy
 cachetools==7.2.0
     # via tox
-certifi==2026.10.18
+certifi==2026.10.19
     # via requests
 charset-normalizer==3.5.2
     # via requests
