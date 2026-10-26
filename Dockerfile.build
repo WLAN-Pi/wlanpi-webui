@@ -1,11 +1,3 @@
-# Dockerfile for building the wlanpi-webui Debian package on Debian trixie.
-#
-#   podman build -f Dockerfile.build -t wlanpi-webui-builder .
-#   podman run --rm -v $(pwd):/work -w /work wlanpi-webui-builder
-#
-# Works with docker too (swap podman -> docker). build-package-native.sh
-# auto-detects podman or docker.
-
 FROM debian:trixie
 
 RUN apt-get update && \
