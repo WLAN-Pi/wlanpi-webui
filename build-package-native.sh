@@ -3,11 +3,10 @@
 # Build wlanpi-webui Debian package in a container (podman or docker)
 #
 # Usage: ./build-package-native.sh [SUITE]
-#   SUITE   Debian release to build for: bullseye | bookworm | trixie (default: trixie)
+#   SUITE defaults to trixie.
 #
 # The container engine is auto-detected (podman preferred, then docker).
-# Override it explicitly with CONTAINER_ENGINE, e.g.:
-#   CONTAINER_ENGINE=docker ./build-package-native.sh trixie
+# Override it explicitly with CONTAINER_ENGINE.
 #
 set -e
 
@@ -59,7 +58,6 @@ echo "Step 2: Building Debian package in container..."
 echo "(This may take several minutes...)"
 echo ""
 
-# Run the build in container
 "$ENGINE" run --rm \
     -v "$(pwd)":/work:Z \
     -w /work \
@@ -76,14 +74,11 @@ dpkg-buildpackage -us -uc -b
 
 echo ""
 echo "Copying packages from container to host..."
-cp -v /*.deb /work/ 2>/dev/null || echo "No .deb files found in container root"
+cp -v ../*.deb /work/ 2>/dev/null || echo "No .deb files found"
 
 echo ""
 echo "Creating build manifest..."
-# List only the packages built in this run. The container root holds just the
-# output of this build; globbing /work would also match stale .deb files from
-# earlier builds and deploy the wrong version.
-ls -1 /*.deb 2>/dev/null | grep -v dbgsym | xargs -r -n1 basename > /work/.build-manifest.txt || true
+ls -1 ../*.deb 2>/dev/null | grep -v dbgsym | xargs -r -n1 basename > /work/.build-manifest.txt || true
 
 echo ""
 echo "Build complete!"

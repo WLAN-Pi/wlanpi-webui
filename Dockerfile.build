@@ -1,6 +1,6 @@
 # Dockerfile for building wlanpi-webui Debian package
 #
-# Build for a specific Debian release (bullseye, bookworm, trixie) via SUITE:
+# Build for a specific Debian release via SUITE (default trixie):
 #   podman build -f Dockerfile.build --build-arg SUITE=trixie -t wlanpi-webui-builder .
 #   podman run --rm -v $(pwd):/work -w /work wlanpi-webui-builder
 #
