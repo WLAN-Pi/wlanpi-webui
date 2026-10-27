@@ -3,12 +3,10 @@
 # Build wlanpi-webui Debian package in a container (podman or docker)
 #
 # Usage: ./build-package-native.sh [SUITE]
-#   SUITE   Debian release to build for (default: trixie). Override when
-#           packaging locally against a newer Debian release.
+#   SUITE defaults to trixie.
 #
 # The container engine is auto-detected (podman preferred, then docker).
-# Override it explicitly with CONTAINER_ENGINE, e.g.:
-#   CONTAINER_ENGINE=docker ./build-package-native.sh trixie
+# Override it explicitly with CONTAINER_ENGINE.
 #
 set -e
 
