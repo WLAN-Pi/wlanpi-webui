@@ -1,14 +1,24 @@
 #!/bin/bash
+#
+# Build wlanpi-webui Debian package in a container (podman or docker)
+#
+# Usage: ./build-package-native.sh [SUITE]
+#   SUITE   Debian release to build for (default: trixie). Override when
+#           packaging locally against a newer Debian release.
+#
+# The container engine is auto-detected (podman preferred, then docker).
+# Override it explicitly with CONTAINER_ENGINE, e.g.:
+#   CONTAINER_ENGINE=docker ./build-package-native.sh trixie
+#
 set -e
-
-if [ "${1:-trixie}" != "trixie" ]; then
-    echo "ERROR: Debian trixie is the only suite." >&2
-    exit 1
-fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Debian release to build for
+SUITE="${1:-trixie}"
+
+# Detect container engine (override with CONTAINER_ENGINE)
 if [ -n "$CONTAINER_ENGINE" ]; then
     ENGINE="$CONTAINER_ENGINE"
 elif command -v podman &> /dev/null; then
@@ -26,8 +36,12 @@ if ! command -v "$ENGINE" &> /dev/null; then
     exit 1
 fi
 
-IMAGE="wlanpi-webui-builder:trixie"
+IMAGE="wlanpi-webui-builder:${SUITE}"
 
+# Clean up old build manifest, stale build trees, and previously built
+# packages. Without this, setuptools reuses build/lib and repackages files that
+# were deleted or renamed in the source tree, and stale .deb files in the repo
+# root get picked up by the manifest and deployed.
 rm -f .build-manifest.txt
 rm -rf build .pybuild
 rm -f wlanpi-webui*.deb
@@ -35,11 +49,11 @@ rm -f wlanpi-webui*.deb
 echo "========================================="
 echo "Building wlanpi-webui Debian Package"
 echo "  engine: $ENGINE"
-echo "  suite:  trixie"
+echo "  suite:  $SUITE"
 echo "========================================="
 
 echo "Step 1: Building container image..."
-"$ENGINE" build -f Dockerfile.build -t "$IMAGE" .
+"$ENGINE" build -f Dockerfile.build --build-arg SUITE="$SUITE" -t "$IMAGE" .
 
 echo ""
 echo "Step 2: Building Debian package in container..."

@@ -1,4 +1,15 @@
-FROM debian:trixie
+# Dockerfile for building wlanpi-webui Debian package
+#
+# Build for a specific Debian release via SUITE (default trixie):
+#   podman build -f Dockerfile.build --build-arg SUITE=trixie -t wlanpi-webui-builder .
+#   podman run --rm -v $(pwd):/work -w /work wlanpi-webui-builder
+#
+# Works with docker too (swap podman -> docker). The build-package-native.sh
+# helper auto-detects podman or docker and passes SUITE through for you.
+
+ARG SUITE=trixie
+
+FROM debian:${SUITE}
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
