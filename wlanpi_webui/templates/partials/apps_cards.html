@@ -24,7 +24,7 @@
           <span class="app-icon" uk-icon="icon: users; ratio: 1.6"></span>
           <div>
             <h2 class="uk-card-title uk-margin-remove-bottom">Profiler</h2>
-            <p class="app-status {{ profiler_state[1] }}">{{ profiler_state[0] }}</p>
+            <p class="app-status {{ profiler_state_class }}">{{ profiler_state_label }}</p>
           </div>
         </div>
         <p class="uk-text-meta">Determine wireless client capabilities from association frames.</p>
@@ -49,7 +49,7 @@
           <span class="app-icon" uk-icon="icon: receiver; ratio: 1.6"></span>
           <div>
             <h2 class="uk-card-title uk-margin-remove-bottom">Kismet</h2>
-            <p class="app-status {{ kismet_state[1] }}">{{ kismet_state[0] }}</p>
+            <p class="app-status {{ kismet_state_class }}">{{ kismet_state_label }}</p>
           </div>
         </div>
         <p class="uk-text-meta">Wi-Fi, Bluetooth, RF, and more.</p>

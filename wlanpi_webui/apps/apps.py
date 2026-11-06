@@ -19,6 +19,8 @@ def apps_cards():
     """Render the app cards (service checks, may be slow)."""
     profiler = system_service_state("wlanpi-profiler")
     kismet = system_service_state("kismet")
+    profiler_label, profiler_class = SERVICE_STATES[profiler]
+    kismet_label, kismet_class = SERVICE_STATES[kismet]
     # systemd reports Grafana active long before it listens (about a minute
     # of migrations on first start), so use the state that probes the port.
     grafana = grafana_state()["state"]
@@ -26,13 +28,15 @@ def apps_cards():
 
     resp_data = {
         "profiler_running": profiler == "running",
-        "profiler_state": SERVICE_STATES[profiler],
+        "profiler_state_label": profiler_label,
+        "profiler_state_class": profiler_class,
         "profiler_settling": profiler in ("starting", "stopping"),
         "profiler_toggle": service_toggle_anchor(
             profiler, "/startprofiler", "/stopprofiler"
         ),
         "kismet_running": kismet == "running",
-        "kismet_state": SERVICE_STATES[kismet],
+        "kismet_state_label": kismet_label,
+        "kismet_state_class": kismet_class,
         "kismet_settling": kismet in ("starting", "stopping"),
         "kismet_toggle": service_toggle_anchor(kismet, "/startkismet", "/stopkismet"),
         "grafana_state": grafana,

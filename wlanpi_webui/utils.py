@@ -523,7 +523,6 @@ def system_service_active_state(service, timeout=5) -> str:
     return (result.stdout or "").strip() or "unknown"
 
 
-# State -> (pill label, pill class) for a service card.
 SERVICE_STATES = {
     "running": ("Running", "is-on"),
     "starting": ("Starting", "is-warn"),
