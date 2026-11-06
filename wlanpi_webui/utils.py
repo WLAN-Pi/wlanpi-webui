@@ -539,7 +539,6 @@ _ACTIVE_TO_STATE = {
 }
 
 
-# How long start_stop_service waits for the unit to leave its old state.
 SERVICE_SETTLE_POLLS = 8
 SERVICE_SETTLE_INTERVAL = 0.25
 

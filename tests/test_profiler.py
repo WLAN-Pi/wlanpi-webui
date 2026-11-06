@@ -331,7 +331,6 @@ class TestProfilerSession:
     def test_systemd_state_drives_badge_and_toggle(
         self, client, monkeypatch, profiler_root, path, state, badge, toggle
     ):
-        # A live session file lags the unit; stopping and failed must win over it.
         if state in ("stopping", "failed", "running"):
             _write_session(
                 profiler_root,
