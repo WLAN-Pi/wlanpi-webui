@@ -420,16 +420,27 @@ def _profiler_pid_alive(pid: Any) -> bool:
     return any(os.path.basename(arg) == b"profiler" for arg in argv)
 
 
+def _mtime_ns(path: str) -> int:
+    try:
+        return os.stat(path).st_mtime_ns
+    except OSError:
+        return 0
+
+
 def get_profiler_session(unit_state: str) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
     The /run files survive a killed profiler, so "running" counts only while
     its pid is a profiler; until the next run rewrites them it is "starting".
-    info.json is written only after "running", so under "starting" it is from
-    the previous run.
+    info.json is written right after "running", so one older than the status
+    file is from the previous run.
     """
-    status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
-    info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
+    status_path = current_app.config["PROFILER_STATUS_PATH"]
+    info_path = current_app.config["PROFILER_INFO_PATH"]
+    status = _read_json(status_path) or {}
+    info = _read_json(info_path) or {}
+    if info and _mtime_ns(info_path) < _mtime_ns(status_path):
+        info = {}
     state = str(status.get("state") or "").lower()
     pid_alive = _profiler_pid_alive(status.get("pid"))
     if state == "running" and not pid_alive:
@@ -522,7 +533,9 @@ def profiler_service_view(session: dict[str, Any], unit_state: str) -> dict[str,
             "state_label": "Stopping",
             "message": "Profiler is stopping...",
         }
-    if (up and session.get("state") == "failed") or (not up and unit_state == "failed"):
+    if (up and unit_state != "starting" and session.get("state") == "failed") or (
+        not up and unit_state == "failed"
+    ):
         return {
             "state_class": "is-bad",
             "state_label": "Failed",

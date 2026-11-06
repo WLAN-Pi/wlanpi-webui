@@ -408,6 +408,39 @@ class TestProfilerSession:
         assert b"Profiler is starting..." in resp.data
         assert b"Profiler 573" not in resp.data
 
+    def test_info_older_than_status_is_previous_run(
+        self, client, monkeypatch, profiler_root
+    ):
+        _write_session(
+            profiler_root,
+            {"state": "running", "pid": 4242},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        info = profiler_root.parent / "info.json"
+        os.utime(info, ns=(1, 1))
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Profiler 573" not in resp.data
+
+    def test_unit_starting_hides_previous_failure(
+        self, client, monkeypatch, profiler_root
+    ):
+        _write_session(profiler_root, {"state": "failed"}, {})
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "starting",
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Profiler is starting..." in resp.data
+        assert b"Profiler failed." not in resp.data
+
     def test_dead_cli_pid_is_stale(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
@@ -764,6 +797,27 @@ class TestProfilerCliRun:
             headers={"hx-request": "true"},
         )
         assert resp.status_code == 302
+        assert calls == []
+        with client.session_transaction() as sess:
+            assert "command line" in sess["wlanpi_toast"]["message"]
+
+    def test_start_refused_while_cli_starting(self, client, monkeypatch, profiler_root):
+        calls = []
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.start_stop_service",
+            lambda task, service: calls.append((task, service)) or ("", 204),
+        )
+        _write_session(
+            profiler_root,
+            {"state": "starting", "pid": 4242, "startup_method": "cli"},
+            {},
+        )
+        _login(client, monkeypatch)
+        client.post(
+            "/startprofiler",
+            data={"csrf_token": _csrf(client)},
+            headers={"hx-request": "true"},
+        )
         assert calls == []
         with client.session_transaction() as sess:
             assert "command line" in sess["wlanpi_toast"]["message"]
