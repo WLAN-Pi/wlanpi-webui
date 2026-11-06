@@ -3,6 +3,7 @@ from flask import render_template, request
 from wlanpi_webui.apps import bp
 from wlanpi_webui.auth.auth import service_toggle_anchor
 from wlanpi_webui.grafana.grafana import GRAFANA_STATES, grafana_state, grafana_toggle
+from wlanpi_webui.profiler.profiler import get_profiler_session, profiler_toggle
 from wlanpi_webui.utils import SERVICE_STATES, is_htmx, system_service_state
 
 
@@ -18,6 +19,10 @@ def apps():
 def apps_cards():
     """Render the app cards (service checks, may be slow)."""
     profiler = system_service_state("wlanpi-profiler")
+    profiler_session = get_profiler_session(profiler)
+    toggle = profiler_toggle(profiler, profiler_session)
+    if profiler_session["up"] and profiler in ("stopped", "failed"):
+        profiler = "running" if profiler_session["state"] == "running" else "starting"
     kismet = system_service_state("kismet")
     profiler_label, profiler_class = SERVICE_STATES[profiler]
     kismet_label, kismet_class = SERVICE_STATES[kismet]
@@ -31,9 +36,7 @@ def apps_cards():
         "profiler_state_label": profiler_label,
         "profiler_state_class": profiler_class,
         "profiler_settling": profiler in ("starting", "stopping"),
-        "profiler_toggle": service_toggle_anchor(
-            profiler, "/startprofiler", "/stopprofiler"
-        ),
+        "profiler_toggle": toggle,
         "kismet_running": kismet == "running",
         "kismet_state_label": kismet_label,
         "kismet_state_class": kismet_class,

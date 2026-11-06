@@ -410,12 +410,45 @@ def _qr_escape(value: str) -> str:
     return "".join(f"\\{ch}" if ch in '\\;,:"' else ch for ch in value)
 
 
-def get_profiler_session() -> dict[str, Any]:
-    """Live profiler session from the runtime files, else the last session."""
-    status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
-    info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
+def _profiler_pid_alive(pid: Any) -> bool:
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    try:
+        argv = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
+    except OSError:
+        return False
+    return any(os.path.basename(arg) == b"profiler" for arg in argv)
+
+
+def _mtime_ns(path: str) -> int:
+    try:
+        return os.stat(path).st_mtime_ns
+    except OSError:
+        return 0
+
+
+def get_profiler_session(unit_state: str) -> dict[str, Any]:
+    """Live profiler session from the runtime files, else the last session.
+
+    The /run files survive a killed profiler, so "running" counts only while
+    its pid is a profiler; until the next run rewrites them it is "starting".
+    info.json is written right after "running", so one older than the status
+    file is from the previous run.
+    """
+    status_path = current_app.config["PROFILER_STATUS_PATH"]
+    info_path = current_app.config["PROFILER_INFO_PATH"]
+    status = _read_json(status_path) or {}
+    info = _read_json(info_path) or {}
+    if info and _mtime_ns(info_path) < _mtime_ns(status_path):
+        info = {}
     state = str(status.get("state") or "").lower()
-    if state in ("running", "starting") and info:
+    pid_alive = _profiler_pid_alive(status.get("pid"))
+    if state == "running" and not pid_alive:
+        state = "starting"
+    up = unit_state in ("running", "starting", "stopping") or (
+        status.get("startup_method") == "cli" and pid_alive
+    )
+    if up and state == "running" and info:
         interfaces = info.get("interfaces") or {}
         ssid = str(info.get("ssid") or "")
         passphrase = str(info.get("passphrase") or "")
@@ -426,8 +459,9 @@ def get_profiler_session() -> dict[str, Any]:
         )
         return {
             "live": True,
+            "up": True,
             "state": state,
-            "state_class": "is-on" if state == "running" else "is-warn",
+            "state_class": "is-on",
             "profiler_version": str(info.get("profiler_version") or ""),
             "mode": str(info.get("mode") or ""),
             "phy": str(info.get("phy") or ""),
@@ -460,7 +494,8 @@ def get_profiler_session() -> dict[str, Any]:
     exit_status = str(exit_info.get("status") or "")
     return {
         "live": False,
-        "state": state or "stopped",
+        "up": up,
+        "state": state,
         "state_class": "is-bad"
         if exit_status in ("failed", "interrupted")
         else "is-off",
@@ -485,43 +520,58 @@ def get_profiler_session() -> dict[str, Any]:
     }
 
 
-def profiler_service_view(session: dict[str, Any], state: str) -> dict[str, str]:
+def profiler_service_view(session: dict[str, Any], unit_state: str) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    "Up" comes from the profiler's own status file. The systemd state covers
-    the window between the unit starting and the profiler writing that file,
-    which is what keeps the bar from regressing to "stopped" on the next poll.
-    Stopping and failed win over the status file, which lags the unit.
+    The status file has no stopping state, and profilers before 2.0 write no
+    status file, so a missing one means Running rather than stuck on Starting.
     """
-    if state == "stopping":
+    up = session.get("up")
+    if unit_state == "stopping":
         return {
             "state_class": "is-warn",
             "state_label": "Stopping",
             "message": "Profiler is stopping...",
         }
-    if state == "failed":
+    if (up and unit_state != "starting" and session.get("state") == "failed") or (
+        not up and unit_state == "failed"
+    ):
         return {
             "state_class": "is-bad",
             "state_label": "Failed",
             "message": "Profiler failed. Start it again or check its logs.",
         }
-    if session.get("live") and session.get("state") == "running":
+    if not up:
         return {
-            "state_class": "is-on",
-            "state_label": "Running",
-            "message": "Profiler is up and ready to capture association requests.",
+            "state_class": "is-off",
+            "state_label": "Stopped",
+            "message": "Start the profiler to begin capturing.",
         }
-    if session.get("state") == "starting" or state in ("running", "starting"):
+    if unit_state == "starting" or session.get("state") not in ("running", ""):
         return {
             "state_class": "is-warn",
             "state_label": "Starting",
             "message": "Profiler is starting...",
         }
     return {
-        "state_class": "is-off",
-        "state_label": "Stopped",
-        "message": "Start the profiler to begin capturing.",
+        "state_class": "is-on",
+        "state_label": "Running",
+        "message": "Profiler is up and ready to capture association requests.",
     }
+
+
+def profiler_toggle(unit_state: str, session: dict[str, Any]) -> str:
+    """Start/Stop button for the profiler unit.
+
+    systemd cannot stop a CLI run, and starting the unit during one would
+    launch a second profiler, so a CLI run gets a disabled Start.
+    """
+    if unit_state in ("stopped", "failed") and session.get("up"):
+        return (
+            '<button class="uk-button uk-button-default" type="button" disabled '
+            'title="Profiler is running from the command line">Start</button>'
+        )
+    return service_toggle_anchor(unit_state, "/startprofiler", "/stopprofiler")
 
 
 def get_reports() -> list[dict[str, str]]:
@@ -669,35 +719,31 @@ def capabilities():
     )
 
 
-def profiler_toggle(state: str) -> str:
-    return service_toggle_anchor(state, "/startprofiler", "/stopprofiler")
-
-
 @bp.route("/profiler/session")
 def profiler_session():
     """Live profiler session data (htmx partial)"""
-    session = get_profiler_session()
     state = system_service_state("wlanpi-profiler")
+    session = get_profiler_session(state)
     return render_template(
         "/partials/profiler_session.html",
         session=session,
         service=profiler_service_view(session, state),
-        profiler_toggle=profiler_toggle(state),
+        profiler_toggle=profiler_toggle(state, session),
     )
 
 
 @bp.route("/profiler/profiles")
 def profiler():
     """Profiles"""
-    session = get_profiler_session()
     state = system_service_state("wlanpi-profiler")
+    session = get_profiler_session(state)
     resp_data = {
         "content": "",
         "show_capabilities": True,
         "getting_started": getting_started,
         "profiler_running": state == "running",
         "service": profiler_service_view(session, state),
-        "profiler_toggle": profiler_toggle(state),
+        "profiler_toggle": profiler_toggle(state, session),
         "reports": get_reports(),
     }
     if is_htmx(request):
@@ -722,5 +768,8 @@ def get_profiler_results(filename):
 @csrf_required
 def start_stop_profiler(task):
     if is_htmx(request):
+        if task == "start" and get_profiler_session("stopped")["up"]:
+            queue_toast("Profiler is already running from the command line.", "warning")
+            return redirect(get_safe_referrer_target())
         return start_stop_service(task, "wlanpi-profiler")
     return "", 204
