@@ -512,9 +512,8 @@ def get_profiler_session(unit_state: str) -> dict[str, Any]:
 def profiler_service_view(session: dict[str, Any], unit_state: str) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    Stopping comes from systemd, which leads the status file. Profilers before
-    2.0 write no status file, so a missing one means Running rather than stuck
-    on Starting.
+    The status file has no stopping state, and profilers before 2.0 write no
+    status file, so a missing one means Running rather than stuck on Starting.
     """
     up = session.get("up")
     if unit_state == "stopping":
