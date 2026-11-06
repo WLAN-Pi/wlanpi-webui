@@ -174,14 +174,8 @@ def grafana_state() -> dict:
 
 def grafana_toggle(state: str) -> str:
     """Start/Stop control for the current state, disabled mid-transition."""
-    if state == "stopped":
-        return service_toggle_anchor(False, "/startgrafana", "/stopgrafana")
-    if state in ("running", "waiting"):
-        return service_toggle_anchor(True, "/startgrafana", "/stopgrafana")
-    label = "Starting…" if state == "starting" else "Stopping…"
-    return (
-        f'<button class="uk-button uk-button-default" type="button" '
-        f"disabled>{label}</button>"
+    return service_toggle_anchor(
+        "running" if state == "waiting" else state, "/startgrafana", "/stopgrafana"
     )
 
 

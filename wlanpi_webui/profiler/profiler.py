@@ -24,6 +24,7 @@ from wlanpi_webui.utils import (
     queue_toast,
     start_stop_service,
     system_service_running_state,
+    system_service_state,
 )
 
 getting_started = """
@@ -484,20 +485,33 @@ def get_profiler_session() -> dict[str, Any]:
     }
 
 
-def profiler_service_view(session: dict[str, Any], running: bool) -> dict[str, str]:
+def profiler_service_view(session: dict[str, Any], state: str) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
     "Up" comes from the profiler's own status file. The systemd state covers
     the window between the unit starting and the profiler writing that file,
     which is what keeps the bar from regressing to "stopped" on the next poll.
+    Stopping and failed win over the status file, which lags the unit.
     """
+    if state == "stopping":
+        return {
+            "state_class": "is-warn",
+            "state_label": "Stopping",
+            "message": "Profiler is stopping...",
+        }
+    if state == "failed":
+        return {
+            "state_class": "is-bad",
+            "state_label": "Failed",
+            "message": "Profiler failed. Start it again or check its logs.",
+        }
     if session.get("live") and session.get("state") == "running":
         return {
             "state_class": "is-on",
             "state_label": "Running",
             "message": "Profiler is up and ready to capture association requests.",
         }
-    if session.get("state") == "starting" or running:
+    if session.get("state") == "starting" or state in ("running", "starting"):
         return {
             "state_class": "is-warn",
             "state_label": "Starting",
@@ -655,16 +669,20 @@ def capabilities():
     )
 
 
+def profiler_toggle(state: str) -> str:
+    return service_toggle_anchor(state, "/startprofiler", "/stopprofiler")
+
+
 @bp.route("/profiler/session")
 def profiler_session():
     """Live profiler session data (htmx partial)"""
     session = get_profiler_session()
+    state = system_service_state("wlanpi-profiler")
     return render_template(
         "/partials/profiler_session.html",
         session=session,
-        service=profiler_service_view(
-            session, system_service_running_state("wlanpi-profiler", quiet=True)
-        ),
+        service=profiler_service_view(session, state),
+        profiler_toggle=profiler_toggle(state),
     )
 
 
@@ -672,16 +690,14 @@ def profiler_session():
 def profiler():
     """Profiles"""
     session = get_profiler_session()
-    profiler_running = system_service_running_state("wlanpi-profiler")
+    state = system_service_state("wlanpi-profiler")
     resp_data = {
         "content": "",
         "show_capabilities": True,
         "getting_started": getting_started,
-        "profiler_running": profiler_running,
-        "service": profiler_service_view(session, profiler_running),
-        "profiler_toggle": service_toggle_anchor(
-            profiler_running, "/startprofiler", "/stopprofiler"
-        ),
+        "profiler_running": state == "running",
+        "service": profiler_service_view(session, state),
+        "profiler_toggle": profiler_toggle(state),
         "reports": get_reports(),
     }
     if is_htmx(request):

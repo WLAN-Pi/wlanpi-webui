@@ -3,11 +3,7 @@ from flask import render_template, request
 from wlanpi_webui.apps import bp
 from wlanpi_webui.auth.auth import service_toggle_anchor
 from wlanpi_webui.grafana.grafana import GRAFANA_STATES, grafana_state, grafana_toggle
-from wlanpi_webui.utils import (
-    is_htmx,
-    system_service_running_state,
-    systemd_service_message,
-)
+from wlanpi_webui.utils import SERVICE_STATES, is_htmx, system_service_state
 
 
 @bp.route("/apps")
@@ -21,26 +17,28 @@ def apps():
 @bp.route("/apps/cards")
 def apps_cards():
     """Render the app cards (service checks, may be slow)."""
-    profiler_running = system_service_running_state("wlanpi-profiler")
-    kismet_running = system_service_running_state("kismet")
+    profiler = system_service_state("wlanpi-profiler")
+    kismet = system_service_state("kismet")
+    profiler_label, profiler_class = SERVICE_STATES[profiler]
+    kismet_label, kismet_class = SERVICE_STATES[kismet]
     # systemd reports Grafana active long before it listens (about a minute
     # of migrations on first start), so use the state that probes the port.
     grafana = grafana_state()["state"]
     grafana_label, grafana_class, _ = GRAFANA_STATES[grafana]
 
     resp_data = {
-        "profiler_running": profiler_running,
-        "profiler_status": systemd_service_message("wlanpi-profiler").replace(
-            "wlanpi-", ""
-        ),
+        "profiler_running": profiler == "running",
+        "profiler_state_label": profiler_label,
+        "profiler_state_class": profiler_class,
+        "profiler_settling": profiler in ("starting", "stopping"),
         "profiler_toggle": service_toggle_anchor(
-            profiler_running, "/startprofiler", "/stopprofiler"
+            profiler, "/startprofiler", "/stopprofiler"
         ),
-        "kismet_running": kismet_running,
-        "kismet_status": systemd_service_message("kismet"),
-        "kismet_toggle": service_toggle_anchor(
-            kismet_running, "/startkismet", "/stopkismet"
-        ),
+        "kismet_running": kismet == "running",
+        "kismet_state_label": kismet_label,
+        "kismet_state_class": kismet_class,
+        "kismet_settling": kismet in ("starting", "stopping"),
+        "kismet_toggle": service_toggle_anchor(kismet, "/startkismet", "/stopkismet"),
         "grafana_state": grafana,
         "grafana_state_label": grafana_label,
         "grafana_state_class": grafana_class,

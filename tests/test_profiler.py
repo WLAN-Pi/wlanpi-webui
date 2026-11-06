@@ -49,6 +49,10 @@ def app(profiler_root, monkeypatch):
         "wlanpi_webui.profiler.profiler.system_service_running_state",
         lambda service, quiet=False: False,
     )
+    monkeypatch.setattr(
+        "wlanpi_webui.profiler.profiler.system_service_state",
+        lambda service: "stopped",
+    )
     return create_app()
 
 
@@ -112,8 +116,8 @@ class TestProfilerService:
 
     def test_shows_starting_when_not_confirmed_up(self, client, monkeypatch):
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
@@ -128,8 +132,8 @@ class TestProfilerService:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
@@ -234,8 +238,8 @@ class TestProfilerSession:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -245,8 +249,8 @@ class TestProfilerSession:
 
     def test_poll_shows_starting_before_up(self, client, monkeypatch, profiler_root):
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -304,14 +308,51 @@ class TestProfilerSession:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
         assert resp.status_code == 200
         assert b'<div id="profiler-qr-slot"></div>' in resp.data
         assert b'id="profiler-qr"' not in resp.data
+
+    @pytest.mark.parametrize("path", ["/profiler/profiles", "/profiler/session"])
+    @pytest.mark.parametrize(
+        "state, badge, toggle",
+        [
+            ("starting", b'is-warn">Starting<', "disabled>Starting…</button>"),
+            ("stopping", b'is-warn">Stopping<', "disabled>Stopping…</button>"),
+            ("failed", b'is-bad">Failed<', 'hx-post="/startprofiler"'),
+            ("stopped", b'is-off">Stopped<', 'hx-post="/startprofiler"'),
+            ("running", b'is-on">Running<', 'hx-post="/stopprofiler"'),
+        ],
+    )
+    def test_systemd_state_drives_badge_and_toggle(
+        self, client, monkeypatch, profiler_root, path, state, badge, toggle
+    ):
+        if state in ("stopping", "failed", "running"):
+            _write_session(
+                profiler_root,
+                {"state": "running"},
+                {"ssid": "Profiler 573", "passphrase": "profiler"},
+            )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: state,
+        )
+        _login(client, monkeypatch)
+        resp = client.get(path)
+        assert resp.status_code == 200
+        assert badge in resp.data
+        oob = b'<span id="profiler-toggle" hx-swap-oob="true">'
+        start = resp.data.index(
+            oob if path == "/profiler/session" else b'id="profiler-toggle"'
+        )
+        toggle_html = resp.data[start : resp.data.index(b"</span>", start)]
+        assert toggle.encode() in toggle_html
+        if state in ("starting", "stopping"):
+            assert b"hx-post" not in toggle_html
 
 
 class TestProfilerCapabilities:

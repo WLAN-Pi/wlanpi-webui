@@ -12,7 +12,7 @@
       <p class="uk-text-meta uk-margin-remove">{{ service.message }}</p>
     </div>
     <div class="profiler-service-actions">
-      {{ profiler_toggle | safe }}
+      <span id="profiler-toggle">{{ profiler_toggle | safe }}</span>
       <form method="post" hx-post="/profiler/purge" hx-target="#content" hx-swap="innerHTML" hx-indicator=".progress"
         hx-confirm="Delete all profiler reports and captures? This cannot be undone." data-confirm-ok="Delete all">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
