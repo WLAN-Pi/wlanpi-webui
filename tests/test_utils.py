@@ -328,6 +328,20 @@ class TestStartStopServiceToast:
             ("stop", ["running"], "Kismet service did not stop.", "warning"),
             ("stop", ["stopping"], "Kismet service is stopping.", "primary"),
             ("stop", ["failed"], "Kismet service stopped.", "success"),
+            (
+                "start",
+                ["stopping", "starting"],
+                "Kismet service is starting.",
+                "primary",
+            ),
+            (
+                "stop",
+                ["starting", "stopping"],
+                "Kismet service is stopping.",
+                "primary",
+            ),
+            ("start", ["running"], "Kismet service started.", "success"),
+            ("stop", ["stopped"], "Kismet service stopped.", "success"),
         ],
     )
     @patch("wlanpi_webui.utils.make_api_request")
