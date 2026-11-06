@@ -56,6 +56,9 @@ def app(profiler_root, monkeypatch):
         "wlanpi_webui.profiler.profiler.system_service_state",
         lambda service: "stopped",
     )
+    monkeypatch.setattr(
+        "wlanpi_webui.profiler.profiler._profiler_pid_alive", lambda pid: pid == 4242
+    )
     return create_app()
 
 
@@ -134,7 +137,7 @@ class TestProfilerService:
     def test_shows_up_when_running(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
@@ -148,7 +151,9 @@ class TestProfilerService:
         assert b'hx-post="/stopprofiler"' in resp.data
 
     def test_shell_ignores_stale_running_file(self, client, monkeypatch, profiler_root):
-        _write_session(profiler_root, {"state": "running"}, {"ssid": "Profiler 573"})
+        _write_session(
+            profiler_root, {"state": "running", "pid": 4242}, {"ssid": "Profiler 573"}
+        )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
         assert resp.status_code == 200
@@ -189,7 +194,7 @@ class TestProfilerSession:
     def test_live_session(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running", "reason": "startup_complete", "pid": 1},
+            {"state": "running", "reason": "startup_complete", "pid": 4242},
             {
                 "schema_version": "1.0",
                 "profiler_version": "2.0.1",
@@ -273,7 +278,7 @@ class TestProfilerSession:
     def test_poll_updates_service_bar(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
@@ -303,7 +308,7 @@ class TestProfilerSession:
     ):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         _login(client, monkeypatch)
@@ -385,6 +390,24 @@ class TestProfilerSession:
         assert b"Profiler is stopping..." in resp.data
         assert b"running from the command line" not in resp.data
 
+    def test_start_after_kill_hides_previous_run(
+        self, client, monkeypatch, profiler_root
+    ):
+        _write_session(
+            profiler_root,
+            {"state": "running", "pid": 99},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Profiler is starting..." in resp.data
+        assert b"Profiler 573" not in resp.data
+
     def test_dead_cli_pid_is_stale(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
@@ -421,7 +444,7 @@ class TestProfilerSession:
     def test_poll_carries_new_profile_marker(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {
                 "ssid": "Profiler 573",
                 "passphrase": "profiler",
@@ -443,7 +466,7 @@ class TestProfilerSession:
     def test_poll_carries_qr_when_running(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
@@ -472,7 +495,7 @@ class TestProfilerSession:
     def test_shell_has_empty_qr_slot(self, client, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
-            {"state": "running"},
+            {"state": "running", "pid": 4242},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
@@ -502,7 +525,7 @@ class TestProfilerSession:
         if state in ("stopping", "failed", "running"):
             _write_session(
                 profiler_root,
-                {"state": "running"},
+                {"state": "running", "pid": 4242},
                 {"ssid": "Profiler 573", "passphrase": "profiler"},
             )
         monkeypatch.setattr(

@@ -423,14 +423,19 @@ def _profiler_pid_alive(pid: Any) -> bool:
 def get_profiler_session(unit_state: str) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
-    The /run files survive a killed profiler, and info.json is written only
-    after "running", so under "starting" it is from the previous run.
+    The /run files survive a killed profiler, so "running" counts only while
+    its pid is a profiler; until the next run rewrites them it is "starting".
+    info.json is written only after "running", so under "starting" it is from
+    the previous run.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
     state = str(status.get("state") or "").lower()
+    pid_alive = _profiler_pid_alive(status.get("pid"))
+    if state == "running" and not pid_alive:
+        state = "starting"
     up = unit_state in ("running", "starting", "stopping") or (
-        status.get("startup_method") == "cli" and _profiler_pid_alive(status.get("pid"))
+        status.get("startup_method") == "cli" and pid_alive
     )
     if up and state == "running" and info:
         interfaces = info.get("interfaces") or {}
