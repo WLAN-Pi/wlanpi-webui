@@ -39,7 +39,7 @@ def app(tmp_path, monkeypatch):
 
     utils.clear_core_alert()
     utils._health_cache = []
-    utils._health_cache_at = 0.0
+    utils._health_cache_at = float("-inf")
     # Health alerts probe wlanpi-core; keep the default fixture offline.
     monkeypatch.setattr(utils, "get_core_json", lambda *a, **k: None)
     return _make_app(tmp_path, monkeypatch)
@@ -104,7 +104,7 @@ class TestHealthAlerts:
         from wlanpi_webui import utils
 
         utils._health_cache = []
-        utils._health_cache_at = 0.0
+        utils._health_cache_at = float("-inf")
         payloads = {
             "/api/v1/system/health": health,
             "/api/v1/system/services/failed": failed,
@@ -148,3 +148,23 @@ class TestHealthAlerts:
         resp = client.get("/alerts")
         assert b"Device is throttling" in resp.data
         assert "throttle" in resp.headers["X-Wlanpi-Alerts"]
+
+    def test_cache_expires_after_wall_clock_steps_back(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        self._patch_health(monkeypatch, {"throttled": {}}, {"units": []})
+        clocks = {"boot": 1000.0, "wall": 2_000_000_000.0}
+        monkeypatch.setattr(utils, "boot_clock", lambda: clocks["boot"])
+        monkeypatch.setattr(utils, "time", lambda: clocks["wall"])
+        assert utils._health_alerts() == []
+
+        health = {"throttled": {"undervoltage": True}}
+        monkeypatch.setattr(
+            utils,
+            "get_core_json",
+            lambda path, params=None: health if path.endswith("health") else None,
+        )
+        clocks["wall"] -= 86400
+        clocks["boot"] += utils.HEALTH_CACHE_TTL
+        keys = [a["key"] for a in utils._health_alerts()]
+        assert keys == ["throttle-undervoltage"]
