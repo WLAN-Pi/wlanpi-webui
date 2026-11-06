@@ -22,7 +22,7 @@ defusedxml==0.7.1
     # via genbadge
 distlib==0.4.3
     # via virtualenv
-filelock==3.32.7
+filelock==4.2.9
     # via
     #   python-discovery
     #   tox
@@ -44,6 +44,7 @@ packaging==26.3
     #   pyproject-api
     #   pytest
     #   tox
+    #   virtualenv
 pathspec==1.1.1
     # via mypy
 pillow==13.0.0
@@ -84,7 +85,7 @@ typing-extensions==4.16.0
     # via mypy
 urllib3==2.8.0
     # via requests
-virtualenv==21.7.12
+virtualenv==21.15.5
     # via tox
 
 # The following packages are considered to be unsafe in a requirements file:
