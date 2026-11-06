@@ -14,8 +14,6 @@ import pytest
 
 from wlanpi_webui.app import create_app
 
-# Runs cli.js against stub browser globals: a persisted pagehide (back/forward
-# cache) must keep polling and send no stop; a real close sends one.
 BFCACHE_HARNESS = """
 const handlers = {}, beacons = [], fetches = [];
 const stage = {

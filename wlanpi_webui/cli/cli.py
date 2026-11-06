@@ -161,10 +161,6 @@ def close_shell(sid: str | None) -> None:
 
 
 def _track_tab(shell: Session, tab: object) -> None:
-    """Record a request from `tab` and forget tabs quiet past TAB_TIMEOUT.
-
-    A stopped tab stays stopped, so a poll still in flight when its page
-    closed cannot keep the shell alive for the other tabs."""
     now = time.time()
     cutoff = now - TAB_TIMEOUT
     shell.tab_polled_at = {
@@ -173,6 +169,7 @@ def _track_tab(shell: Session, tab: object) -> None:
     shell.tab_stopped_at = {
         t: at for t, at in shell.tab_stopped_at.items() if at > cutoff
     }
+    # A poll in flight when its page closed must not revive a stopped tab.
     if isinstance(tab, str) and tab and tab not in shell.tab_stopped_at:
         shell.tab_polled_at[tab] = now
 
