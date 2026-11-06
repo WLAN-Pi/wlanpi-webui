@@ -5,6 +5,7 @@ import os
 import re
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
@@ -176,6 +177,7 @@ class TestCli:
                 self.owner = owner
                 self.last = time.time()
                 self.closed = False
+                self.tabs = {}
                 created.append(self)
                 if block and len(created) == 1:
                     block["entered"].set()
@@ -241,6 +243,7 @@ class TestCli:
         class ClosingSession:
             last = time.time()
             owner = None
+            tabs = {}
 
             def drain(self):
                 pass
@@ -321,6 +324,44 @@ class TestCli:
         assert other.post("/cli/stop", headers=headers).status_code == 204
         assert cli_module._session is created[0]
         assert not created[0].closed
+
+    def test_closing_a_tab_keeps_the_shell_another_tab_polls(
+        self, client, monkeypatch
+    ):
+        from wlanpi_webui.cli import cli as cli_module
+
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        assert (
+            client.post("/cli/start", headers={"X-CSRF-Token": csrf}).status_code == 200
+        )
+        for tab in ("a", "b"):
+            client.get(f"/cli/output?since=0&tab={tab}")
+        shell = cli_module._session
+
+        client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
+        assert cli_module._session is shell
+        assert client.get("/cli/output?since=0&tab=b").get_json()["alive"] is True
+
+        client.post("/cli/stop", data={"csrf_token": csrf, "tab": "b"})
+        assert cli_module._session is None
+
+    def test_stale_tab_does_not_keep_the_shell(self, client, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        client.post("/cli/start", headers={"X-CSRF-Token": csrf})
+        client.get("/cli/output?since=0&tab=a")
+        client.get("/cli/output?since=0&tab=b")
+        cli_module._session.tabs["b"] -= cli_module.TAB_TIMEOUT + 1
+
+        client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
+        assert cli_module._session is None
+
+    def test_back_forward_cache_keeps_the_terminal(self, app):
+        js = (Path(app.root_path) / "static" / "js" / "cli.js").read_text()
+        assert "if (!evt.persisted) stopCurrent(true);" in js
 
     def test_logout_closes_the_shell(self, client, monkeypatch):
         from wlanpi_webui.cli import cli as cli_module

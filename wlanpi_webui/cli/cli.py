@@ -31,6 +31,8 @@ from wlanpi_webui.utils import is_htmx
 SHELL = "/bin/bash"
 OUTPUT_LIMIT = 200_000  # bytes of scrollback kept per session
 IDLE_TIMEOUT = 600  # seconds without input or output before the shell is reaped
+# Browsers can throttle a background tab's polling to once a minute.
+TAB_TIMEOUT = 90
 
 
 class Session:
@@ -58,6 +60,7 @@ class Session:
         self.start = 0  # absolute offset of buffer[0]
         self.total = 0  # absolute offset of the end
         self.last = time.time()
+        self.tabs: dict[str, float] = {}  # browser tab -> last poll
 
     def write(self, data: bytes) -> None:
         self.last = time.time()
@@ -218,6 +221,9 @@ def output():
             # quiet one, so it can start a new shell instead of sitting dead.
             return jsonify({"offset": 0, "data": "", "alive": False})
 
+        tab = request.args.get("tab")
+        if tab:
+            shell.tabs[tab] = time.time()
         shell.drain()
         since = request.args.get("since", type=int)
         if since is None or since < shell.start or since > shell.total:
@@ -235,5 +241,15 @@ def output():
 @bp.route("/cli/stop", methods=["POST"])
 @csrf_required
 def stop():
-    close_shell(session.get("sid"))
+    """Close this session's shell unless another of its tabs still polls."""
+    global _session
+    with _lock:
+        shell = _mine()
+        if shell is None:
+            return "", 204
+        shell.tabs.pop(request.form.get("tab"), None)
+        cutoff = time.time() - TAB_TIMEOUT
+        if not any(seen > cutoff for seen in shell.tabs.values()):
+            shell.close()
+            _session = None
     return "", 204
