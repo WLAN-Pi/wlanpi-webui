@@ -409,16 +409,28 @@ def _qr_escape(value: str) -> str:
     return "".join(f"\\{ch}" if ch in '\\;,:"' else ch for ch in value)
 
 
+def _profiler_pid_alive(pid: Any) -> bool:
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    try:
+        return b"profiler" in Path(f"/proc/{pid}/cmdline").read_bytes()
+    except OSError:
+        return False
+
+
 def get_profiler_session(running: bool) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
     The /run files outlive a SIGKILL or OOM kill, so trust them only while
-    the unit is active.
+    the unit is active or the pid they name is still a profiler (a CLI run
+    has no unit). info.json lands after "running", so with "starting" it is
+    a previous run's.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
     state = str(status.get("state") or "").lower()
-    if running and state in ("running", "starting") and info:
+    up = running or _profiler_pid_alive(status.get("pid"))
+    if up and state == "running" and info:
         interfaces = info.get("interfaces") or {}
         ssid = str(info.get("ssid") or "")
         passphrase = str(info.get("passphrase") or "")
@@ -429,8 +441,9 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
         )
         return {
             "live": True,
+            "up": True,
             "state": state,
-            "state_class": "is-on" if state == "running" else "is-warn",
+            "state_class": "is-on",
             "profiler_version": str(info.get("profiler_version") or ""),
             "mode": str(info.get("mode") or ""),
             "phy": str(info.get("phy") or ""),
@@ -463,7 +476,8 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
     exit_status = str(exit_info.get("status") or "")
     return {
         "live": False,
-        "state": state or "stopped",
+        "up": up,
+        "state": state,
         "state_class": "is-bad"
         if exit_status in ("failed", "interrupted")
         else "is-off",
@@ -488,19 +502,19 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
     }
 
 
-def profiler_service_view(session: dict[str, Any], running: bool) -> dict[str, str]:
+def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    Falls back to Running so a profiler that never writes the status file
+    No status file falls back to Running so a profiler that never writes one
     isn't stuck on Starting.
     """
-    if not running:
+    if not session.get("up"):
         return {
             "state_class": "is-off",
             "state_label": "Stopped",
             "message": "Start the profiler to begin capturing.",
         }
-    if session.get("state") == "starting":
+    if session.get("state") not in ("running", ""):
         return {
             "state_class": "is-warn",
             "state_label": "Starting",
@@ -666,7 +680,7 @@ def profiler_session():
     return render_template(
         "/partials/profiler_session.html",
         session=session,
-        service=profiler_service_view(session, running),
+        service=profiler_service_view(session),
     )
 
 
@@ -680,7 +694,7 @@ def profiler():
         "show_capabilities": True,
         "getting_started": getting_started,
         "profiler_running": profiler_running,
-        "service": profiler_service_view(session, profiler_running),
+        "service": profiler_service_view(session),
         "profiler_toggle": service_toggle_anchor(
             profiler_running, "/startprofiler", "/stopprofiler"
         ),
