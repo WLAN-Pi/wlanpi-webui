@@ -598,6 +598,62 @@ def _csrf(client):
         return sess["csrf_token"]
 
 
+class TestProfilerCliRun:
+    """A profiler started from the CLI runs with the systemd unit inactive."""
+
+    def _cli_run(self, monkeypatch, profiler_root):
+        _write_session(
+            profiler_root,
+            {"state": "running", "pid": 4242},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler._profiler_pid_alive",
+            lambda pid: pid == 4242,
+        )
+
+    def test_shell_disables_start(self, client, monkeypatch, profiler_root):
+        self._cli_run(monkeypatch, profiler_root)
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/profiles")
+        assert resp.status_code == 200
+        assert b"Profiler is running from the command line" in resp.data
+        assert b'hx-post="/startprofiler"' not in resp.data
+
+    def test_poll_swaps_toggle(self, client, monkeypatch, profiler_root):
+        self._cli_run(monkeypatch, profiler_root)
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b'<span id="profiler-toggle" hx-swap-oob="true">' in resp.data
+        assert b"Profiler is running from the command line" in resp.data
+
+    def test_poll_offers_start_when_stopped(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b'hx-post="/startprofiler"' in resp.data
+
+    def test_start_refused(self, client, monkeypatch, profiler_root):
+        from wlanpi_webui import utils
+
+        calls = []
+        monkeypatch.setattr(
+            utils, "make_api_request", lambda *a, **k: calls.append(a) or None
+        )
+        self._cli_run(monkeypatch, profiler_root)
+        _login(client, monkeypatch)
+        resp = client.post(
+            "/startprofiler",
+            data={"csrf_token": _csrf(client)},
+            headers={"hx-request": "true"},
+        )
+        assert resp.status_code == 302
+        assert calls == []
+        with client.session_transaction() as sess:
+            assert "command line" in sess["wlanpi_toast"]["message"]
+
+
 class TestProfilerPurge:
     PROFILES = "https://wlanpi.local/profiler/profiles"
 

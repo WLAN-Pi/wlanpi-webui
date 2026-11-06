@@ -100,6 +100,24 @@ class TestApps:
         # data streams moved to their own page
         assert b"Internet monitoring" not in resp.data
 
+    def test_profiler_cli_run_disables_start(self, client, monkeypatch):
+        _everything_installed(monkeypatch)
+        from wlanpi_webui.apps import apps as apps_module
+
+        monkeypatch.setattr(
+            apps_module,
+            "system_service_running_state",
+            lambda unit: unit != "wlanpi-profiler",
+        )
+        monkeypatch.setattr(
+            apps_module, "get_profiler_session", lambda running: {"up": True}
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/apps/cards")
+        assert resp.status_code == 200
+        assert b"Profiler is running from the command line" in resp.data
+        assert b'hx-post="/startprofiler"' not in resp.data
+
     def test_shell_loads_without_services(self, client, monkeypatch):
         _login(client, monkeypatch)
         resp = client.get("/apps")

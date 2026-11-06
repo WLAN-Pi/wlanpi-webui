@@ -3,6 +3,7 @@
   <p class="app-status {{ service.state_class }}">{{ service.state_label }}</p>
   <p class="uk-text-meta uk-margin-remove">{{ service.message }}</p>
 </div>
+<span id="profiler-toggle" hx-swap-oob="true">{{ profiler_toggle | safe }}</span>
 {# Out-of-band: the join QR follows the session, so it appears once the
    profiler writes its info file and clears once it stops. #}
 <div id="profiler-qr-slot" hx-swap-oob="true">

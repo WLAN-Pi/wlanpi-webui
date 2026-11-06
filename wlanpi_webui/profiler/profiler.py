@@ -526,6 +526,16 @@ def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def profiler_toggle(running: bool, session: dict[str, Any]) -> str:
+    """Start/Stop button; a CLI run has no unit to stop and must not get a second."""
+    if not running and session.get("up"):
+        return (
+            '<button class="uk-button uk-button-default" type="button" disabled '
+            'title="Profiler is running from the command line">Start</button>'
+        )
+    return service_toggle_anchor(running, "/startprofiler", "/stopprofiler")
+
+
 def get_reports() -> list[dict[str, str]]:
     """Session-level CSV reports."""
     root = current_app.config["PROFILER_DIR"]
@@ -680,6 +690,7 @@ def profiler_session():
         "/partials/profiler_session.html",
         session=session,
         service=profiler_service_view(session),
+        profiler_toggle=profiler_toggle(running, session),
     )
 
 
@@ -694,9 +705,7 @@ def profiler():
         "getting_started": getting_started,
         "profiler_running": profiler_running,
         "service": profiler_service_view(session),
-        "profiler_toggle": service_toggle_anchor(
-            profiler_running, "/startprofiler", "/stopprofiler"
-        ),
+        "profiler_toggle": profiler_toggle(profiler_running, session),
         "reports": get_reports(),
     }
     if is_htmx(request):
@@ -721,5 +730,8 @@ def get_profiler_results(filename):
 @csrf_required
 def start_stop_profiler(task):
     if is_htmx(request):
+        if task == "start" and get_profiler_session(False)["up"]:
+            queue_toast("Profiler is already running from the command line.", "warning")
+            return redirect(get_safe_referrer_target())
         return start_stop_service(task, "wlanpi-profiler")
     return "", 204

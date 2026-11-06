@@ -3,6 +3,7 @@ from flask import render_template, request
 from wlanpi_webui.apps import bp
 from wlanpi_webui.auth.auth import service_toggle_anchor
 from wlanpi_webui.grafana.grafana import GRAFANA_STATES, grafana_state, grafana_toggle
+from wlanpi_webui.profiler.profiler import get_profiler_session, profiler_toggle
 from wlanpi_webui.utils import (
     is_htmx,
     system_service_running_state,
@@ -22,6 +23,7 @@ def apps():
 def apps_cards():
     """Render the app cards (service checks, may be slow)."""
     profiler_running = system_service_running_state("wlanpi-profiler")
+    profiler_session = get_profiler_session(profiler_running)
     kismet_running = system_service_running_state("kismet")
     # systemd reports Grafana active long before it listens (about a minute
     # of migrations on first start), so use the state that probes the port.
@@ -29,13 +31,11 @@ def apps_cards():
     grafana_label, grafana_class, _ = GRAFANA_STATES[grafana]
 
     resp_data = {
-        "profiler_running": profiler_running,
+        "profiler_running": profiler_session["up"],
         "profiler_status": systemd_service_message("wlanpi-profiler").replace(
             "wlanpi-", ""
         ),
-        "profiler_toggle": service_toggle_anchor(
-            profiler_running, "/startprofiler", "/stopprofiler"
-        ),
+        "profiler_toggle": profiler_toggle(profiler_running, profiler_session),
         "kismet_running": kismet_running,
         "kismet_status": systemd_service_message("kismet"),
         "kismet_toggle": service_toggle_anchor(
