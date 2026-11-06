@@ -140,6 +140,16 @@ def _mine() -> Session | None:
     return None
 
 
+def reap_shell() -> None:
+    """Close the shell if it is idle or its owner's session ended; skip if busy."""
+    # Never wait: a holder can sit in close() for 2s, and the next request reaps.
+    if _lock.acquire(blocking=False):
+        try:
+            _current()
+        finally:
+            _lock.release()
+
+
 def close_shell(sid: str | None) -> None:
     """Close the shell if `sid` owns it; called when that session ends."""
     global _session

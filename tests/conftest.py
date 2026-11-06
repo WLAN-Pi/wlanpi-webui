@@ -40,6 +40,12 @@ class ContendedLock:
     def __exit__(self, *exc):
         self._lock.release()
 
+    def acquire(self, blocking=True):
+        return self._lock.acquire(blocking)
+
+    def release(self):
+        self._lock.release()
+
 
 def join_all(*threads):
     for t in threads:

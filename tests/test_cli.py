@@ -423,6 +423,42 @@ class TestCli:
         assert created[0].closed
         assert len(created) == 2
 
+    def test_any_request_reaps_a_revoked_owners_shell(self, app, monkeypatch):
+        from wlanpi_webui.auth import auth
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        (owner,) = self._clients(app, monkeypatch, n=1)
+        owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)})
+        with app.app_context():
+            auth._revoke_user_sessions("wlanpi")
+        app.test_client().get("/login")
+        assert created[0].closed
+        assert cli_module._session is None
+
+    def test_any_request_reaps_an_idle_shell(self, app, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        owner, other = self._clients(app, monkeypatch)
+        owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)})
+        created[0].last -= cli_module.IDLE_TIMEOUT + 1
+        other.get("/")
+        assert created[0].closed
+        started = other.post("/cli/start", headers={"X-CSRF-Token": _csrf(other)})
+        assert started.get_json() == {"ok": True, "resumed": False}
+
+    def test_reap_skips_while_a_cli_request_holds_the_lock(self, app, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        created = self._fake_session(monkeypatch)
+        (owner,) = self._clients(app, monkeypatch, n=1)
+        owner.post("/cli/start", headers={"X-CSRF-Token": _csrf(owner)})
+        created[0].last -= cli_module.IDLE_TIMEOUT + 1
+        with cli_module._lock:
+            cli_module.reap_shell()
+        assert not created[0].closed
+
     def test_start_racing_sign_out_creates_no_shell(self, client, monkeypatch):
         # The start passed the session check, then a sign-out revoked the
         # session before the start reached the CLI lock.
@@ -441,6 +477,9 @@ class TestCli:
 
             def __exit__(self, *exc):
                 return real.__exit__(*exc)
+
+            acquire = real.acquire
+            release = real.release
 
         monkeypatch.setattr(cli_module, "_lock", SignOutFirst())
         resp = client.post("/cli/start", headers={"X-CSRF-Token": _csrf(client)})
