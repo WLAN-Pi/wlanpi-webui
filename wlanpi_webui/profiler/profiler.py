@@ -24,6 +24,7 @@ from wlanpi_webui.utils import (
     queue_toast,
     start_stop_service,
     system_service_running_state,
+    system_service_state,
 )
 
 getting_started = """
@@ -413,22 +414,25 @@ def _profiler_pid_alive(pid: Any) -> bool:
     if not isinstance(pid, int) or pid <= 0:
         return False
     try:
-        return b"profiler" in Path(f"/proc/{pid}/cmdline").read_bytes()
+        argv = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
     except OSError:
         return False
+    return any(os.path.basename(arg) == b"profiler" for arg in argv)
 
 
-def get_profiler_session(running: bool) -> dict[str, Any]:
+def get_profiler_session(unit_state: str) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
     The /run files survive a killed profiler, so trust them only while the
-    unit is active or their pid is still a profiler (CLI runs have no unit).
-    The profiler writes info.json after "running", so under "starting" it is stale.
+    unit has a process or a CLI run's pid is still a profiler. The profiler
+    writes info.json after "running", so under "starting" it is stale.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
     state = str(status.get("state") or "").lower()
-    up = running or _profiler_pid_alive(status.get("pid"))
+    up = unit_state in ("running", "starting", "stopping") or (
+        status.get("startup_method") == "cli" and _profiler_pid_alive(status.get("pid"))
+    )
     if up and state == "running" and info:
         interfaces = info.get("interfaces") or {}
         ssid = str(info.get("ssid") or "")
@@ -501,19 +505,33 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
     }
 
 
-def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
+def profiler_service_view(session: dict[str, Any], unit_state: str) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    Profilers before 2.0 write no status file, so a missing one means
-    Running rather than stuck on Starting.
+    Stopping comes from systemd, which leads the status file. Profilers before
+    2.0 write no status file, so a missing one means Running rather than stuck
+    on Starting.
     """
-    if not session.get("up"):
+    up = session.get("up")
+    if unit_state == "stopping":
+        return {
+            "state_class": "is-warn",
+            "state_label": "Stopping",
+            "message": "Profiler is stopping...",
+        }
+    if (up and session.get("state") == "failed") or (not up and unit_state == "failed"):
+        return {
+            "state_class": "is-bad",
+            "state_label": "Failed",
+            "message": "Profiler failed. Start it again or check its logs.",
+        }
+    if not up:
         return {
             "state_class": "is-off",
             "state_label": "Stopped",
             "message": "Start the profiler to begin capturing.",
         }
-    if session.get("state") not in ("running", ""):
+    if unit_state == "starting" or session.get("state") not in ("running", ""):
         return {
             "state_class": "is-warn",
             "state_label": "Starting",
@@ -526,18 +544,18 @@ def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def profiler_toggle(running: bool, session: dict[str, Any]) -> str:
+def profiler_toggle(unit_state: str, session: dict[str, Any]) -> str:
     """Start/Stop button for the profiler unit.
 
     systemd cannot stop a CLI run, and starting the unit during one would
     launch a second profiler, so a CLI run gets a disabled Start.
     """
-    if not running and session.get("up"):
+    if unit_state in ("stopped", "failed") and session.get("up"):
         return (
             '<button class="uk-button uk-button-default" type="button" disabled '
             'title="Profiler is running from the command line">Start</button>'
         )
-    return service_toggle_anchor(running, "/startprofiler", "/stopprofiler")
+    return service_toggle_anchor(unit_state, "/startprofiler", "/stopprofiler")
 
 
 def get_reports() -> list[dict[str, str]]:
@@ -688,28 +706,28 @@ def capabilities():
 @bp.route("/profiler/session")
 def profiler_session():
     """Live profiler session data (htmx partial)"""
-    running = system_service_running_state("wlanpi-profiler", quiet=True)
-    session = get_profiler_session(running)
+    state = system_service_state("wlanpi-profiler")
+    session = get_profiler_session(state)
     return render_template(
         "/partials/profiler_session.html",
         session=session,
-        service=profiler_service_view(session),
-        profiler_toggle=profiler_toggle(running, session),
+        service=profiler_service_view(session, state),
+        profiler_toggle=profiler_toggle(state, session),
     )
 
 
 @bp.route("/profiler/profiles")
 def profiler():
     """Profiles"""
-    profiler_running = system_service_running_state("wlanpi-profiler")
-    session = get_profiler_session(profiler_running)
+    state = system_service_state("wlanpi-profiler")
+    session = get_profiler_session(state)
     resp_data = {
         "content": "",
         "show_capabilities": True,
         "getting_started": getting_started,
-        "profiler_running": profiler_running,
-        "service": profiler_service_view(session),
-        "profiler_toggle": profiler_toggle(profiler_running, session),
+        "profiler_running": state == "running",
+        "service": profiler_service_view(session, state),
+        "profiler_toggle": profiler_toggle(state, session),
         "reports": get_reports(),
     }
     if is_htmx(request):
@@ -734,7 +752,7 @@ def get_profiler_results(filename):
 @csrf_required
 def start_stop_profiler(task):
     if is_htmx(request):
-        if task == "start" and get_profiler_session(False)["up"]:
+        if task == "start" and get_profiler_session("stopped")["up"]:
             queue_toast("Profiler is already running from the command line.", "warning")
             return redirect(get_safe_referrer_target())
         return start_stop_service(task, "wlanpi-profiler")

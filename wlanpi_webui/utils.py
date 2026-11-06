@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from time import CLOCK_BOOTTIME, clock_gettime, time
+from time import CLOCK_BOOTTIME, clock_gettime, sleep, time
 
 import requests
 from flask import abort, current_app, redirect, request, session
@@ -296,18 +296,18 @@ def make_api_request(
 # Health-derived alerts are refreshed at most once per TTL so the navbar bell
 # and the after_request hook do not probe wlanpi-core on every request.
 _health_cache: list[dict[str, str]] = []
-_health_cache_at = 0.0
+_health_cache_at = float("-inf")
 HEALTH_CACHE_TTL = 60
 _health_lock = threading.Lock()
 
 
 def _health_alerts() -> list[dict[str, str]]:
     """Throttling, clock, and failed-unit alerts from wlanpi-core, cached."""
-    if time() - _health_cache_at < HEALTH_CACHE_TTL:
+    if boot_clock() - _health_cache_at < HEALTH_CACHE_TTL:
         return list(_health_cache)
     with _health_lock:
         # Another thread may have refreshed while this one waited.
-        if time() - _health_cache_at < HEALTH_CACHE_TTL:
+        if boot_clock() - _health_cache_at < HEALTH_CACHE_TTL:
             return list(_health_cache)
         return _refresh_health_alerts()
 
@@ -315,7 +315,7 @@ def _health_alerts() -> list[dict[str, str]]:
 def _refresh_health_alerts() -> list[dict[str, str]]:
     global _health_cache, _health_cache_at
 
-    now = time()
+    now = boot_clock()
     alerts: list[dict[str, str]] = []
 
     health = get_core_json("/api/v1/system/health")
@@ -523,6 +523,31 @@ def system_service_active_state(service, timeout=5) -> str:
     return (result.stdout or "").strip() or "unknown"
 
 
+SERVICE_STATES = {
+    "running": ("Running", "is-on"),
+    "starting": ("Starting", "is-warn"),
+    "stopping": ("Stopping", "is-warn"),
+    "failed": ("Failed", "is-bad"),
+    "stopped": ("Stopped", "is-off"),
+}
+_ACTIVE_TO_STATE = {
+    "active": "running",
+    "reloading": "running",
+    "activating": "starting",
+    "deactivating": "stopping",
+    "failed": "failed",
+}
+
+
+SERVICE_SETTLE_POLLS = 8
+SERVICE_SETTLE_INTERVAL = 0.25
+
+
+def system_service_state(service) -> str:
+    """One of the ``SERVICE_STATES`` keys for a systemd service."""
+    return _ACTIVE_TO_STATE.get(system_service_active_state(service), "stopped")
+
+
 def run_command(cmd: list, suppress_output=False) -> str:
     """Run a single CLI command with subprocess and return stdout or stderr response"""
     cp = subprocess.run(
@@ -570,18 +595,6 @@ def run_pipeline(*commands, timeout: int = 10) -> str:
     return out.decode()
 
 
-def systemd_service_message(service):
-    """
-    Checks if systemd service is running.
-    Returns '<service> is running' if it is, and '<service> is not running' if not.
-    """
-    status = system_service_running_state(service)
-    if status:
-        return f"{service} is running"
-    else:
-        return f"{service} is not running"
-
-
 def service_friendly_name(service_name):
     """Human-readable name for a systemd service."""
     friendly_name = service_name
@@ -624,6 +637,10 @@ def start_stop_service(task, service, label=None, noun="service"):
     """
     name = label or service_friendly_name(service)
 
+    if task not in ("start", "stop"):
+        current_app.logger.error("Invalid task: %s", task)
+        return redirect(get_safe_referrer_target())
+
     if task == "start" and not system_service_exists(service):
         queue_toast(f"{name} {noun} is not installed.", "warning")
         return redirect(get_safe_referrer_target())
@@ -632,35 +649,43 @@ def start_stop_service(task, service, label=None, noun="service"):
         queue_toast("wlanpi-core is not running.", "danger")
         return redirect(get_safe_referrer_target())
 
-    if task not in ("start", "stop"):
-        current_app.logger.error("Invalid task: %s", task)
-        return redirect(get_safe_referrer_target())
-
     current_app.logger.info("%sing %s", task, service)
     url = f"https://127.0.0.1:31415/api/v1/system/service/{task}"
     params = {"name": service}
 
     try:
-        response = make_api_request(method="POST", url=url, params=params)
+        make_api_request(method="POST", url=url, params=params)
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
         queue_toast(f"Could not {task} {name} {noun}.", "warning")
         return redirect(get_safe_referrer_target())
 
-    if response.status_code != 200:
-        current_app.logger.error(
-            "Request failed with status %s. Response body: %s",
-            response.status_code,
-            response.text,
-        )
-        if response.status_code == 401:
-            current_app.logger.error("Authentication failed. Verify core credentials.")
-        queue_toast(f"Could not {task} {name} {noun}.", "warning")
-        return redirect(get_safe_referrer_target())
-
-    queue_toast(
-        f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
+    # Core only queues the systemd job, so the unit can still be in its old state.
+    before = (
+        ("stopped", "stopping", "failed")
+        if task == "start"
+        else ("running", "starting")
     )
+    state = system_service_state(service)
+    for _ in range(SERVICE_SETTLE_POLLS):
+        if state not in before:
+            break
+        sleep(SERVICE_SETTLE_INTERVAL)
+        state = system_service_state(service)
+
+    done, pending = (
+        ("running", "starting") if task == "start" else ("stopped", "stopping")
+    )
+    if state == done or (task == "stop" and state == "failed"):
+        queue_toast(
+            f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
+        )
+    elif state == pending:
+        queue_toast(f"{name} {noun} is {pending}.")
+    elif task == "start" and state == "failed":
+        queue_toast(f"{name} {noun} failed to start.", "danger")
+    else:
+        queue_toast(f"{name} {noun} did not {task}.", "warning")
     return redirect(get_safe_referrer_target())
 
 

@@ -51,10 +51,7 @@ def _everything_installed(monkeypatch):
 
     from wlanpi_webui.apps import apps as apps_module
 
-    monkeypatch.setattr(apps_module, "system_service_running_state", lambda unit: True)
-    monkeypatch.setattr(
-        apps_module, "systemd_service_message", lambda unit: f"{unit} is running"
-    )
+    monkeypatch.setattr(apps_module, "system_service_state", lambda unit: "running")
 
     from wlanpi_webui.grafana import grafana as grafana_module
 
@@ -106,8 +103,8 @@ class TestApps:
 
         monkeypatch.setattr(
             apps_module,
-            "system_service_running_state",
-            lambda unit: unit != "wlanpi-profiler",
+            "system_service_state",
+            lambda unit: "stopped" if unit == "wlanpi-profiler" else "running",
         )
         monkeypatch.setattr(
             apps_module, "get_profiler_session", lambda running: {"up": True}
@@ -136,6 +133,7 @@ class TestApps:
 
         monkeypatch.setattr(utils, "make_api_request", lambda *a, **k: CoreResponse())
         monkeypatch.setattr(utils, "system_service_exists", lambda service: True)
+        monkeypatch.setattr(utils, "system_service_state", lambda service: "running")
 
         from wlanpi_webui.profiler import profiler as profiler_module
 
@@ -152,6 +150,44 @@ class TestApps:
         )
         assert resp.status_code == 302
         assert resp.headers["Location"].endswith("/apps")
+
+
+class TestAppsServiceCards:
+    POLL = b'hx-select="#apps-kismet-card"'
+
+    def _kismet_card(self, client, monkeypatch, state):
+        _everything_installed(monkeypatch)
+        from wlanpi_webui.apps import apps as apps_module
+
+        monkeypatch.setattr(apps_module, "system_service_state", lambda unit: state)
+        _login(client, monkeypatch)
+        resp = client.get("/apps/cards")
+        assert resp.status_code == 200
+        start = resp.data.index(b'id="apps-kismet-card"')
+        return resp.data[start : resp.data.index(b"Cockpit", start)]
+
+    @pytest.mark.parametrize(
+        "state, label", [("starting", b"Starting"), ("stopping", b"Stopping")]
+    )
+    def test_transition_disables_toggle_and_polls(
+        self, client, monkeypatch, state, label
+    ):
+        card = self._kismet_card(client, monkeypatch, state)
+        assert b">" + label + b"<" in card
+        assert b"disabled>" + label + "…".encode() + b"</button>" in card
+        assert b"hx-post=" not in card
+        assert self.POLL in card
+
+    def test_failed_shows_failed_and_offers_start(self, client, monkeypatch):
+        card = self._kismet_card(client, monkeypatch, "failed")
+        assert b'class="app-status is-bad">Failed<' in card
+        assert b'hx-post="/startkismet"' in card
+        assert self.POLL not in card
+
+    def test_toggle_disables_itself_while_in_flight(self, client, monkeypatch):
+        card = self._kismet_card(client, monkeypatch, "running")
+        assert b'hx-post="/stopkismet"' in card
+        assert b'hx-disable="this"' in card
 
 
 class TestAppsGrafanaCard:

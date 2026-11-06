@@ -13,7 +13,6 @@ import logging
 import threading
 from datetime import timedelta
 from pathlib import Path
-from time import time
 
 from flask import (
     Flask,
@@ -118,6 +117,7 @@ def create_app(config_class=Config):
 
     app.logger.debug("registering cli blueprint")
     from wlanpi_webui.cli import bp as cli_bp
+    from wlanpi_webui.cli.cli import reap_shell
 
     app.register_blueprint(cli_bp)
     app.logger.debug("cli blueprint registered")
@@ -223,6 +223,7 @@ def create_app(config_class=Config):
         # those make browsers refetch every asset on every page.
         if request.endpoint in STATIC_ENDPOINTS:
             return None
+        reap_shell()
         if not session.get("user"):
             return None
         now = boot_clock()
@@ -396,13 +397,13 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def utility_processor():
-        current_time = time()
+        current_time = boot_clock()
         current_mtime = get_dpkg_status_mtime()
 
         def fresh():
             return (
                 _context_cache
-                and time() - _context_cache_time < CONTEXT_CACHE_TTL
+                and boot_clock() - _context_cache_time < CONTEXT_CACHE_TTL
                 and _context_cache_mtime == current_mtime
             )
 
