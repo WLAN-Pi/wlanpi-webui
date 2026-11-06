@@ -527,7 +527,11 @@ def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
 
 
 def profiler_toggle(running: bool, session: dict[str, Any]) -> str:
-    """Start/Stop button; a CLI run has no unit to stop and must not get a second."""
+    """Start/Stop button for the profiler unit.
+
+    systemd cannot stop a CLI run, and starting the unit during one would
+    launch a second profiler, so a CLI run gets a disabled Start.
+    """
     if not running and session.get("up"):
         return (
             '<button class="uk-button uk-button-default" type="button" disabled '

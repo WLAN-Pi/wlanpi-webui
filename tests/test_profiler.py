@@ -599,8 +599,6 @@ def _csrf(client):
 
 
 class TestProfilerCliRun:
-    """A profiler started from the CLI runs with the systemd unit inactive."""
-
     def _cli_run(self, monkeypatch, profiler_root):
         _write_session(
             profiler_root,
