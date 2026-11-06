@@ -206,7 +206,7 @@
       if (stopped) return;
       if (!delay) term.writeln("\r\n[session ended, starting a new shell]");
       offset = 0;
-      post("/cli/start").then(
+      post("/cli/start", { tab: TAB }).then(
         function (r) {
           if (!started(r)) return;
           sendResize();
@@ -299,7 +299,7 @@
     window.addEventListener("resize", sendResize);
     document.addEventListener("wlanpi:theme", onThemeChange);
 
-    post("/cli/start").then(
+    post("/cli/start", { tab: TAB }).then(
       function (r) {
         if (!started(r)) return;
         term.focus();

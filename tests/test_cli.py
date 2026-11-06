@@ -243,7 +243,6 @@ class TestCli:
         class ClosingSession:
             last = time.time()
             owner = None
-            tab_polled_at = {}
 
             def drain(self):
                 pass
@@ -255,6 +254,7 @@ class TestCli:
         c1, c2 = self._clients(app, monkeypatch)
         closing_session = ClosingSession()
         closing_session.owner = _sid(c1)
+        closing_session.tab_polled_at = {}
         cli_module._session = closing_session
         stops, starts = [], []
 
@@ -325,23 +325,20 @@ class TestCli:
         assert cli_module._session is created[0]
         assert not created[0].closed
 
-    def test_closing_a_tab_keeps_the_shell_another_tab_polls(
-        self, client, monkeypatch
-    ):
+    def test_closing_a_tab_keeps_the_shell_another_tab_uses(self, client, monkeypatch):
         from wlanpi_webui.cli import cli as cli_module
 
         _login(client, monkeypatch)
         csrf = _csrf(client)
-        assert (
-            client.post("/cli/start", headers={"X-CSRF-Token": csrf}).status_code == 200
-        )
         for tab in ("a", "b"):
-            client.get(f"/cli/output?since=0&tab={tab}")
+            resp = client.post(
+                "/cli/start", json={"tab": tab}, headers={"X-CSRF-Token": csrf}
+            )
+            assert resp.status_code == 200
         shell = cli_module._session
 
         client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
         assert cli_module._session is shell
-        assert client.get("/cli/output?since=0&tab=b").get_json()["alive"] is True
 
         client.post("/cli/stop", data={"csrf_token": csrf, "tab": "b"})
         assert cli_module._session is None

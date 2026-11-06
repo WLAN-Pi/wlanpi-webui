@@ -166,16 +166,20 @@ def start():
     Another session's shell is never shown: that is 409 until it ends.
     """
     global _session
+    tab = (request.get_json(silent=True) or {}).get("tab")
     with _lock:
-        if _mine() is not None:
-            return jsonify({"ok": True, "resumed": True})
-        if _session is not None:
-            return jsonify({"ok": False, "error": "in_use"}), 409
-        if not session_registered(session.get("sid")):
-            abort(401)  # signed out while this request was on its way
-        _session = Session(session["sid"])
-        _session.drain()
-        return jsonify({"ok": True, "resumed": False})
+        shell = _mine()
+        resumed = shell is not None
+        if not resumed:
+            if _session is not None:
+                return jsonify({"ok": False, "error": "in_use"}), 409
+            if not session_registered(session.get("sid")):
+                abort(401)  # signed out while this request was on its way
+            shell = _session = Session(session["sid"])
+            shell.drain()
+        if isinstance(tab, str) and tab:
+            shell.tab_polled_at[tab] = time.time()
+        return jsonify({"ok": True, "resumed": resumed})
 
 
 @bp.route("/cli/input", methods=["POST"])
