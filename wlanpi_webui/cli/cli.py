@@ -60,7 +60,7 @@ class Session:
         self.start = 0  # absolute offset of buffer[0]
         self.total = 0  # absolute offset of the end
         self.last = time.time()
-        self.tabs: dict[str, float] = {}  # browser tab -> last poll
+        self.tab_polled_at: dict[str, float] = {}
 
     def write(self, data: bytes) -> None:
         self.last = time.time()
@@ -223,7 +223,7 @@ def output():
 
         tab = request.args.get("tab")
         if tab:
-            shell.tabs[tab] = time.time()
+            shell.tab_polled_at[tab] = time.time()
         shell.drain()
         since = request.args.get("since", type=int)
         if since is None or since < shell.start or since > shell.total:
@@ -247,9 +247,9 @@ def stop():
         shell = _mine()
         if shell is None:
             return "", 204
-        shell.tabs.pop(request.form.get("tab"), None)
+        shell.tab_polled_at.pop(request.form.get("tab"), None)
         cutoff = time.time() - TAB_TIMEOUT
-        if not any(seen > cutoff for seen in shell.tabs.values()):
+        if not any(seen > cutoff for seen in shell.tab_polled_at.values()):
             shell.close()
             _session = None
     return "", 204

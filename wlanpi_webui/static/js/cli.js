@@ -13,8 +13,7 @@
 
   var POLL_MS = 150;
   var current = null; // the live terminal's teardown, if any
-  // Tabs on one sign-in share the shell; the server keeps it while another
-  // tab still polls.
+  // Tabs on one sign-in share the shell; the server keeps it while any tab polls.
   var TAB = Math.random().toString(36).slice(2);
 
   // One load per URL, shared by every visit to /cli; a failed load is

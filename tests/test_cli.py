@@ -177,7 +177,7 @@ class TestCli:
                 self.owner = owner
                 self.last = time.time()
                 self.closed = False
-                self.tabs = {}
+                self.tab_polled_at = {}
                 created.append(self)
                 if block and len(created) == 1:
                     block["entered"].set()
@@ -243,7 +243,7 @@ class TestCli:
         class ClosingSession:
             last = time.time()
             owner = None
-            tabs = {}
+            tab_polled_at = {}
 
             def drain(self):
                 pass
@@ -354,7 +354,7 @@ class TestCli:
         client.post("/cli/start", headers={"X-CSRF-Token": csrf})
         client.get("/cli/output?since=0&tab=a")
         client.get("/cli/output?since=0&tab=b")
-        cli_module._session.tabs["b"] -= cli_module.TAB_TIMEOUT + 1
+        cli_module._session.tab_polled_at["b"] -= cli_module.TAB_TIMEOUT + 1
 
         client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
         assert cli_module._session is None
