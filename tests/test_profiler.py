@@ -385,6 +385,22 @@ class TestProfilerSession:
         assert b"Profiler is stopping..." in resp.data
         assert b"running from the command line" not in resp.data
 
+    def test_dead_cli_pid_is_stale(self, client, monkeypatch, profiler_root):
+        _write_session(
+            profiler_root,
+            {"state": "running", "pid": 4242, "startup_method": "cli"},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler._profiler_pid_alive", lambda pid: False
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Start the profiler to begin capturing." in resp.data
+        assert b'hx-post="/startprofiler"' in resp.data
+        assert b"Profiler 573" not in resp.data
+
     def test_systemd_pid_without_unit_is_stale(
         self, client, monkeypatch, profiler_root
     ):
@@ -728,6 +744,24 @@ class TestProfilerCliRun:
         assert calls == []
         with client.session_transaction() as sess:
             assert "command line" in sess["wlanpi_toast"]["message"]
+
+    def test_dead_cli_pid_allows_start(self, client, monkeypatch, profiler_root):
+        calls = []
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.start_stop_service",
+            lambda task, service: calls.append((task, service)) or ("", 204),
+        )
+        self._cli_run(monkeypatch, profiler_root)
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler._profiler_pid_alive", lambda pid: False
+        )
+        _login(client, monkeypatch)
+        client.post(
+            "/startprofiler",
+            data={"csrf_token": _csrf(client)},
+            headers={"hx-request": "true"},
+        )
+        assert calls == [("start", "wlanpi-profiler")]
 
 
 class TestProfilerPurge:

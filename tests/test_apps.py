@@ -114,6 +114,10 @@ class TestApps:
         assert resp.status_code == 200
         assert b"Profiler is running from the command line" in resp.data
         assert b'hx-post="/startprofiler"' not in resp.data
+        card = resp.data.split(b'id="apps-profiler-card"')[1].split(b"</a>")[0]
+        assert b'app-status is-on">Running' in card
+        assert b'type="button" disabled' in card
+        assert b"uk-button-primary" in card
 
     def test_shell_loads_without_services(self, client, monkeypatch):
         _login(client, monkeypatch)
