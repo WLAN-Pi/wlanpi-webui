@@ -22,7 +22,7 @@ def apps_cards():
     profiler_session = get_profiler_session(profiler)
     toggle = profiler_toggle(profiler, profiler_session)
     if profiler_session["up"] and profiler in ("stopped", "failed"):
-        profiler = "running"
+        profiler = "running" if profiler_session["state"] == "running" else "starting"
     kismet = system_service_state("kismet")
     profiler_label, profiler_class = SERVICE_STATES[profiler]
     kismet_label, kismet_class = SERVICE_STATES[kismet]

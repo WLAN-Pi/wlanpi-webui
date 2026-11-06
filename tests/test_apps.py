@@ -107,7 +107,9 @@ class TestApps:
             lambda unit: "stopped" if unit == "wlanpi-profiler" else "running",
         )
         monkeypatch.setattr(
-            apps_module, "get_profiler_session", lambda running: {"up": True}
+            apps_module,
+            "get_profiler_session",
+            lambda running: {"up": True, "state": "running"},
         )
         _login(client, monkeypatch)
         resp = client.get("/apps/cards")
@@ -118,6 +120,30 @@ class TestApps:
         assert b'app-status is-on">Running' in card
         assert b'type="button" disabled' in card
         assert b"uk-button-primary" in card
+
+    def test_profiler_cli_run_starting_keeps_polling(self, client, monkeypatch):
+        _everything_installed(monkeypatch)
+        from wlanpi_webui.apps import apps as apps_module
+
+        monkeypatch.setattr(
+            apps_module,
+            "system_service_state",
+            lambda unit: "stopped" if unit == "wlanpi-profiler" else "running",
+        )
+        monkeypatch.setattr(
+            apps_module,
+            "get_profiler_session",
+            lambda running: {"up": True, "state": "starting"},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/apps/cards")
+        assert resp.status_code == 200
+        card = resp.data.split(b'id="apps-profiler-card"')[1].split(
+            b"</div>\n    </div>"
+        )[0]
+        assert b'app-status is-warn">Starting' in card
+        assert b'hx-select="#apps-profiler-card"' in card
+        assert b'type="button" disabled' in card
 
     def test_shell_loads_without_services(self, client, monkeypatch):
         _login(client, monkeypatch)
