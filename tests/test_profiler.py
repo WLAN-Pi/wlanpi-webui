@@ -110,7 +110,10 @@ class TestProfilerService:
         assert b"X-CSRF-Token" in resp.data
         assert b"dropdown" not in resp.data
 
-    def test_shows_starting_when_not_confirmed_up(self, client, monkeypatch):
+    def test_shows_starting_when_not_confirmed_up(
+        self, client, monkeypatch, profiler_root
+    ):
+        _write_session(profiler_root, {"state": "starting"}, {})
         monkeypatch.setattr(
             "wlanpi_webui.profiler.profiler.system_service_running_state",
             lambda service, quiet=False: True,
@@ -173,6 +176,10 @@ class TestProfilerSession:
                 "last_profile": None,
                 "last_profile_timestamp": None,
             },
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_running_state",
+            lambda service, quiet=False: True,
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -244,6 +251,7 @@ class TestProfilerSession:
         assert b"Profiler is up and ready to capture association requests." in resp.data
 
     def test_poll_shows_starting_before_up(self, client, monkeypatch, profiler_root):
+        _write_session(profiler_root, {"state": "starting"}, {})
         monkeypatch.setattr(
             "wlanpi_webui.profiler.profiler.system_service_running_state",
             lambda service, quiet=False: True,
@@ -253,6 +261,30 @@ class TestProfilerSession:
         assert resp.status_code == 200
         assert b"Profiler is starting..." in resp.data
         assert b"up and ready" not in resp.data
+
+    def test_stale_running_file_when_unit_inactive(
+        self, client, monkeypatch, profiler_root
+    ):
+        _write_session(
+            profiler_root,
+            {"state": "running"},
+            {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Start the profiler to begin capturing." in resp.data
+        assert b"Profiler 573" not in resp.data
+
+    def test_running_without_status_file(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_running_state",
+            lambda service, quiet=False: True,
+        )
+        _login(client, monkeypatch)
+        resp = client.get("/profiler/session")
+        assert resp.status_code == 200
+        assert b"Profiler is up and ready to capture association requests." in resp.data
 
     def test_poll_carries_new_profile_marker(self, client, monkeypatch, profiler_root):
         _write_session(
@@ -264,6 +296,10 @@ class TestProfilerSession:
                 "profile_count": 2,
                 "last_profile": "aa:bb:cc:dd:ee:ff",
             },
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_running_state",
+            lambda service, quiet=False: True,
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -277,6 +313,10 @@ class TestProfilerSession:
             profiler_root,
             {"state": "running"},
             {"ssid": "Profiler 573", "passphrase": "profiler"},
+        )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_running_state",
+            lambda service, quiet=False: True,
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")

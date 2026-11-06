@@ -409,12 +409,16 @@ def _qr_escape(value: str) -> str:
     return "".join(f"\\{ch}" if ch in '\\;,:"' else ch for ch in value)
 
 
-def get_profiler_session() -> dict[str, Any]:
-    """Live profiler session from the runtime files, else the last session."""
+def get_profiler_session(running: bool) -> dict[str, Any]:
+    """Live profiler session from the runtime files, else the last session.
+
+    The runtime files survive a SIGKILL or OOM kill in /run, so they count as
+    live only while systemd says the unit is active.
+    """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
     state = str(status.get("state") or "").lower()
-    if state in ("running", "starting") and info:
+    if running and state in ("running", "starting") and info:
         interfaces = info.get("interfaces") or {}
         ssid = str(info.get("ssid") or "")
         passphrase = str(info.get("passphrase") or "")
@@ -487,26 +491,26 @@ def get_profiler_session() -> dict[str, Any]:
 def profiler_service_view(session: dict[str, Any], running: bool) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    "Up" comes from the profiler's own status file. The systemd state covers
-    the window between the unit starting and the profiler writing that file,
-    which is what keeps the bar from regressing to "stopped" on the next poll.
+    systemd decides up or down, the same state the Start/Stop button reads.
+    The status file only narrows "up" to "starting"; a build that never
+    writes it shows "Running" rather than "Starting" forever.
     """
-    if session.get("live") and session.get("state") == "running":
+    if not running:
         return {
-            "state_class": "is-on",
-            "state_label": "Running",
-            "message": "Profiler is up and ready to capture association requests.",
+            "state_class": "is-off",
+            "state_label": "Stopped",
+            "message": "Start the profiler to begin capturing.",
         }
-    if session.get("state") == "starting" or running:
+    if session.get("state") == "starting":
         return {
             "state_class": "is-warn",
             "state_label": "Starting",
             "message": "Profiler is starting...",
         }
     return {
-        "state_class": "is-off",
-        "state_label": "Stopped",
-        "message": "Start the profiler to begin capturing.",
+        "state_class": "is-on",
+        "state_label": "Running",
+        "message": "Profiler is up and ready to capture association requests.",
     }
 
 
@@ -658,21 +662,20 @@ def capabilities():
 @bp.route("/profiler/session")
 def profiler_session():
     """Live profiler session data (htmx partial)"""
-    session = get_profiler_session()
+    running = system_service_running_state("wlanpi-profiler", quiet=True)
+    session = get_profiler_session(running)
     return render_template(
         "/partials/profiler_session.html",
         session=session,
-        service=profiler_service_view(
-            session, system_service_running_state("wlanpi-profiler", quiet=True)
-        ),
+        service=profiler_service_view(session, running),
     )
 
 
 @bp.route("/profiler/profiles")
 def profiler():
     """Profiles"""
-    session = get_profiler_session()
     profiler_running = system_service_running_state("wlanpi-profiler")
+    session = get_profiler_session(profiler_running)
     resp_data = {
         "content": "",
         "show_capabilities": True,
