@@ -117,6 +117,7 @@ def create_app(config_class=Config):
 
     app.logger.debug("registering cli blueprint")
     from wlanpi_webui.cli import bp as cli_bp
+    from wlanpi_webui.cli.cli import reap_shell
 
     app.register_blueprint(cli_bp)
     app.logger.debug("cli blueprint registered")
@@ -222,6 +223,7 @@ def create_app(config_class=Config):
         # those make browsers refetch every asset on every page.
         if request.endpoint in STATIC_ENDPOINTS:
             return None
+        reap_shell()
         if not session.get("user"):
             return None
         now = boot_clock()

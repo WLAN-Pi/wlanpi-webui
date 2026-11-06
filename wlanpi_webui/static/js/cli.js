@@ -13,6 +13,8 @@
 
   var POLL_MS = 150;
   var current = null; // the live terminal's teardown, if any
+  // Tabs on one sign-in share the shell; the server keeps it while any tab polls.
+  var TAB = Math.random().toString(36).slice(2);
 
   // One load per URL, shared by every visit to /cli; a failed load is
   // forgotten so the next visit retries.
@@ -200,24 +202,29 @@
     // The server reaps the shell after a spell with no input or output, so a
     // long idle leaves the terminal dead. Start a new one instead of going
     // quiet.
-    function revive() {
-      term.writeln("\r\n[session ended, starting a new shell]");
+    function revive(delay) {
+      if (stopped) return;
+      if (!delay) term.writeln("\r\n[session ended, starting a new shell]");
       offset = 0;
-      post("/cli/start").then(
+      post("/cli/start", { tab: TAB }).then(
         function (r) {
           if (!started(r)) return;
           sendResize();
           timer = setTimeout(poll, POLL_MS);
         },
         function () {
-          term.writeln("Could not start a new shell. Reload the page.");
+          if (!delay) term.writeln("Could not reach the WLAN Pi, retrying.");
+          delay = Math.min((delay || 500) * 2, 30000);
+          timer = setTimeout(function () {
+            revive(delay);
+          }, delay);
         }
       );
     }
 
     function poll() {
       if (stopped) return;
-      fetch("/cli/output?since=" + offset)
+      fetch("/cli/output?since=" + offset + "&tab=" + TAB)
         .then(function (r) {
           if (signedOut(r)) return null;
           return r.ok ? r.json() : null;
@@ -284,7 +291,7 @@
       window.removeEventListener("resize", sendResize);
       document.removeEventListener("wlanpi:theme", onThemeChange);
       if (kill && navigator.sendBeacon) {
-        navigator.sendBeacon("/cli/stop", new URLSearchParams({ csrf_token: csrf }));
+        navigator.sendBeacon("/cli/stop", new URLSearchParams({ csrf_token: csrf, tab: TAB }));
       }
     }
 
@@ -292,7 +299,7 @@
     window.addEventListener("resize", sendResize);
     document.addEventListener("wlanpi:theme", onThemeChange);
 
-    post("/cli/start").then(
+    post("/cli/start", { tab: TAB }).then(
       function (r) {
         if (!started(r)) return;
         term.focus();
@@ -315,8 +322,10 @@
       stopCurrent(false);
     }
   });
-  window.addEventListener("pagehide", function () {
-    stopCurrent(true);
+  // A page put in the back/forward cache keeps its terminal: its timers
+  // resume when Back restores it.
+  window.addEventListener("pagehide", function (evt) {
+    if (!evt.persisted) stopCurrent(true);
   });
   window.addEventListener("load", init);
 })();

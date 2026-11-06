@@ -31,6 +31,8 @@ from wlanpi_webui.utils import is_htmx
 SHELL = "/bin/bash"
 OUTPUT_LIMIT = 200_000  # bytes of scrollback kept per session
 IDLE_TIMEOUT = 600  # seconds without input or output before the shell is reaped
+# Browsers can throttle a background tab's polling to once a minute.
+TAB_TIMEOUT = 90
 
 
 class Session:
@@ -58,6 +60,8 @@ class Session:
         self.start = 0  # absolute offset of buffer[0]
         self.total = 0  # absolute offset of the end
         self.last = time.time()
+        self.tab_polled_at: dict[str, float] = {}
+        self.tab_stopped_at: dict[str, float] = {}
 
     def write(self, data: bytes) -> None:
         self.last = time.time()
@@ -137,6 +141,16 @@ def _mine() -> Session | None:
     return None
 
 
+def reap_shell() -> None:
+    """Close the shell if it is idle or its owner's session ended; skip if busy."""
+    # Never wait: a holder can sit in close() for 2s, and the next request reaps.
+    if _lock.acquire(blocking=False):
+        try:
+            _current()
+        finally:
+            _lock.release()
+
+
 def close_shell(sid: str | None) -> None:
     """Close the shell if `sid` owns it; called when that session ends."""
     global _session
@@ -144,6 +158,29 @@ def close_shell(sid: str | None) -> None:
         if sid and _session is not None and _session.owner == sid:
             _session.close()
             _session = None
+
+
+def _track_tab(shell: Session, tab: object) -> None:
+    now = time.time()
+    cutoff = now - TAB_TIMEOUT
+    shell.tab_polled_at = {
+        t: at for t, at in shell.tab_polled_at.items() if at > cutoff
+    }
+    shell.tab_stopped_at = {
+        t: at for t, at in shell.tab_stopped_at.items() if at > cutoff
+    }
+    # A poll in flight when its page closed must not revive a stopped tab.
+    if isinstance(tab, str) and tab and tab not in shell.tab_stopped_at:
+        shell.tab_polled_at[tab] = now
+
+
+def _json_body() -> dict:
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        abort(400)
+    return payload
 
 
 @bp.route("/cli")
@@ -163,16 +200,19 @@ def start():
     Another session's shell is never shown: that is 409 until it ends.
     """
     global _session
+    tab = _json_body().get("tab")
     with _lock:
-        if _mine() is not None:
-            return jsonify({"ok": True, "resumed": True})
-        if _session is not None:
-            return jsonify({"ok": False, "error": "in_use"}), 409
-        if not session_registered(session.get("sid")):
-            abort(401)  # signed out while this request was on its way
-        _session = Session(session["sid"])
-        _session.drain()
-        return jsonify({"ok": True, "resumed": False})
+        shell = _mine()
+        resumed = shell is not None
+        if not resumed:
+            if _session is not None:
+                return jsonify({"ok": False, "error": "in_use"}), 409
+            if not session_registered(session.get("sid")):
+                abort(401)  # signed out while this request was on its way
+            shell = _session = Session(session["sid"])
+            shell.drain()
+        _track_tab(shell, tab)
+        return jsonify({"ok": True, "resumed": resumed})
 
 
 @bp.route("/cli/input", methods=["POST"])
@@ -182,7 +222,7 @@ def send_input():
         shell = _mine()
         if shell is None:
             abort(409)
-        payload = request.get_json(silent=True) or {}
+        payload = _json_body()
         try:
             data = base64.b64decode(payload.get("data") or "", validate=True)
         except (ValueError, TypeError):
@@ -198,7 +238,7 @@ def resize():
         shell = _mine()
         if shell is None:
             abort(409)
-        payload = request.get_json(silent=True) or {}
+        payload = _json_body()
         try:
             rows = int(payload.get("rows") or 0)
             cols = int(payload.get("cols") or 0)
@@ -218,6 +258,7 @@ def output():
             # quiet one, so it can start a new shell instead of sitting dead.
             return jsonify({"offset": 0, "data": "", "alive": False})
 
+        _track_tab(shell, request.args.get("tab"))
         shell.drain()
         since = request.args.get("since", type=int)
         if since is None or since < shell.start or since > shell.total:
@@ -235,5 +276,18 @@ def output():
 @bp.route("/cli/stop", methods=["POST"])
 @csrf_required
 def stop():
-    close_shell(session.get("sid"))
+    """Close this session's shell unless another of its tabs still polls."""
+    global _session
+    with _lock:
+        shell = _mine()
+        if shell is None:
+            return "", 204
+        tab = request.form.get("tab")
+        if tab:
+            shell.tab_polled_at.pop(tab, None)
+            shell.tab_stopped_at[tab] = time.time()
+        _track_tab(shell, None)
+        if not shell.tab_polled_at:
+            shell.close()
+            _session = None
     return "", 204
