@@ -61,6 +61,7 @@ class Session:
         self.total = 0  # absolute offset of the end
         self.last = time.time()
         self.tab_polled_at: dict[str, float] = {}
+        self.tab_stopped_at: dict[str, float] = {}
 
     def write(self, data: bytes) -> None:
         self.last = time.time()
@@ -159,6 +160,23 @@ def close_shell(sid: str | None) -> None:
             _session = None
 
 
+def _track_tab(shell: Session, tab: object) -> None:
+    """Record a request from `tab` and forget tabs quiet past TAB_TIMEOUT.
+
+    A stopped tab stays stopped, so a poll still in flight when its page
+    closed cannot keep the shell alive for the other tabs."""
+    now = time.time()
+    cutoff = now - TAB_TIMEOUT
+    shell.tab_polled_at = {
+        t: at for t, at in shell.tab_polled_at.items() if at > cutoff
+    }
+    shell.tab_stopped_at = {
+        t: at for t, at in shell.tab_stopped_at.items() if at > cutoff
+    }
+    if isinstance(tab, str) and tab and tab not in shell.tab_stopped_at:
+        shell.tab_polled_at[tab] = now
+
+
 def _json_body() -> dict:
     payload = request.get_json(silent=True)
     if payload is None:
@@ -196,8 +214,7 @@ def start():
                 abort(401)  # signed out while this request was on its way
             shell = _session = Session(session["sid"])
             shell.drain()
-        if isinstance(tab, str) and tab:
-            shell.tab_polled_at[tab] = time.time()
+        _track_tab(shell, tab)
         return jsonify({"ok": True, "resumed": resumed})
 
 
@@ -244,9 +261,7 @@ def output():
             # quiet one, so it can start a new shell instead of sitting dead.
             return jsonify({"offset": 0, "data": "", "alive": False})
 
-        tab = request.args.get("tab")
-        if tab:
-            shell.tab_polled_at[tab] = time.time()
+        _track_tab(shell, request.args.get("tab"))
         shell.drain()
         since = request.args.get("since", type=int)
         if since is None or since < shell.start or since > shell.total:
@@ -270,9 +285,12 @@ def stop():
         shell = _mine()
         if shell is None:
             return "", 204
-        shell.tab_polled_at.pop(request.form.get("tab"), None)
-        cutoff = time.time() - TAB_TIMEOUT
-        if not any(seen > cutoff for seen in shell.tab_polled_at.values()):
+        tab = request.form.get("tab")
+        if tab:
+            shell.tab_polled_at.pop(tab, None)
+            shell.tab_stopped_at[tab] = time.time()
+        _track_tab(shell, None)
+        if not shell.tab_polled_at:
             shell.close()
             _session = None
     return "", 204

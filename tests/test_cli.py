@@ -1,8 +1,11 @@
 """Tests for the /cli terminal."""
 
 import base64
+import json
 import os
 import re
+import shutil
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -10,6 +13,60 @@ from pathlib import Path
 import pytest
 
 from wlanpi_webui.app import create_app
+
+# Runs cli.js against stub browser globals: a persisted pagehide (back/forward
+# cache) must keep polling and send no stop; a real close sends one.
+BFCACHE_HARNESS = """
+const handlers = {}, beacons = [], fetches = [];
+const stage = {
+  dataset: {}, isConnected: true, textContent: "",
+  getAttribute: (name) => (name === "data-csrf" ? "t" : "/" + name),
+};
+const ignore = () => {};
+globalThis.window = {
+  addEventListener: (type, fn) => (handlers[type] = fn),
+  removeEventListener: ignore, location: { assign: ignore },
+};
+globalThis.document = {
+  getElementById: () => stage,
+  createElement: () => ({ remove: ignore }),
+  head: { appendChild: (el) => setTimeout(el.onload) },
+  addEventListener: ignore, removeEventListener: ignore,
+  documentElement: { getAttribute: () => null },
+};
+Object.defineProperty(globalThis, "navigator", {
+  value: { sendBeacon: (url) => beacons.push(url) },
+});
+globalThis.getComputedStyle = () => ({ getPropertyValue: () => "" });
+globalThis.Terminal = class {
+  constructor() { this.options = {}; }
+  loadAddon() {} open() {} focus() {} write() {} writeln() {} onData() {}
+};
+globalThis.FitAddon = { FitAddon: class { fit() {} } };
+globalThis.fetch = (url) => {
+  fetches.push(url);
+  return Promise.resolve({
+    ok: true, status: 200, redirected: false,
+    json: () => Promise.resolve({ alive: true, offset: 0, data: "" }),
+  });
+};
+eval(require("fs").readFileSync(process.argv[1], "utf8"));
+handlers.load();
+setTimeout(() => {
+  handlers.pagehide({ persisted: true });
+  const polled = fetches.length;
+  setTimeout(() => {
+    const result = {
+      beaconsWhenCached: beacons.length,
+      pollsWhileCached: fetches.length > polled,
+    };
+    handlers.pagehide({ persisted: false });
+    result.beaconsWhenClosed = beacons.length;
+    console.log(JSON.stringify(result));
+    process.exit(0);
+  }, 500);
+}, 200);
+"""
 
 
 class FakeResponse:
@@ -185,6 +242,7 @@ class TestCli:
                 self.last = time.time()
                 self.closed = False
                 self.tab_polled_at = {}
+                self.tab_stopped_at = {}
                 created.append(self)
                 if block and len(created) == 1:
                     block["entered"].set()
@@ -262,6 +320,7 @@ class TestCli:
         closing_session = ClosingSession()
         closing_session.owner = _sid(c1)
         closing_session.tab_polled_at = {}
+        closing_session.tab_stopped_at = {}
         cli_module._session = closing_session
         stops, starts = [], []
 
@@ -363,9 +422,46 @@ class TestCli:
         client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
         assert cli_module._session is None
 
+    def test_poll_forgets_stale_tabs(self, client, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        _login(client, monkeypatch)
+        client.post("/cli/start", headers={"X-CSRF-Token": _csrf(client)})
+        client.get("/cli/output?since=0&tab=a")
+        client.get("/cli/output?since=0&tab=b")
+        cli_module._session.tab_polled_at["b"] -= cli_module.TAB_TIMEOUT + 1
+
+        client.get("/cli/output?since=0&tab=a")
+        assert set(cli_module._session.tab_polled_at) == {"a"}
+
+    def test_late_poll_does_not_bring_back_a_stopped_tab(self, client, monkeypatch):
+        from wlanpi_webui.cli import cli as cli_module
+
+        _login(client, monkeypatch)
+        csrf = _csrf(client)
+        for tab in ("a", "b"):
+            client.post("/cli/start", json={"tab": tab}, headers={"X-CSRF-Token": csrf})
+
+        client.post("/cli/stop", data={"csrf_token": csrf, "tab": "a"})
+        client.get("/cli/output?since=0&tab=a")
+        client.post("/cli/stop", data={"csrf_token": csrf, "tab": "b"})
+        assert cli_module._session is None
+
+    @pytest.mark.skipif(not shutil.which("node"), reason="needs node")
     def test_back_forward_cache_keeps_the_terminal(self, app):
-        js = (Path(app.root_path) / "static" / "js" / "cli.js").read_text()
-        assert "if (!evt.persisted) stopCurrent(true);" in js
+        cli_js = Path(app.root_path) / "static" / "js" / "cli.js"
+        out = subprocess.run(
+            ["node", "-e", BFCACHE_HARNESS, str(cli_js)],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout
+        assert json.loads(out) == {
+            "beaconsWhenCached": 0,
+            "pollsWhileCached": True,
+            "beaconsWhenClosed": 1,
+        }
 
     def test_logout_closes_the_shell(self, client, monkeypatch):
         from wlanpi_webui.cli import cli as cli_module
