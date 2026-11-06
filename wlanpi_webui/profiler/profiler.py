@@ -423,9 +423,8 @@ def _profiler_pid_alive(pid: Any) -> bool:
 def get_profiler_session(unit_state: str) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
-    The /run files survive a killed profiler, so trust them only while the
-    unit has a process or a CLI run's pid is still a profiler. The profiler
-    writes info.json after "running", so under "starting" it is stale.
+    The /run files survive a killed profiler, and info.json is written only
+    after "running", so under "starting" it is from the previous run.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
