@@ -296,18 +296,18 @@ def make_api_request(
 # Health-derived alerts are refreshed at most once per TTL so the navbar bell
 # and the after_request hook do not probe wlanpi-core on every request.
 _health_cache: list[dict[str, str]] = []
-_health_cache_at = 0.0
+_health_cache_at = float("-inf")
 HEALTH_CACHE_TTL = 60
 _health_lock = threading.Lock()
 
 
 def _health_alerts() -> list[dict[str, str]]:
     """Throttling, clock, and failed-unit alerts from wlanpi-core, cached."""
-    if time() - _health_cache_at < HEALTH_CACHE_TTL:
+    if boot_clock() - _health_cache_at < HEALTH_CACHE_TTL:
         return list(_health_cache)
     with _health_lock:
         # Another thread may have refreshed while this one waited.
-        if time() - _health_cache_at < HEALTH_CACHE_TTL:
+        if boot_clock() - _health_cache_at < HEALTH_CACHE_TTL:
             return list(_health_cache)
         return _refresh_health_alerts()
 
@@ -315,7 +315,7 @@ def _health_alerts() -> list[dict[str, str]]:
 def _refresh_health_alerts() -> list[dict[str, str]]:
     global _health_cache, _health_cache_at
 
-    now = time()
+    now = boot_clock()
     alerts: list[dict[str, str]] = []
 
     health = get_core_json("/api/v1/system/health")
