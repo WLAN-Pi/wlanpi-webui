@@ -154,15 +154,23 @@ class TestProfilerService:
 
 def test_profiler_pid_alive():
     proc = subprocess.Popen(
-        [sys.executable, "-c", "import time; time.sleep(30)", "profiler"]
+        [
+            sys.executable,
+            "-c",
+            "import time; print(flush=True); time.sleep(30)",
+            "profiler",
+        ],
+        stdout=subprocess.PIPE,
     )
     try:
+        proc.stdout.readline()
         assert _profiler_pid_alive(proc.pid)
         assert not _profiler_pid_alive("1")
         assert not _profiler_pid_alive(0)
     finally:
         proc.kill()
         proc.wait()
+        proc.stdout.close()
     assert not _profiler_pid_alive(proc.pid)
 
 
