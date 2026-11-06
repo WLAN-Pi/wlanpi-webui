@@ -523,6 +523,28 @@ def system_service_active_state(service, timeout=5) -> str:
     return (result.stdout or "").strip() or "unknown"
 
 
+# State -> (pill label, pill class) for a service card.
+SERVICE_STATES = {
+    "running": ("Running", "is-on"),
+    "starting": ("Starting", "is-warn"),
+    "stopping": ("Stopping", "is-warn"),
+    "failed": ("Failed", "is-bad"),
+    "stopped": ("Stopped", "is-off"),
+}
+_ACTIVE_TO_STATE = {
+    "active": "running",
+    "reloading": "running",
+    "activating": "starting",
+    "deactivating": "stopping",
+    "failed": "failed",
+}
+
+
+def system_service_state(service) -> str:
+    """One of the ``SERVICE_STATES`` keys for a systemd service."""
+    return _ACTIVE_TO_STATE.get(system_service_active_state(service), "stopped")
+
+
 def run_command(cmd: list, suppress_output=False) -> str:
     """Run a single CLI command with subprocess and return stdout or stderr response"""
     cp = subprocess.run(
@@ -570,18 +592,6 @@ def run_pipeline(*commands, timeout: int = 10) -> str:
     return out.decode()
 
 
-def systemd_service_message(service):
-    """
-    Checks if systemd service is running.
-    Returns '<service> is running' if it is, and '<service> is not running' if not.
-    """
-    status = system_service_running_state(service)
-    if status:
-        return f"{service} is running"
-    else:
-        return f"{service} is not running"
-
-
 def service_friendly_name(service_name):
     """Human-readable name for a systemd service."""
     friendly_name = service_name
@@ -624,6 +634,10 @@ def start_stop_service(task, service, label=None, noun="service"):
     """
     name = label or service_friendly_name(service)
 
+    if task not in ("start", "stop"):
+        current_app.logger.error("Invalid task: %s", task)
+        return redirect(get_safe_referrer_target())
+
     if task == "start" and not system_service_exists(service):
         queue_toast(f"{name} {noun} is not installed.", "warning")
         return redirect(get_safe_referrer_target())
@@ -632,35 +646,27 @@ def start_stop_service(task, service, label=None, noun="service"):
         queue_toast("wlanpi-core is not running.", "danger")
         return redirect(get_safe_referrer_target())
 
-    if task not in ("start", "stop"):
-        current_app.logger.error("Invalid task: %s", task)
-        return redirect(get_safe_referrer_target())
-
     current_app.logger.info("%sing %s", task, service)
     url = f"https://127.0.0.1:31415/api/v1/system/service/{task}"
     params = {"name": service}
 
     try:
-        response = make_api_request(method="POST", url=url, params=params)
+        make_api_request(method="POST", url=url, params=params)
     except requests.exceptions.RequestException:
         current_app.logger.exception("API request failed")
         queue_toast(f"Could not {task} {name} {noun}.", "warning")
         return redirect(get_safe_referrer_target())
 
-    if response.status_code != 200:
-        current_app.logger.error(
-            "Request failed with status %s. Response body: %s",
-            response.status_code,
-            response.text,
+    # Core only accepted the request; report what systemd says now.
+    state = system_service_state(service)
+    if task == "start" and state == "failed":
+        queue_toast(f"{name} {noun} failed to start.", "danger")
+    elif state in ("starting", "stopping"):
+        queue_toast(f"{name} {noun} is {state}.")
+    else:
+        queue_toast(
+            f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
         )
-        if response.status_code == 401:
-            current_app.logger.error("Authentication failed. Verify core credentials.")
-        queue_toast(f"Could not {task} {name} {noun}.", "warning")
-        return redirect(get_safe_referrer_target())
-
-    queue_toast(
-        f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
-    )
     return redirect(get_safe_referrer_target())
 
 

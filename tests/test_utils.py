@@ -2,6 +2,7 @@ import subprocess
 from unittest.mock import patch
 
 import pytest
+import requests
 from flask import session
 from werkzeug.exceptions import BadRequest
 
@@ -211,8 +212,34 @@ class TestSystemServiceActiveState:
         monkeypatch.setattr(utils.subprocess, "run", boom)
         assert utils.system_service_active_state("x") == "unknown"
 
+    @pytest.mark.parametrize(
+        "active, state",
+        [
+            ("active", "running"),
+            ("reloading", "running"),
+            ("activating", "starting"),
+            ("deactivating", "stopping"),
+            ("failed", "failed"),
+            ("inactive", "stopped"),
+            ("unknown", "stopped"),
+        ],
+    )
+    def test_service_state(self, monkeypatch, active, state):
+        from wlanpi_webui import utils
+
+        monkeypatch.setattr(utils, "system_service_active_state", lambda s: active)
+        assert utils.system_service_state("x") == state
+
 
 class TestStartStopServiceToast:
+    @pytest.fixture(autouse=True)
+    def unit_state(self, monkeypatch):
+        from wlanpi_webui import utils
+
+        state = {"value": "running"}
+        monkeypatch.setattr(utils, "system_service_state", lambda s: state["value"])
+        return state
+
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_start_uninstalled_queues_warning(self, mock_exists, app):
         mock_exists.return_value = False
@@ -271,13 +298,52 @@ class TestStartStopServiceToast:
     def test_api_failure_queues_warning(self, mock_exists, mock_running, mock_api, app):
         mock_exists.return_value = True
         mock_running.return_value = True
-        mock_api.return_value = _Resp(500)
+        mock_api.side_effect = requests.HTTPError("500")
         with app.test_request_context():
             start_stop_service("start", "kismet")
             assert session["wlanpi_toast"] == {
                 "message": "Could not start Kismet service.",
                 "status": "warning",
             }
+
+    @pytest.mark.parametrize(
+        "task, state, message, status",
+        [
+            ("start", "failed", "Kismet service failed to start.", "danger"),
+            ("start", "starting", "Kismet service is starting.", "primary"),
+            ("stop", "stopping", "Kismet service is stopping.", "primary"),
+            ("stop", "failed", "Kismet service stopped.", "success"),
+        ],
+    )
+    @patch("wlanpi_webui.utils.make_api_request")
+    @patch("wlanpi_webui.utils.system_service_running_state")
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_toast_reports_unit_state_after_request(
+        self,
+        mock_exists,
+        mock_running,
+        mock_api,
+        app,
+        unit_state,
+        task,
+        state,
+        message,
+        status,
+    ):
+        mock_exists.return_value = True
+        mock_running.return_value = True
+        mock_api.return_value = _Resp(200)
+        unit_state["value"] = state
+        with app.test_request_context():
+            start_stop_service(task, "kismet")
+            assert session["wlanpi_toast"] == {"message": message, "status": status}
+
+    @patch("wlanpi_webui.utils.system_service_exists")
+    def test_invalid_task_checked_first(self, mock_exists, app):
+        with app.test_request_context():
+            start_stop_service("restart", "kismet")
+            mock_exists.assert_not_called()
+            assert "wlanpi_toast" not in session
 
     @patch("wlanpi_webui.utils.make_api_request")
     @patch("wlanpi_webui.utils.system_service_running_state")

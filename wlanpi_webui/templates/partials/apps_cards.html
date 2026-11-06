@@ -19,12 +19,12 @@
 
     {% if profiler_installed %}
     <div>
-      <div class="uk-card uk-card-default uk-card-body app-card">
+      <div id="apps-profiler-card" class="uk-card uk-card-default uk-card-body app-card">
         <div class="app-card-head">
           <span class="app-icon" uk-icon="icon: users; ratio: 1.6"></span>
           <div>
             <h2 class="uk-card-title uk-margin-remove-bottom">Profiler</h2>
-            <p class="app-status {% if profiler_running %}is-on{% else %}is-off{% endif %}">{% if profiler_running %}Running{% else %}Stopped{% endif %}</p>
+            <p class="app-status {{ profiler_state[1] }}">{{ profiler_state[0] }}</p>
           </div>
         </div>
         <p class="uk-text-meta">Determine wireless client capabilities from association frames.</p>
@@ -34,18 +34,22 @@
             hx-get="/profiler/profiles" hx-target="#content" hx-swap="innerHTML" hx-push-url="true"
             hx-indicator=".progress">Launch</a>
         </p>
+        {% if profiler_settling %}
+        <span hidden hx-get="/apps/cards" hx-trigger="load delay:3s" hx-select="#apps-profiler-card"
+          hx-target="#apps-profiler-card" hx-swap="outerHTML"></span>
+        {% endif %}
       </div>
     </div>
     {% endif %}
 
     {% if kismet_installed %}
     <div>
-      <div class="uk-card uk-card-default uk-card-body app-card">
+      <div id="apps-kismet-card" class="uk-card uk-card-default uk-card-body app-card">
         <div class="app-card-head">
           <span class="app-icon" uk-icon="icon: receiver; ratio: 1.6"></span>
           <div>
             <h2 class="uk-card-title uk-margin-remove-bottom">Kismet</h2>
-            <p class="app-status {% if kismet_running %}is-on{% else %}is-off{% endif %}">{% if kismet_running %}Running{% else %}Stopped{% endif %}</p>
+            <p class="app-status {{ kismet_state[1] }}">{{ kismet_state[0] }}</p>
           </div>
         </div>
         <p class="uk-text-meta">Wi-Fi, Bluetooth, RF, and more.</p>
@@ -55,6 +59,10 @@
           <a class="uk-button uk-button-primary" href="/kismet" target="_blank">Launch Kismet</a>
           {% endif %}
         </p>
+        {% if kismet_settling %}
+        <span hidden hx-get="/apps/cards" hx-trigger="load delay:3s" hx-select="#apps-kismet-card"
+          hx-target="#apps-kismet-card" hx-swap="outerHTML"></span>
+        {% endif %}
       </div>
     </div>
     {% endif %}

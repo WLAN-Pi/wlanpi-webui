@@ -49,6 +49,10 @@ def app(profiler_root, monkeypatch):
         "wlanpi_webui.profiler.profiler.system_service_running_state",
         lambda service, quiet=False: False,
     )
+    monkeypatch.setattr(
+        "wlanpi_webui.profiler.profiler.system_service_state",
+        lambda service: "stopped",
+    )
     return create_app()
 
 
@@ -112,8 +116,8 @@ class TestProfilerService:
 
     def test_shows_starting_when_not_confirmed_up(self, client, monkeypatch):
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
@@ -128,8 +132,8 @@ class TestProfilerService:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")
@@ -234,8 +238,8 @@ class TestProfilerSession:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -245,8 +249,8 @@ class TestProfilerSession:
 
     def test_poll_shows_starting_before_up(self, client, monkeypatch, profiler_root):
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/session")
@@ -304,8 +308,8 @@ class TestProfilerSession:
             {"ssid": "Profiler 573", "passphrase": "profiler"},
         )
         monkeypatch.setattr(
-            "wlanpi_webui.profiler.profiler.system_service_running_state",
-            lambda service, quiet=False: True,
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: "running",
         )
         _login(client, monkeypatch)
         resp = client.get("/profiler/profiles")

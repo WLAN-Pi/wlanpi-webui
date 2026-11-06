@@ -24,6 +24,7 @@ from wlanpi_webui.utils import (
     queue_toast,
     start_stop_service,
     system_service_running_state,
+    system_service_state,
 )
 
 getting_started = """
@@ -655,16 +656,20 @@ def capabilities():
     )
 
 
+def profiler_toggle(state: str) -> str:
+    return service_toggle_anchor(state, "/startprofiler", "/stopprofiler")
+
+
 @bp.route("/profiler/session")
 def profiler_session():
     """Live profiler session data (htmx partial)"""
     session = get_profiler_session()
+    state = system_service_state("wlanpi-profiler")
     return render_template(
         "/partials/profiler_session.html",
         session=session,
-        service=profiler_service_view(
-            session, system_service_running_state("wlanpi-profiler", quiet=True)
-        ),
+        service=profiler_service_view(session, state in ("running", "starting")),
+        profiler_toggle=profiler_toggle(state),
     )
 
 
@@ -672,16 +677,14 @@ def profiler_session():
 def profiler():
     """Profiles"""
     session = get_profiler_session()
-    profiler_running = system_service_running_state("wlanpi-profiler")
+    state = system_service_state("wlanpi-profiler")
     resp_data = {
         "content": "",
         "show_capabilities": True,
         "getting_started": getting_started,
-        "profiler_running": profiler_running,
-        "service": profiler_service_view(session, profiler_running),
-        "profiler_toggle": service_toggle_anchor(
-            profiler_running, "/startprofiler", "/stopprofiler"
-        ),
+        "profiler_running": state == "running",
+        "service": profiler_service_view(session, state in ("running", "starting")),
+        "profiler_toggle": profiler_toggle(state),
         "reports": get_reports(),
     }
     if is_htmx(request):

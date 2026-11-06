@@ -338,15 +338,20 @@ def hx_post_button(
     cls = f' class="{css}"' if css else ""
     return (
         f'<button type="button" hx-post="{url}" hx-indicator=".progress"{swap}{cls} '
-        f'hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</button>'
+        f'hx-disable="this" hx-headers=\'{{"X-CSRF-Token": "{token}"}}\'>{inner}</button>'
     )
 
 
 def service_toggle_anchor(
-    running: bool, start: str, stop: str, target: str = "#content"
+    state: str, start: str, stop: str, target: str = "#content"
 ) -> str:
-    """Start/Stop button for a systemd-backed service."""
-    if running:
+    """Start/Stop button for a ``SERVICE_STATES`` state, disabled mid-transition."""
+    if state in ("starting", "stopping"):
+        return (
+            f'<button class="uk-button uk-button-default" type="button" '
+            f"disabled>{state.capitalize()}…</button>"
+        )
+    if state == "running":
         return hx_post_button(
             stop, "Stop", target=target, css="uk-button uk-button-default"
         )
