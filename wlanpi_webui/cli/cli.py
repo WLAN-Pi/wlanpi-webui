@@ -149,6 +149,15 @@ def close_shell(sid: str | None) -> None:
             _session = None
 
 
+def _json_body() -> dict:
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        abort(400)
+    return payload
+
+
 @bp.route("/cli")
 def cli():
     if is_htmx(request):
@@ -166,7 +175,7 @@ def start():
     Another session's shell is never shown: that is 409 until it ends.
     """
     global _session
-    tab = (request.get_json(silent=True) or {}).get("tab")
+    tab = _json_body().get("tab")
     with _lock:
         shell = _mine()
         resumed = shell is not None
@@ -189,7 +198,7 @@ def send_input():
         shell = _mine()
         if shell is None:
             abort(409)
-        payload = request.get_json(silent=True) or {}
+        payload = _json_body()
         try:
             data = base64.b64decode(payload.get("data") or "", validate=True)
         except (ValueError, TypeError):
@@ -205,7 +214,7 @@ def resize():
         shell = _mine()
         if shell is None:
             abort(409)
-        payload = request.get_json(silent=True) or {}
+        payload = _json_body()
         try:
             rows = int(payload.get("rows") or 0)
             cols = int(payload.get("cols") or 0)

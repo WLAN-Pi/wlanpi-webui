@@ -102,6 +102,13 @@ class TestCli:
         _login(client, monkeypatch)
         assert client.post("/cli/start").status_code == 400
 
+    def test_non_object_json_is_rejected(self, client, monkeypatch):
+        _login(client, monkeypatch)
+        headers = {"X-CSRF-Token": _csrf(client)}
+        assert client.post("/cli/start", headers=headers).status_code == 200
+        for path in ("/cli/start", "/cli/input", "/cli/resize"):
+            assert client.post(path, json=["x"], headers=headers).status_code == 400
+
     def test_shell_round_trip(self, client, monkeypatch):
         _login(client, monkeypatch)
         csrf = _csrf(client)
