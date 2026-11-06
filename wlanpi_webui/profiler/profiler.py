@@ -412,8 +412,8 @@ def _qr_escape(value: str) -> str:
 def get_profiler_session(running: bool) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
-    The runtime files survive a SIGKILL or OOM kill in /run, so they count as
-    live only while systemd says the unit is active.
+    The /run files outlive a SIGKILL or OOM kill, so trust them only while
+    the unit is active.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
@@ -491,9 +491,8 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
 def profiler_service_view(session: dict[str, Any], running: bool) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    systemd decides up or down, the same state the Start/Stop button reads.
-    The status file only narrows "up" to "starting"; a build that never
-    writes it shows "Running" rather than "Starting" forever.
+    Falls back to Running so a profiler that never writes the status file
+    isn't stuck on Starting.
     """
     if not running:
         return {
