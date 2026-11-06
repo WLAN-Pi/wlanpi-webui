@@ -421,10 +421,9 @@ def _profiler_pid_alive(pid: Any) -> bool:
 def get_profiler_session(running: bool) -> dict[str, Any]:
     """Live profiler session from the runtime files, else the last session.
 
-    The /run files outlive a SIGKILL or OOM kill, so trust them only while
-    the unit is active or the pid they name is still a profiler (a CLI run
-    has no unit). info.json lands after "running", so with "starting" it is
-    a previous run's.
+    The /run files survive a killed profiler, so trust them only while the
+    unit is active or their pid is still a profiler (CLI runs have no unit).
+    The profiler writes info.json after "running", so under "starting" it is stale.
     """
     status = _read_json(current_app.config["PROFILER_STATUS_PATH"]) or {}
     info = _read_json(current_app.config["PROFILER_INFO_PATH"]) or {}
@@ -505,8 +504,8 @@ def get_profiler_session(running: bool) -> dict[str, Any]:
 def profiler_service_view(session: dict[str, Any]) -> dict[str, str]:
     """Badge and message for the profiler service bar.
 
-    No status file falls back to Running so a profiler that never writes one
-    isn't stuck on Starting.
+    Profilers before 2.0 write no status file, so a missing one means
+    Running rather than stuck on Starting.
     """
     if not session.get("up"):
         return {
