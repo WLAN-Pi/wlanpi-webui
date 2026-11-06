@@ -236,9 +236,14 @@ class TestStartStopServiceToast:
     def unit_state(self, monkeypatch):
         from wlanpi_webui import utils
 
-        state = {"value": "running"}
-        monkeypatch.setattr(utils, "system_service_state", lambda s: state["value"])
-        return state
+        states = ["running"]
+        monkeypatch.setattr(
+            utils,
+            "system_service_state",
+            lambda s: states.pop(0) if len(states) > 1 else states[0],
+        )
+        monkeypatch.setattr(utils, "sleep", lambda s: None)
+        return states
 
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_start_uninstalled_queues_warning(self, mock_exists, app):
@@ -271,8 +276,9 @@ class TestStartStopServiceToast:
     @patch("wlanpi_webui.utils.system_service_running_state")
     @patch("wlanpi_webui.utils.system_service_exists")
     def test_stop_success_queues_success(
-        self, mock_exists, mock_running, mock_api, app
+        self, mock_exists, mock_running, mock_api, app, unit_state
     ):
+        unit_state[:] = ["stopped"]
         mock_exists.return_value = True
         mock_running.return_value = True
         mock_api.return_value = _Resp(200)
@@ -307,12 +313,21 @@ class TestStartStopServiceToast:
             }
 
     @pytest.mark.parametrize(
-        "task, state, message, status",
+        "task, states, message, status",
         [
-            ("start", "failed", "Kismet service failed to start.", "danger"),
-            ("start", "starting", "Kismet service is starting.", "primary"),
-            ("stop", "stopping", "Kismet service is stopping.", "primary"),
-            ("stop", "failed", "Kismet service stopped.", "success"),
+            ("start", ["stopped", "running"], "Kismet service started.", "success"),
+            ("start", ["stopped"], "Kismet service did not start.", "warning"),
+            (
+                "start",
+                ["stopped", "failed"],
+                "Kismet service failed to start.",
+                "danger",
+            ),
+            ("start", ["starting"], "Kismet service is starting.", "primary"),
+            ("stop", ["running", "stopped"], "Kismet service stopped.", "success"),
+            ("stop", ["running"], "Kismet service did not stop.", "warning"),
+            ("stop", ["stopping"], "Kismet service is stopping.", "primary"),
+            ("stop", ["failed"], "Kismet service stopped.", "success"),
         ],
     )
     @patch("wlanpi_webui.utils.make_api_request")
@@ -326,14 +341,14 @@ class TestStartStopServiceToast:
         app,
         unit_state,
         task,
-        state,
+        states,
         message,
         status,
     ):
         mock_exists.return_value = True
         mock_running.return_value = True
         mock_api.return_value = _Resp(200)
-        unit_state["value"] = state
+        unit_state[:] = states
         with app.test_request_context():
             start_stop_service(task, "kismet")
             assert session["wlanpi_toast"] == {"message": message, "status": status}
@@ -348,7 +363,10 @@ class TestStartStopServiceToast:
     @patch("wlanpi_webui.utils.make_api_request")
     @patch("wlanpi_webui.utils.system_service_running_state")
     @patch("wlanpi_webui.utils.system_service_exists")
-    def test_data_stream_label_and_noun(self, mock_exists, mock_running, mock_api, app):
+    def test_data_stream_label_and_noun(
+        self, mock_exists, mock_running, mock_api, app, unit_state
+    ):
+        unit_state[:] = ["stopped"]
         mock_exists.return_value = True
         mock_running.return_value = True
         mock_api.return_value = _Resp(200)

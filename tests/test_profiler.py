@@ -317,6 +317,44 @@ class TestProfilerSession:
         assert b'<div id="profiler-qr-slot"></div>' in resp.data
         assert b'id="profiler-qr"' not in resp.data
 
+    @pytest.mark.parametrize("path", ["/profiler/profiles", "/profiler/session"])
+    @pytest.mark.parametrize(
+        "state, badge, toggle",
+        [
+            ("starting", b'is-warn">Starting<', "disabled>Starting…</button>"),
+            ("stopping", b'is-warn">Stopping<', "disabled>Stopping…</button>"),
+            ("failed", b'is-bad">Failed<', 'hx-post="/startprofiler"'),
+            ("stopped", b'is-off">Stopped<', 'hx-post="/startprofiler"'),
+            ("running", b'is-on">Running<', 'hx-post="/stopprofiler"'),
+        ],
+    )
+    def test_systemd_state_drives_badge_and_toggle(
+        self, client, monkeypatch, profiler_root, path, state, badge, toggle
+    ):
+        # A live session file lags the unit; stopping and failed must win over it.
+        if state in ("stopping", "failed", "running"):
+            _write_session(
+                profiler_root,
+                {"state": "running"},
+                {"ssid": "Profiler 573", "passphrase": "profiler"},
+            )
+        monkeypatch.setattr(
+            "wlanpi_webui.profiler.profiler.system_service_state",
+            lambda service: state,
+        )
+        _login(client, monkeypatch)
+        resp = client.get(path)
+        assert resp.status_code == 200
+        assert badge in resp.data
+        oob = b'<span id="profiler-toggle" hx-swap-oob="true">'
+        start = resp.data.index(
+            oob if path == "/profiler/session" else b'id="profiler-toggle"'
+        )
+        toggle_html = resp.data[start : resp.data.index(b"</span>", start)]
+        assert toggle.encode() in toggle_html
+        if state in ("starting", "stopping"):
+            assert b"hx-post" not in toggle_html
+
 
 class TestProfilerCapabilities:
     def test_requires_login(self, client):

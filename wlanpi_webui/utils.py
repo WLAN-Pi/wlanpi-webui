@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from time import CLOCK_BOOTTIME, clock_gettime, time
+from time import CLOCK_BOOTTIME, clock_gettime, sleep, time
 
 import requests
 from flask import abort, current_app, redirect, request, session
@@ -539,6 +539,11 @@ _ACTIVE_TO_STATE = {
 }
 
 
+# How long start_stop_service waits for the unit to leave its old state.
+SERVICE_SETTLE_POLLS = 8
+SERVICE_SETTLE_INTERVAL = 0.25
+
+
 def system_service_state(service) -> str:
     """One of the ``SERVICE_STATES`` keys for a systemd service."""
     return _ACTIVE_TO_STATE.get(system_service_active_state(service), "stopped")
@@ -656,16 +661,32 @@ def start_stop_service(task, service, label=None, noun="service"):
         queue_toast(f"Could not {task} {name} {noun}.", "warning")
         return redirect(get_safe_referrer_target())
 
-    # Core only accepted the request; report what systemd says now.
+    # Core only queues the systemd job, so the unit can still be in its old state.
+    before = (
+        ("stopped", "stopping", "failed")
+        if task == "start"
+        else ("running", "starting")
+    )
     state = system_service_state(service)
-    if task == "start" and state == "failed":
-        queue_toast(f"{name} {noun} failed to start.", "danger")
-    elif state in ("starting", "stopping"):
-        queue_toast(f"{name} {noun} is {state}.")
-    else:
+    for _ in range(SERVICE_SETTLE_POLLS):
+        if state not in before:
+            break
+        sleep(SERVICE_SETTLE_INTERVAL)
+        state = system_service_state(service)
+
+    done, pending = (
+        ("running", "starting") if task == "start" else ("stopped", "stopping")
+    )
+    if state == done or (task == "stop" and state == "failed"):
         queue_toast(
             f"{name} {noun} {'started' if task == 'start' else 'stopped'}.", "success"
         )
+    elif state == pending:
+        queue_toast(f"{name} {noun} is {pending}.")
+    elif task == "start" and state == "failed":
+        queue_toast(f"{name} {noun} failed to start.", "danger")
+    else:
+        queue_toast(f"{name} {noun} did not {task}.", "warning")
     return redirect(get_safe_referrer_target())
 
 
